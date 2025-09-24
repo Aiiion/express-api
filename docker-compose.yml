@@ -1,13 +1,8 @@
-version: '3.8'
-
 services:
   api:
     build: .
+    container_name: express-api
     ports:
       - "3000:3000"
-    environment:
-      NODE_ENV: production
-    volumes:
-      - .:/src/
     restart: always
     command: ["npm", "start"]
