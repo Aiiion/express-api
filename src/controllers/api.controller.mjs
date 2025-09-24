@@ -5,7 +5,7 @@ export const test = (req, res) => res.status(200).send({message: 'test successfu
 export const weather = async (req, res) => {
     if(!req.query.lat || !req.query.lon)
         return res.status(400).send({message: "You need to provide both lat and lon coordinates"});
-    console.log(req.query.lat, req.query.lon)
+    console.log(req.query.lat, req.query.lon, process.env.WEATHER_API_KEY)
     const weatherReq = await axios({
         method: 'get',
         url: EXTERNAL_WEATHER_URL + '/weather',

@@ -1,7 +1,7 @@
 FROM node:24
 
 # Set the working directory
-WORKDIR /src
+WORKDIR user/src/app
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
