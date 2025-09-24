@@ -1,7 +1,13 @@
 import axios from "axios";
-import { EXTERNAL_WEATHER_URL } from "../utils/constants.mjs";
+import { EXTERNAL_WEATHER_URL, EMAIL, GITHUB } from "../utils/constants.mjs";
 
-export const test = (req, res) => res.status(200).send({message: 'test successful'});
+export const test = (req, res) => res.status(200).send({message: 'API is running'});
+
+export const contact = (req, res) => res.status(200).send({
+    message: "Hello! I am Alex. Feel free to use this API. If you have any questions or feedback, please reach out to me via email or GitHub.",
+    github: GITHUB,
+    email: EMAIL
+});
 
 export const weather = async (req, res) => {
     if(!req.query.lat || !req.query.lon)
