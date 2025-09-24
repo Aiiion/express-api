@@ -53,7 +53,7 @@ export const pollution = async (req, res) => {
 
     const pollutionReq = await axios({
         method: 'get',
-        url: EXTERNAL_WEATHER_URL + '/pollution',
+        url: EXTERNAL_WEATHER_URL + '/air_pollution',
         params: {
             ...req.query,
             appid
@@ -62,7 +62,7 @@ export const pollution = async (req, res) => {
 
     const forecastReq = await axios({
         method: 'get',
-        url: EXTERNAL_WEATHER_URL + '/pollution/forecast',
+        url: EXTERNAL_WEATHER_URL + '/air_pollution/forecast',
         params: {
             ...req.query,
             appid
