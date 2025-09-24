@@ -6,6 +6,6 @@ const router = Router();
 
 router.get("/", test);
 
-router.post("/weather", cache(120), weather);
+router.post("/weather", cache(60 * 10), weather);
 
 export default router;
