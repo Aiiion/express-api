@@ -13,6 +13,7 @@ npm start
 *You will need your own API key for openwheatermaps to get weatherdata. Add it in an .env file at the root as WEATHER_API_KEY.*
 
 **Endpoints**
+
 (GET)**/** 
 
 Get app and contact info
