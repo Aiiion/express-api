@@ -6,7 +6,7 @@ const router = Router();
 
 router.get("/", contact);
 router.get("/test", test);
-router.post("/weather", cache(60 * 10), weather);
-router.post("/pollution", cache(60 * 10), pollution);
+router.get("/weather", cache(60 * 10), weather);
+router.get("/pollution", cache(60 * 10), pollution);
 
 export default router;
