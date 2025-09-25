@@ -1,7 +1,9 @@
 You will need your own API key for openwheatermaps to get weatherdata. Add it in an .env file at the root as WEATHER_API_KEY.
 
 Start this app up using docker:
+
 docker compose build
+
 docker compose up
 
 Or without docker:
