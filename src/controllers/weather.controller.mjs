@@ -7,17 +7,10 @@ import {
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
-  const appid = process.env.WEATHER_API_KEY;
+  const weatherReq = await currentWeather(req.query);
+  const pollutionReq = await currentPollution(req.query);
 
-  if (!appid)
-    return res
-      .status(500)
-      .send({ message: "API key missing from environment variables" });
-
-  const weatherReq = await currentWeather(req.query, appid);
-  const pollutionReq = await currentPollution(req.query, appid);
-  
-  const forecastReq = await forecastWeather(req.query, appid).then((res) => {
+  const forecastReq = await forecastWeather(req.query).then((res) => {
     const forcastData = res.data;
     const upcoming = {};
 
@@ -41,15 +34,8 @@ export const aggregate = async (req, res) => {
 };
 
 export const weather = async (req, res) => {
-  const appid = process.env.WEATHER_API_KEY;
-
-  if (!appid)
-    return res
-      .status(500)
-      .send({ message: "API key missing from environment variables" });
-
-  const weatherReq = await currentWeather(req.query, appid);
-  const forecastReq = await forecastWeather(req.query, appid);
+  const weatherReq = await currentWeather(req.query);
+  const forecastReq = await forecastWeather(req.query);
 
   return res.status(200).send({
     data: {
@@ -60,15 +46,8 @@ export const weather = async (req, res) => {
 };
 
 export const pollution = async (req, res) => {
-  const appid = process.env.WEATHER_API_KEY;
-
-  if (!appid)
-    return res
-      .status(500)
-      .send({ message: "API key missing from environment variables" });
-
-  const pollutionReq = await currentPollution(req.query, appid);
-  const forecastReq = await forecastPollution(req.query, appid);
+  const pollutionReq = await currentPollution(req.query);
+  const forecastReq = await forecastPollution(req.query);
 
   return res.status(200).send({
     data: {
