@@ -1,12 +1,16 @@
-import { contact, test, pollution, weather } from '../controllers/api.controller.mjs';
+import { contact, test } from '../controllers/info.controller.mjs';
+import { aggregate, pollution, weather } from '../controllers/weather.controller.mjs';
 import { Router } from "express";
-import { cache, requireLatLon } from '../middleware/cache.mjs';
+import { cache } from '../middleware/cache.middleware.mjs';
+import { requireLatLon } from '../middleware/weather.middleware.mjs';
 
 const router = Router();
 
 router.get("/", contact);
 router.get("/test", test);
 router.get("/weather", [requireLatLon, cache(60 * 10)], weather);
-router.get("/pollution", [requireLatLon, cache(60 * 10)], pollution);
+router.get("/weather/pollution", [requireLatLon, cache(60 * 10)], pollution);
+router.get("/weather/aggregate", [requireLatLon, cache(60 * 10)], aggregate);
+
 
 export default router;
