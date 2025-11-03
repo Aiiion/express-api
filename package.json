@@ -4,9 +4,13 @@
   "description": "",
   "main": "index.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "start:dev": "nodemon ./src/index.mjs",
     "start": "node ./src/index.mjs"
+  },
+  "jest": {
+    "transform": {},
+    "testEnvironment": "node"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +24,9 @@
     "memory-cache": "^0.2.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@babel/preset-env": "^7.28.5",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }
