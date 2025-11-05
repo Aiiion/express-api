@@ -44,7 +44,7 @@ https://openweathermap.org/forecast5
 
 ### (GET) **/weather/pollution**
 
-Combines these current and forcast requests, you can use the same query as described in the docs (but without appid)
+Combines these current and forecast requests, you can use the same query as described in the docs (but without appid)
 
 https://openweathermap.org/api/air-pollution
 
