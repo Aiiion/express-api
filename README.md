@@ -48,7 +48,7 @@ Combines these current and forecast requests, you can use the same query as desc
 
 https://openweathermap.org/api/air-pollution
 
-### (GET)**/weather/aggregate** (Beta)
+### (GET) **/weather/aggregate** (Beta)
 
 Combines these three requests, you can use the same query as described in the docs (but without appid)
 
