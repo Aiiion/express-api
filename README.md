@@ -1,3 +1,5 @@
+# Usage
+
 **Start this app up using docker (production):**
 
 docker compose build
@@ -22,17 +24,17 @@ npm run start:dev
 
 npm test
 
-**Endpoints**
+# Endpoints
 
-(GET)**/** 
+### (GET) **/** 
 
 Get app- and contact info
 
-(GET)**/test**
+### (GET) **/test**
 
 Test if the api is running
 
-(GET)**/weather**
+### (GET) **/weather**
 
 Combines these two requests, you can use the same query as described in the docs (but without appid)
 
@@ -40,14 +42,13 @@ https://openweathermap.org/current
 
 https://openweathermap.org/forecast5
 
-(GET)**/weather/pollution**
+### (GET) **/weather/pollution**
 
 Combines these current and forcast requests, you can use the same query as described in the docs (but without appid)
 
 https://openweathermap.org/api/air-pollution
 
-
-(GET)**/weather/aggregate** (Beta)
+### (GET)**/weather/aggregate** (Beta)
 
 Combines these three requests, you can use the same query as described in the docs (but without appid)
 
