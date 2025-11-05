@@ -3,7 +3,7 @@ import {
   currentWeather,
   forecastPollution,
   forecastWeather,
-} from "../utils/owmRequests.mjs";
+} from "../services/openWeatherMaps.service.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
