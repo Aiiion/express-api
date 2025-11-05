@@ -6,7 +6,7 @@ docker compose up
 
 **Or without docker (production):**
 
-npm install
+npm install --omit=dev
 
 npm start
 
