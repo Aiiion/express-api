@@ -3,7 +3,7 @@ import {
   currentWeather,
   forecastPollution,
   forecastWeather,
-} from "../utils/owmRequests.mjs";
+} from "../services/openWeatherMaps.service.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
@@ -11,15 +11,15 @@ export const aggregate = async (req, res) => {
   const pollutionReq = await currentPollution(req.query);
 
   const forecastReq = await forecastWeather(req.query).then((res) => {
-    const forcastData = res.data;
+    const forecastData = res.data;
     const upcoming = {};
 
-    for (let i = 0; i < forcastData.list.length; i++) {
-      const day = translateEpochDay(forcastData.list[i].dt);
+    for (let i = 0; i < forecastData.list.length; i++) {
+      const day = translateEpochDay(forecastData.list[i].dt);
       if (!upcoming[day]) {
         upcoming[day] = [];
       }
-      upcoming[day].push(forcastData.list[i]);
+      upcoming[day].push(forecastData.list[i]);
     }
     return upcoming;
   });

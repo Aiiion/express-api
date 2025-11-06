@@ -14,8 +14,9 @@ app.use(cors({
 
 const port = process.env.PORT || 3000;
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`server running on port ${port}.`);
 });
 
+export { server };
 export default app;
