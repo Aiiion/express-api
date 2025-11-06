@@ -28,10 +28,7 @@ describe("API Routes", () => {
   });
 
   afterAll((done) => {
-    delete process.env.WEATHER_API_KEY;
-    server.close(() => {
-      done();
-    });
+    server.close(done);
   });
 
   describe("GET /", () => {
