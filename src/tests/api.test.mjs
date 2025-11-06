@@ -22,6 +22,8 @@ describe("API Routes", () => {
     lat: "40.7128",
     lon: "-74.0060",
   };
+  const originalEnv = process.env.ENVIRONMENT;
+  const originalApiKey = process.env.WEATHER_API_KEY;
 
   beforeAll(() => {
     process.env.WEATHER_API_KEY = 'test-key';
@@ -29,6 +31,8 @@ describe("API Routes", () => {
   });
 
   afterAll((done) => {
+    process.env.WEATHER_API_KEY = originalEnv;
+    process.env.ENVIRONMENT = originalApiKey;
     server.close(done);
   });
 
