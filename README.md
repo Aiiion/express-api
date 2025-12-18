@@ -34,6 +34,10 @@ Get app- and contact info
 
 Test if the api is running
 
+### (GET) **/cv**
+
+Downloads my CV as a pdf
+
 ### (GET) **/weather**
 
 Combines these two requests, you can use the same query as described in the docs (but without appid)
