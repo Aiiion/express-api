@@ -7,3 +7,5 @@ export const contact = (req, res) => res.status(200).send({
     github: GITHUB,
     email: EMAIL
 });
+
+export const cv = (req, res) => res.status(200).sendFile('CV.pdf', { root: 'src/public/files' });
