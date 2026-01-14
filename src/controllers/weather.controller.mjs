@@ -4,17 +4,17 @@ import {
   forecastPollution,
   forecastWeather,
 } from "../services/openWeatherMaps.service.mjs";
-import { weatherWarnings } from "../services/smhi.service.mjs";
-import { isPointInSmhiBounds } from "../utils/geoHelpers.mjs";
+import { getCoordinateBound } from "../utils/geoHelpers.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
   const weatherReq = await currentWeather(req.query);
   const pollutionReq = await currentPollution(req.query);
   
-  let warningsReq = { data: null };
-  if (isPointInSmhiBounds(req.query.lat, req.query.lon)) {
-    warningsReq = await weatherWarnings(req.query.lat, req.query.lon);
+  let warnings = { data: null };
+  const bound = getCoordinateBound(req.query.lat, req.query.lon);
+  if (bound?.provider) {
+    warnings = await bound.provider.weatherWarnings(req.query.lat, req.query.lon);
   }
 
   const forecastReq = await forecastWeather(req.query).then((res) => {
@@ -36,7 +36,7 @@ export const aggregate = async (req, res) => {
       currentWeather: weatherReq.data,
       forecastWeather: forecastReq,
       currentPollution: pollutionReq.data,
-      weatherWarnings: warningsReq.data,
+      weatherWarnings: warnings,
     },
   });
 };

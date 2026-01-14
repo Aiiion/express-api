@@ -54,7 +54,7 @@ https://openweathermap.org/api/air-pollution
 
 ### (GET) **/weather/aggregate** (Beta)
 
-Combines these three requests plus weather warnings from SMHI (SMHI only provides warnings for coordinates whithin Sweden). You can use the same query as described in the docs (but without appid)
+Combines these three requests plus local weather warnings (only supports Sweden atm). You can use the same query as described in the docs (but without appid)
 
 https://openweathermap.org/current
 
