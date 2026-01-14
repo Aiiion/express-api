@@ -36,7 +36,7 @@ Test if the api is running
 
 ### (GET) **/cv**
 
-Downloads my CV as a pdf
+Returns my CV as a pdf
 
 ### (GET) **/weather**
 
