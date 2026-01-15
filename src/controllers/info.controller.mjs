@@ -1,6 +1,7 @@
 import { EMAIL, GITHUB } from "../utils/constants.mjs";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import net from 'net';
 import weatherApiService from "../services/weatherApi.service.mjs";
 
 export const test = (req, res) => res.status(200).send({message: 'API is running'});
@@ -19,7 +20,21 @@ export const cv = (req, res) => {
 };
 
 export const ipLocation = async (req, res) => {
-    const ip = req.query.ip || req.ip;
+    let ip = req.query.ip || req.ip;
+
+    if (typeof ip === 'string') {
+        const lower = ip.toLowerCase();
+        if (lower.startsWith('::ffff:')) {
+            ip = ip.substring(ip.lastIndexOf(':') + 1);
+        }
+    }
+
+    if (!net.isIP(ip)) {
+        return res.status(400).send({
+            error: 'Invalid IP address provided'
+        });
+    }
+
     try {
         const locationData = await weatherApiService.ipLocation(ip);
         return res.status(200).send({
