@@ -4,11 +4,11 @@ const smhiDto = {
     const data = response.data;
 
     return {
-      severity: data.inner.level || null,
-      severityDescription: describeSeverity(data.inner.level) || null,
-      description: data.inner.en || null,
-      type: data.inner.type || null,
-      warningsCount: data.inner.warningsCount || 0,
+      severity: data.inner?.level || null,
+      severityDescription: describeSeverity(data.inner?.level) || null,
+      description: data.inner?.en || null,
+      type: data.inner?.type || null,
+      warningsCount: data.inner?.warningsCount || 0,
       raw: data,
     };
   },

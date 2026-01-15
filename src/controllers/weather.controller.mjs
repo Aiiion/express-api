@@ -11,10 +11,15 @@ export const aggregate = async (req, res) => {
   const weatherReq = await currentWeather(req.query);
   const pollutionReq = await currentPollution(req.query);
   
-  let warnings = { data: null };
+  let warnings = null;
   const bound = getCoordinateBound(req.query.lat, req.query.lon);
   if (bound?.provider) {
-    warnings = await bound.provider.weatherWarnings(req.query.lat, req.query.lon);
+    try {
+      warnings = await bound.provider.weatherWarnings(req.query.lat, req.query.lon);
+    } catch (err) {
+      console.error('Failed to fetch weather warnings:', err.message);
+      warnings = null;
+    }
   }
 
   const forecastReq = await forecastWeather(req.query).then((res) => {
