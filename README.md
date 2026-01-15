@@ -50,7 +50,7 @@ Returns my CV as a pdf
 
 ### (GET) **/ip-location**
 
-Gets the location related to your ip adress
+Gets the location related to your IP address
 
 ### (GET) **/weather**
 
@@ -68,7 +68,7 @@ https://openweathermap.org/api/air-pollution
 
 ### (GET) **/weather/aggregate** (Beta)
 
-Combines these three requests plus local weather warnings (warnings only supports Sweden atm). You can use the same query as described in the docs (but without appid)
+Combines these three requests plus local weather warnings (warnings are currently only supported in Sweden). You can use the same query as described in the docs (but without appid)
 
 https://openweathermap.org/current
 
