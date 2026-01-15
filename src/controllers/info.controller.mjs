@@ -1,6 +1,7 @@
 import { EMAIL, GITHUB } from "../utils/constants.mjs";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import weatherApiService from "../services/weatherApi.service.mjs";
 
 export const test = (req, res) => res.status(200).send({message: 'API is running'});
 
@@ -15,4 +16,18 @@ export const cv = (req, res) => {
     const dirname = path.dirname(filename);
     const filePath = path.resolve(dirname, '../public/files/CV.pdf');
     return res.status(200).sendFile(filePath);
+};
+
+export const ipLocation = async (req, res) => {
+    const ip = req.query.ip || req.ip;
+    try {
+        const locationData = await weatherApiService.ipLocation(ip);
+        return res.status(200).send({
+            data: locationData
+        });
+    } catch (error) {
+        return res.status(500).send({
+            error: 'Failed to retrieve location data'
+        });
+    }
 };

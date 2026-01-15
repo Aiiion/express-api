@@ -15,3 +15,11 @@ export const hasOwmKey = (req, res, next) => {
           .send({ message: "API key missing from environment variables" });
     next();
 }
+
+export const hasWeatherApiKey = (req, res, next) => {
+    if (!process.env.WEATHERAPI_API_KEY)
+        return res
+          .status(500)
+          .send({ message: "API key missing from environment variables" });
+    next();
+}
