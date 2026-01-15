@@ -14,6 +14,7 @@ const smhiDto = {
   },
 };
 
+//todo: crate severity enum and add translate layer for enum here
 const describeSeverity = (severity) => {
   switch (severity) {
     case 'YELLOW':

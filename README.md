@@ -1,3 +1,9 @@
+# Weather data sources:
+
+Thanks to:
+openweathermaps.org
+smhi.se
+
 # Usage
 
 **Start this app up using docker (production):**
