@@ -5,7 +5,9 @@ const smhiDto = {
 
     return {
       severity: data.inner.level || null,
-      description: data.description || null,
+      description: data.inner.en || null,
+      type: data.inner.type || null,
+      warningsCount: data.inner.warningsCount || 0,
       raw: data,
     };
   },
