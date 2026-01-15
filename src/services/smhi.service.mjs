@@ -7,6 +7,7 @@ const smhiService = {
         const response = await axios({
             method: 'get',
             url: SMHI_WPT_API_URL + `/warnings/most-severe/lat/${lat}/lon/${lon}`,
+            timeout: 2000,
         });
         return smhiDto.weatherWarnings(response);
     }
