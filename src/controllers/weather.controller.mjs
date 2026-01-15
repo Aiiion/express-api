@@ -4,11 +4,23 @@ import {
   forecastPollution,
   forecastWeather,
 } from "../services/openWeatherMaps.service.mjs";
+import { getCoordinateBound } from "../utils/geoHelpers.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
   const weatherReq = await currentWeather(req.query);
   const pollutionReq = await currentPollution(req.query);
+  
+  let warnings = null;
+  const bound = getCoordinateBound(req.query.lat, req.query.lon);
+  if (bound?.provider) {
+    try {
+      warnings = await bound.provider.weatherWarnings(req.query.lat, req.query.lon);
+    } catch (err) {
+      console.error('Failed to fetch weather warnings:', err.message);
+      warnings = null;
+    }
+  }
 
   const forecastReq = await forecastWeather(req.query).then((res) => {
     const forecastData = res.data;
@@ -29,6 +41,7 @@ export const aggregate = async (req, res) => {
       currentWeather: weatherReq.data,
       forecastWeather: forecastReq,
       currentPollution: pollutionReq.data,
+      weatherWarnings: warnings,
     },
   });
 };

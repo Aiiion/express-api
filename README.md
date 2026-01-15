@@ -1,3 +1,9 @@
+# Weather data sources:
+
+Thanks to:
+openweathermaps.org
+smhi.se
+
 # Usage
 
 **Start this app up using docker (production):**
@@ -36,7 +42,7 @@ Test if the api is running
 
 ### (GET) **/cv**
 
-Downloads my CV as a pdf
+Returns my CV as a pdf
 
 ### (GET) **/weather**
 
@@ -54,7 +60,7 @@ https://openweathermap.org/api/air-pollution
 
 ### (GET) **/weather/aggregate** (Beta)
 
-Combines these three requests, you can use the same query as described in the docs (but without appid)
+Combines these three requests plus local weather warnings (only supports Sweden atm). You can use the same query as described in the docs (but without appid)
 
 https://openweathermap.org/current
 
