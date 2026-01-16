@@ -20,14 +20,7 @@ export const cv = (req, res) => {
 };
 
 export const ipLocation = async (req, res) => {
-    let ip = req.query.ip || req.ip;
-    console.log('Received IP for location lookup:', req.ip, req.ips);
-    if (typeof ip === 'string') {
-        const lower = ip.toLowerCase();
-        if (lower.startsWith('::ffff:')) {
-            ip = ip.substring(ip.lastIndexOf(':') + 1);
-        }
-    }
+    const ip = req.query.ip || req.ip;
 
     if (!net.isIP(ip)) {
         return res.status(400).send({
