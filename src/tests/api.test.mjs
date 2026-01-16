@@ -7,10 +7,12 @@ import {
 } from "../fixtures/openWeatherMaps.fixture.mjs";
 
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
-  currentWeather: jest.fn().mockResolvedValue(weather),
-  forecastWeather: jest.fn().mockResolvedValue(weatherForecast),
-  currentPollution: jest.fn().mockResolvedValue(airPollution),
-  forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast),
+  default: {
+    currentWeather: jest.fn().mockResolvedValue(weather),
+    forecastWeather: jest.fn().mockResolvedValue(weatherForecast),
+    currentPollution: jest.fn().mockResolvedValue(airPollution),
+    forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast),
+  },
 }));
 
 import request from "supertest";

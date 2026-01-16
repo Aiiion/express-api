@@ -1,15 +1,10 @@
-import {
-  currentPollution,
-  currentWeather,
-  forecastPollution,
-  forecastWeather,
-} from "../services/openWeatherMaps.service.mjs";
+import openWeatherMapsService from "../services/openWeatherMaps.service.mjs";
 import { getCoordinateBound } from "../utils/geoHelpers.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
-  const weatherReq = await currentWeather(req.query);
-  const pollutionReq = await currentPollution(req.query);
+  const weatherReq = await openWeatherMapsService.currentWeather(req.query);
+  const pollutionReq = await openWeatherMapsService.currentPollution(req.query);
   
   let warnings = null;
   const bound = getCoordinateBound(req.query.lat, req.query.lon);
@@ -22,7 +17,7 @@ export const aggregate = async (req, res) => {
     }
   }
 
-  const forecastReq = await forecastWeather(req.query).then((res) => {
+  const forecastReq = await openWeatherMapsService.forecastWeather(req.query).then((res) => {
     const forecastData = res.data;
     const upcoming = {};
 
@@ -47,8 +42,8 @@ export const aggregate = async (req, res) => {
 };
 
 export const weather = async (req, res) => {
-  const weatherReq = await currentWeather(req.query);
-  const forecastReq = await forecastWeather(req.query);
+  const weatherReq = await openWeatherMapsService.currentWeather(req.query);
+  const forecastReq = await openWeatherMapsService.forecastWeather(req.query);
 
   return res.status(200).send({
     data: {
@@ -59,8 +54,8 @@ export const weather = async (req, res) => {
 };
 
 export const pollution = async (req, res) => {
-  const pollutionReq = await currentPollution(req.query);
-  const forecastReq = await forecastPollution(req.query);
+  const pollutionReq = await openWeatherMapsService.currentPollution(req.query);
+  const forecastReq = await openWeatherMapsService.forecastPollution(req.query);
 
   return res.status(200).send({
     data: {
