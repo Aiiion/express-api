@@ -33,8 +33,8 @@ describe("API Routes", () => {
   });
 
   afterAll((done) => {
-    process.env.OWM_API_KEY = originalEnv;
-    process.env.ENVIRONMENT = originalApiKey;
+    process.env.OWM_API_KEY = originalApiKey;  
+    process.env.ENVIRONMENT = originalEnv;
     server.close(done);
   });
 
