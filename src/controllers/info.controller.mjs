@@ -20,14 +20,10 @@ export const cv = (req, res) => {
 };
 
 export const ipLocation = async (req, res) => {
-    let ip = req.query.ip || req.ip;
-
-    if (typeof ip === 'string') {
-        const lower = ip.toLowerCase();
-        if (lower.startsWith('::ffff:')) {
-            ip = ip.substring(ip.lastIndexOf(':') + 1);
-        }
-    }
+    const queryIp = Array.isArray(req.query.ip) ? req.query.ip[0] : req.query.ip;
+    const xff = req.headers['x-forwarded-for'];
+    const forwardedIp = Array.isArray(xff) ? xff[0] : xff?.split(',')[0]?.trim();
+    const ip = queryIp || forwardedIp || req.ip;
 
     if (!net.isIP(ip)) {
         return res.status(400).send({
@@ -41,8 +37,9 @@ export const ipLocation = async (req, res) => {
             data: locationData
         });
     } catch (error) {
+        console.error('ipLocation error:', error.message);
         return res.status(500).send({
-            error: 'Failed to retrieve location data'
+            error: `Failed to retrieve location data for ${ip}`
         });
     }
 };
