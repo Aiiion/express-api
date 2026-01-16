@@ -22,7 +22,7 @@ npm install --omit=dev
 
 npm start
 
-*You will need your own API key for openwheatermaps to get weatherdata. Add it in an .env file at the root as WEATHER_API_KEY.*
+*If you wish to host this API for yourself you will need API keys for certain services, see .env.example.*
 
 **Start this app up for development:**
 

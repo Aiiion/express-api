@@ -7,10 +7,12 @@ import {
 } from "../fixtures/openWeatherMaps.fixture.mjs";
 
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
-  currentWeather: jest.fn().mockResolvedValue(weather),
-  forecastWeather: jest.fn().mockResolvedValue(weatherForecast),
-  currentPollution: jest.fn().mockResolvedValue(airPollution),
-  forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast),
+  default: {
+    currentWeather: jest.fn().mockResolvedValue(weather.data),
+    forecastWeather: jest.fn().mockResolvedValue(weatherForecast.data),
+    currentPollution: jest.fn().mockResolvedValue(airPollution.data),
+    forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast.data),
+  },
 }));
 
 import request from "supertest";
@@ -23,16 +25,16 @@ describe("API Routes", () => {
     lon: "-74.0060",
   };
   const originalEnv = process.env.ENVIRONMENT;
-  const originalApiKey = process.env.WEATHER_API_KEY;
+  const originalApiKey = process.env.OWM_API_KEY;
 
   beforeAll(() => {
-    process.env.WEATHER_API_KEY = 'test-key';
+    process.env.OWM_API_KEY = 'test-key';
     process.env.ENVIRONMENT = 'test';
   });
 
   afterAll((done) => {
-    process.env.WEATHER_API_KEY = originalEnv;
-    process.env.ENVIRONMENT = originalApiKey;
+    process.env.OWM_API_KEY = originalApiKey;  
+    process.env.ENVIRONMENT = originalEnv;
     server.close(done);
   });
 

@@ -1,15 +1,10 @@
-import {
-  currentPollution,
-  currentWeather,
-  forecastPollution,
-  forecastWeather,
-} from "../services/openWeatherMaps.service.mjs";
+import openWeatherMapsService from "../services/openWeatherMaps.service.mjs";
 import { getCoordinateBound } from "../utils/geoHelpers.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 export const aggregate = async (req, res) => {
-  const weatherReq = await currentWeather(req.query);
-  const pollutionReq = await currentPollution(req.query);
+  const weather = await openWeatherMapsService.currentWeather(req.query);
+  const pollution = await openWeatherMapsService.currentPollution(req.query);
   
   let warnings = null;
   const bound = getCoordinateBound(req.query.lat, req.query.lon);
@@ -22,8 +17,7 @@ export const aggregate = async (req, res) => {
     }
   }
 
-  const forecastReq = await forecastWeather(req.query).then((res) => {
-    const forecastData = res.data;
+  const forecast = await openWeatherMapsService.forecastWeather(req.query).then((forecastData) => {
     const upcoming = {};
 
     for (let i = 0; i < forecastData.list.length; i++) {
@@ -38,34 +32,34 @@ export const aggregate = async (req, res) => {
 
   return res.status(200).send({
     data: {
-      currentWeather: weatherReq.data,
-      forecastWeather: forecastReq,
-      currentPollution: pollutionReq.data,
+      currentWeather: weather,
+      forecastWeather: forecast,
+      currentPollution: pollution,
       weatherWarnings: warnings,
     },
   });
 };
 
 export const weather = async (req, res) => {
-  const weatherReq = await currentWeather(req.query);
-  const forecastReq = await forecastWeather(req.query);
+  const weather = await openWeatherMapsService.currentWeather(req.query);
+  const forecast = await openWeatherMapsService.forecastWeather(req.query);
 
   return res.status(200).send({
     data: {
-      current: weatherReq.data,
-      forecast: forecastReq.data,
+      current: weather,
+      forecast: forecast,
     },
   });
 };
 
 export const pollution = async (req, res) => {
-  const pollutionReq = await currentPollution(req.query);
-  const forecastReq = await forecastPollution(req.query);
+  const pollution = await openWeatherMapsService.currentPollution(req.query);
+  const forecast = await openWeatherMapsService.forecastPollution(req.query);
 
   return res.status(200).send({
     data: {
-      current: pollutionReq.data,
-      forecast: forecastReq.data,
+      current: pollution,
+      forecast: forecast,
     },
   });
 };
