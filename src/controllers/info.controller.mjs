@@ -20,7 +20,7 @@ export const cv = (req, res) => {
 };
 
 export const ipLocation = async (req, res) => {
-    const ip = req.query.ip || req.ip;
+    const ip = req.query.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || req.ip;
 
     if (!net.isIP(ip)) {
         return res.status(400).send({
