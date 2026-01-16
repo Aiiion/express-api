@@ -20,7 +20,11 @@ export const cv = (req, res) => {
 };
 
 export const ipLocation = async (req, res) => {
-    const ip = req.query.ip || req.headers['x-forwarded-for'] || req.ip;
+    const queryIp = Array.isArray(req.query.ip) ? req.query.ip[0] : req.query.ip;
+    const xff = req.headers['x-forwarded-for'];
+    const forwardedIp = Array.isArray(xff) ? xff[0] : xff?.split(',')[0]?.trim();
+    const ip = queryIp || forwardedIp || req.ip;
+
     if (!net.isIP(ip)) {
         return res.status(400).send({
             error: 'Invalid IP address provided'
