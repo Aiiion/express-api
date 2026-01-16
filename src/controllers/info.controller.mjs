@@ -21,7 +21,7 @@ export const cv = (req, res) => {
 
 export const ipLocation = async (req, res) => {
     let ip = req.query.ip || req.ip;
-
+    console.log('Received IP for location lookup:', req.ip, req.ips);
     if (typeof ip === 'string') {
         const lower = ip.toLowerCase();
         if (lower.startsWith('::ffff:')) {
@@ -41,8 +41,9 @@ export const ipLocation = async (req, res) => {
             data: locationData
         });
     } catch (error) {
+        console.error('ipLocation error:', error.message);
         return res.status(500).send({
-            error: 'Failed to retrieve location data'
+            error: `Failed to retrieve location data for ${ip}`
         });
     }
 };
