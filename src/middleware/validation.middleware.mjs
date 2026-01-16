@@ -9,7 +9,7 @@ export const validateResult = (req, res, next) => {
 } 
 
 export const hasOwmKey = (req, res, next) => {
-    if (!process.env.WEATHER_API_KEY)
+    if (!process.env.OWM_API_KEY)
         return res
           .status(500)
           .send({ message: "API key missing from environment variables" });

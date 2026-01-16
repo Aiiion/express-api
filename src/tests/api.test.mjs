@@ -23,15 +23,15 @@ describe("API Routes", () => {
     lon: "-74.0060",
   };
   const originalEnv = process.env.ENVIRONMENT;
-  const originalApiKey = process.env.WEATHER_API_KEY;
+  const originalApiKey = process.env.OWM_API_KEY;
 
   beforeAll(() => {
-    process.env.WEATHER_API_KEY = 'test-key';
+    process.env.OWM_API_KEY = 'test-key';
     process.env.ENVIRONMENT = 'test';
   });
 
   afterAll((done) => {
-    process.env.WEATHER_API_KEY = originalEnv;
+    process.env.OWM_API_KEY = originalEnv;
     process.env.ENVIRONMENT = originalApiKey;
     server.close(done);
   });

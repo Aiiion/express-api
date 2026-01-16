@@ -7,7 +7,7 @@ export const currentWeather = async (query) =>
         url: OWM_API_URL + '/weather',
         params: {
             ...query,
-            appid: process.env.WEATHER_API_KEY
+            appid: process.env.OWM_API_KEY
         }
     });
 
@@ -17,7 +17,7 @@ export const forecastWeather = async (query) =>
         url: OWM_API_URL + '/forecast',
         params: {
             ...query,
-            appid: process.env.WEATHER_API_KEY
+            appid: process.env.OWM_API_KEY
         }
     });
 
@@ -27,7 +27,7 @@ export const currentPollution = async (query) =>
         url: OWM_API_URL + '/air_pollution',
         params: {
             ...query,
-            appid: process.env.WEATHER_API_KEY
+            appid: process.env.OWM_API_KEY
         }
     });
 
@@ -37,6 +37,6 @@ export const forecastPollution = async (query) =>
         url: OWM_API_URL + '/air_pollution/forecast',
         params: {
             ...query,
-            appid: process.env.WEATHER_API_KEY
+            appid: process.env.OWM_API_KEY
         }
     });
