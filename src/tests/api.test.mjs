@@ -8,10 +8,10 @@ import {
 
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   default: {
-    currentWeather: jest.fn().mockResolvedValue(weather),
-    forecastWeather: jest.fn().mockResolvedValue(weatherForecast),
-    currentPollution: jest.fn().mockResolvedValue(airPollution),
-    forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast),
+    currentWeather: jest.fn().mockResolvedValue(weather.data),
+    forecastWeather: jest.fn().mockResolvedValue(weatherForecast.data),
+    currentPollution: jest.fn().mockResolvedValue(airPollution.data),
+    forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast.data),
   },
 }));
 
