@@ -23,6 +23,7 @@
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
+    "pg": "^8.11.0",
     "express": "^5.1.0",
     "express-validator": "^7.3.0",
     "memory-cache": "^0.2.0"
