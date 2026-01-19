@@ -1,19 +1,24 @@
 FROM node:24.8.0-alpine3.22
 
-# Set the working directory
-WORKDIR /user/src/app
+# Use a standard workdir
+WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json
+# Copy package manifests first for cached installs
 COPY package*.json ./
 
-# Install dependencies
+# Install production dependencies only
 RUN npm install --omit=dev
+
+# Install postgres client for pg_isready used in startup script
+RUN apk add --no-cache postgresql-client
 
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
+# Ensure startup script is executable
+RUN chmod +x ./startup.sh
+
+# Expose the application port
 EXPOSE 3000
 
-# Command to run the application
-CMD ["node", "index.mjs"]
+ENTRYPOINT ["./startup.sh"]
