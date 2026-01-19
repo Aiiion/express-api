@@ -8,6 +8,11 @@ dotenv.config();
 initLog(sequelize);
 
 const run = async () => {
+  if(process.env.NODE_ENV === 'production') {
+    console.error('Syncing database in production is not allowed. Use migrations instead.');
+    process.exit(1);
+  }
+
   try {
     await sequelize.authenticate();
     console.log('Database connection OK');
