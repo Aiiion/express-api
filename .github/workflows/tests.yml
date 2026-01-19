@@ -9,6 +9,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: express_api
 
     strategy:
       matrix:
@@ -41,17 +47,13 @@ jobs:
       run: npm ci
 
     - name: Run DB migrations
-      env:
-        DB_HOST: localhost
-        DB_PORT: '5432'
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        DB_NAME: express_api
-        DATABASE_URL: postgres://postgres:postgres@localhost:5432/express_api
+    
       run: |
+        export DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
         node src/scripts/run-migrations.mjs
 
     - name: Run tests
-      run: npm test
-
+      run: |
+        export DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+        npm test
     
