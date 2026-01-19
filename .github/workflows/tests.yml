@@ -14,6 +14,21 @@ jobs:
       matrix:
         node-version: [24.x]
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: express_api
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
 
@@ -22,7 +37,21 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Test
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run DB migrations
+      env:
+        DB_HOST: localhost
+        DB_PORT: '5432'
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        DB_NAME: express_api
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/express_api
       run: |
-        npm install
-        npm test
+        node src/scripts/run-migrations.mjs
+
+    - name: Run tests
+      run: npm test
+
+    
