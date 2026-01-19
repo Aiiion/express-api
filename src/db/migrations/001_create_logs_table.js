@@ -8,6 +8,8 @@ export async function up({context: queryInterface}) {
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
     ip: { type: Sequelize.TEXT },
     route: { type: Sequelize.TEXT },
+    method: { type: Sequelize.ENUM('GET','POST','PUT','DELETE','PATCH') },
+    code : { type: Sequelize.INTEGER },
     description: { type: Sequelize.TEXT, allowNull: true },
     type: { type: Sequelize.ENUM('DEBUG','INFO','WARN','ERROR','FATAL') },
     created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn('now') }
