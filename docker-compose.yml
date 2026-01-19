@@ -2,7 +2,6 @@ services:
   api:
     build: .
     container_name: express-api
-    env_file: .env
     ports:
       - "3000:3000"
     restart: always
@@ -15,11 +14,12 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
+      - OWM_API_KEY=${OWM_API_KEY}
+      - WEATHERAPI_API_KEY=${WEATHERAPI_API_KEY}
 
   db:
     image: postgres:15
     container_name: express-db
-    env_file: .env
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
