@@ -4,7 +4,7 @@ export default (sequelize) => {
   const Log = sequelize.define('Log', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     ip: { type: DataTypes.TEXT },
-    method: { type: DataTypes.ENUM('GET','POST','PUT','DELETE','PATCH') },
+    method: { type: DataTypes.ENUM('GET','POST','PUT','DELETE','PATCH','OPTIONS','HEAD') },
     route: { type: DataTypes.TEXT },
     description: { type: DataTypes.TEXT, allowNull: true },
     code: { type: DataTypes.INTEGER },
