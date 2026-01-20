@@ -54,7 +54,7 @@ const stop = async () => {
 };
 
 // Auto-start unless running tests
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.ENVIRONMENT !== 'test') {
   start().catch(() => process.exit(1));
 }
 
