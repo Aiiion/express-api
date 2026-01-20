@@ -9,7 +9,9 @@
     "start": "node ./src/index.mjs",
     "migrate": "node ./src/scripts/run-migrations.mjs",
     "migrate:down": "node ./src/scripts/run-migrations.mjs down",
-    "db:sync": "node ./src/scripts/sync-db.mjs"
+    "db:sync": "node ./src/scripts/sync-db.mjs",
+    "db:seed": "node ./src/scripts/run-seeders.mjs",
+    "db:seed:undo": "node ./src/scripts/run-seeders.mjs down"
   },
   "jest": {
     "transform": {},
