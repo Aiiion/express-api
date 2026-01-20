@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import routes from "./routes/index.mjs";
 import cors from 'cors';
-import { connect } from './services/db.service.mjs';
+import { connect, closePool } from './services/db.service.mjs';
 import { sequelize } from './models/index.mjs';
 import initLog from './models/log.model.mjs';
 dotenv.config();
@@ -46,6 +46,7 @@ const stop = async () => {
     server = undefined;
   }
   try {
+    await closePool();
     await sequelize.close();
   } catch (e) {
     // ignore close errors

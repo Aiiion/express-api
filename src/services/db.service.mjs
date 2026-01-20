@@ -11,6 +11,8 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'express_api',
 });
 
+const closePool = async () => pool.end();
+
 const connect = async () => {
   try {
     await pool.query('SELECT 1');
@@ -21,6 +23,6 @@ const connect = async () => {
   }
 };
 
-const query = (text, params) => pool.query(text, params);
+export const query = (text, params) => pool.query(text, params);
 
-export { pool, query, connect };
+export { pool, query, connect, closePool };
