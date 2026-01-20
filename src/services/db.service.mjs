@@ -23,6 +23,6 @@ const connect = async () => {
   }
 };
 
-export const query = (text, params) => pool.query(text, params);
+const query = (text, params) => pool.query(text, params);
 
 export { pool, query, connect, closePool };
