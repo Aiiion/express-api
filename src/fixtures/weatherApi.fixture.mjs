@@ -1,7 +1,7 @@
 export const ipLocation = {
     fixture: true,
     "data": {
-        "ip": "94.254.32.56",
+        "ip": "94.253.32.54",
         "type": "ipv4",
         "continent_code": "EU",
         "continent_name": "Europe",
