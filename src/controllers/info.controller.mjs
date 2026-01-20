@@ -2,6 +2,7 @@ import { EMAIL, GITHUB } from "../utils/constants.mjs";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import net from 'net';
+import { extractIp } from "../utils/ipHelpers.mjs";
 import weatherApiService from "../services/weatherApi.service.mjs";
 
 export const test = (req, res) => res.status(200).send({message: 'API is running'});
@@ -21,9 +22,7 @@ export const cv = (req, res) => {
 
 export const ipLocation = async (req, res) => {
     const queryIp = Array.isArray(req.query.ip) ? req.query.ip[0] : req.query.ip;
-    const xff = req.headers['x-forwarded-for'];
-    const forwardedIp = Array.isArray(xff) ? xff[0] : xff?.split(',')[0]?.trim();
-    const ip = queryIp || forwardedIp || req.ip;
+    const ip = queryIp || extractIp(req);
 
     if (!net.isIP(ip)) {
         return res.status(400).send({

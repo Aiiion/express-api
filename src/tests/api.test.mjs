@@ -16,8 +16,11 @@ jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
 }));
 
 import request from "supertest";
-// Dynamically import app and server after the mock is set up
-const { default: app, server } = await import("../index.mjs");
+// Dynamically import app/start/stop after the mock is set up
+let app;
+let server;
+let start;
+let stop;
 
 describe("API Routes", () => {
   const validQueryParams = {
@@ -27,15 +30,25 @@ describe("API Routes", () => {
   const originalEnv = process.env.ENVIRONMENT;
   const originalApiKey = process.env.OWM_API_KEY;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     process.env.OWM_API_KEY = 'test-key';
     process.env.ENVIRONMENT = 'test';
+    // import app after env is set and mocks registered
+    const mod = await import("../index.mjs");
+    app = mod.default;
+    start = mod.start;
+    stop = mod.stop;
+    if (start) {
+      // listen on ephemeral port to avoid conflicts
+      server = await start(0);
+    }
   });
 
-  afterAll((done) => {
-    process.env.OWM_API_KEY = originalApiKey;  
+  afterAll(async () => {
+    process.env.OWM_API_KEY = originalApiKey;
     process.env.ENVIRONMENT = originalEnv;
-    server.close(done);
+    if (stop) await stop();
+    else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
   });
 
   describe("GET /", () => {
