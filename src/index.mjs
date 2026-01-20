@@ -19,22 +19,43 @@ const port = process.env.PORT || 3000;
 
 let server;
 
-const start = async () => {
+const start = async (listenPort = port) => {
   try {
     await connect();
     // initialize sequelize models (no sync here; migrations manage schema)
     initLog(sequelize);
     await sequelize.authenticate();
-    server = app.listen(port, () => {
-      console.log(`server running on port ${port}.`);
+    return new Promise((resolve, reject) => {
+      server = app.listen(listenPort, () => {
+        console.log(`server running on port ${listenPort}.`);
+        resolve(server);
+      });
+      server.on('error', (err) => reject(err));
     });
   } catch (err) {
-    console.error('Failed to start app due to DB error');
-    process.exit(1);
+    console.error('Failed to start app due to DB error', err);
+    throw err;
   }
 };
 
-start();
+const stop = async () => {
+  if (server && typeof server.close === 'function') {
+    await new Promise((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+    server = undefined;
+  }
+  try {
+    await sequelize.close();
+  } catch (e) {
+    // ignore close errors
+  }
+};
 
-export { server };
+// Auto-start unless running tests
+if (process.env.NODE_ENV !== 'test') {
+  start().catch(() => process.exit(1));
+}
+
+export { start, stop };
 export default app;
