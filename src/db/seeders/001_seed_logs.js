@@ -1,7 +1,6 @@
 /**
  * Sequelize/Umzug seeder: seed logs table with sample data
  */
-import { Sequelize } from 'sequelize';
 
 export async function up({context: queryInterface}) {
   const logs = [
