@@ -2,7 +2,7 @@ import mcache from 'memory-cache';
 
 export const cache = (duration) => {
   return (req, res, next) => {
-    if(process.env.ENVIRONMENT === 'test')
+    if(process.env.NODE_ENV === 'test')
       return next()
 
     let key = '__express__' + req.originalUrl || req.url
