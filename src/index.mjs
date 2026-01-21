@@ -5,6 +5,7 @@ import cors from 'cors';
 import { connect, closePool } from './services/db.service.mjs';
 import { sequelize } from './models/index.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
+import { logRequest } from './middleware/log.middleware.mjs';
 import initLog from './models/log.model.mjs';
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(cors({
   origin: '*'
 }));
+app.use(logRequest());
 app.use(routes);
 app.use(handleError);
 
