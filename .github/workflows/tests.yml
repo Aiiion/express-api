@@ -47,10 +47,14 @@ jobs:
       run: npm ci
 
     - name: Run DB migrations
-    
       run: |
         export DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
         node src/scripts/run-migrations.mjs
+
+    - name: Run DB seeders
+      run: |
+        export DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+        node src/scripts/run-seeders.mjs
 
     - name: Run tests
       run: |
