@@ -5,7 +5,9 @@ import {
   airPollution,
   airPollutionForecast,
 } from "../fixtures/openWeatherMaps.fixture.mjs";
+import { ipLocation } from "../fixtures/weatherApi.fixture.mjs";
 
+// Mock the OpenWeatherMaps service
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   default: {
     currentWeather: jest.fn().mockResolvedValue(weather.data),
@@ -15,7 +17,16 @@ jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   },
 }));
 
+// Mock the weatherApi service
+jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
+  default: {
+    getIpLocation: jest.fn().mockResolvedValue(ipLocation.data),
+  },
+}));
+
 import request from "supertest";
+import { exampleIp, exampleLatLon, exampleLat } from "../utils/constants.mjs";
+
 // Dynamically import app/start/stop after the mock is set up
 let app;
 let server;
@@ -23,10 +34,7 @@ let start;
 let stop;
 
 describe("API Routes", () => {
-  const validQueryParams = {
-    lat: "40.7128",
-    lon: "-74.0060",
-  };
+  
   const originalEnv = process.env.NODE_ENV;
   const originalApiKey = process.env.OWM_API_KEY;
 
@@ -51,44 +59,27 @@ describe("API Routes", () => {
     else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
   });
 
-  describe("GET /", () => {
-    it("should return 200 OK", async () => {
-      const response = await request(app).get("/");
-      expect(response.status).toBe(200);
-    });
+  const simpleGetPaths = [
+    '/',
+    '/test',
+  ];
+
+  it.each(simpleGetPaths)('GET %s should return 200 OK', async (path) => {
+    const response = await request(app).get(path);
+    expect(response.status).toBe(200);
   });
 
-  describe("GET /test", () => {
-    it("should return 200 OK", async () => {
-      const response = await request(app).get("/test");
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe("GET /weather", () => {
-    it("should return 200 OK with valid parameters", async () => {
-      const response = await request(app)
-        .get("/weather")
-        .query(validQueryParams);
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe("GET /weather/pollution", () => {
-    it("should return 200 OK with valid parameters", async () => {
-      const response = await request(app)
-        .get("/weather/pollution")
-        .query(validQueryParams);
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe("GET /weather/aggregate", () => {
-    it("should return 200 OK with valid parameters", async () => {
-      const response = await request(app)
-        .get("/weather/aggregate")
-        .query(validQueryParams);
-      expect(response.status).toBe(200);
-    });
+  //get requests with query parameters
+  it.each([
+    ['/weather', exampleLatLon, 200],
+    ['/weather/pollution', exampleLatLon, 200],
+    ['/weather/aggregate', exampleLatLon, 200],
+    ['/weather/aggregate', { lat: exampleLat }, 400],
+    ['/weather/aggregate', { lat: exampleLat, lon: 'asd' }, 400],
+    ['ip-location', {ip: exampleIp}, 200],
+    ['ip-location', {ip: '9999.9999.9999.999'}, 400],
+  ])('GET %s with %o -> %i', async (path, query, expected) => {
+    const res = await request(app).get(path).query(query);
+    expect(res.status).toBe(expected);
   });
 });
