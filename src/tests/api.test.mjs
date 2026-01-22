@@ -36,10 +36,12 @@ let stop;
 describe("API Routes", () => {
   
   const originalEnv = process.env.NODE_ENV;
-  const originalApiKey = process.env.OWM_API_KEY;
+  const originalOwmApiKey = process.env.OWM_API_KEY;
+  const originalWeatherApiKey = process.env.WEATHERAPI_API_KEY;
+  
 
   beforeAll(async () => {
-    process.env.OWM_API_KEY = 'test-key';
+    process.env.OWM_API_KEY = process.env.WEATHERAPI_API_KEY = 'test-key';
     process.env.NODE_ENV = 'test';
     // import app after env is set and mocks registered
     const mod = await import("../index.mjs");
@@ -53,7 +55,8 @@ describe("API Routes", () => {
   });
 
   afterAll(async () => {
-    process.env.OWM_API_KEY = originalApiKey;
+    process.env.OWM_API_KEY = originalOwmApiKey;
+    process.env.WEATHERAPI_API_KEY = originalWeatherApiKey;
     process.env.NODE_ENV = originalEnv;
     if (stop) await stop();
     else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
