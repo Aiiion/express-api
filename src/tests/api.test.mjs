@@ -76,8 +76,8 @@ describe("API Routes", () => {
     ['/weather/aggregate', exampleLatLon, 200],
     ['/weather/aggregate', { lat: exampleLat }, 400],
     ['/weather/aggregate', { lat: exampleLat, lon: 'asd' }, 400],
-    ['ip-location', {ip: exampleIp}, 200],
-    ['ip-location', {ip: '9999.9999.9999.999'}, 400],
+    ['/ip-location', {ip: exampleIp}, 200],
+    ['/ip-location', {ip: '9999.9999.9999.999'}, 400],
   ])('GET %s with %o -> %i', async (path, query, expected) => {
     const res = await request(app).get(path).query(query);
     expect(res.status).toBe(expected);
