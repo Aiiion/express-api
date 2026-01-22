@@ -20,7 +20,7 @@ jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
 // Mock the weatherApi service
 jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
   default: {
-    getIpLocation: jest.fn().mockResolvedValue(ipLocation.data),
+    ipLocation: jest.fn().mockResolvedValue(ipLocation.data),
   },
 }));
 
