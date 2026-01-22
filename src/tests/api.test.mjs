@@ -82,4 +82,24 @@ describe("API Routes", () => {
     const res = await request(app).get(path).query(query);
     expect(res.status).toBe(expected);
   });
+
+  describe('GET /cv', () => {
+    it('should return a PDF file with correct headers and non-empty body', async () => {
+      const res = await request(app).get('/cv');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/pdf/);
+
+      const disposition = res.headers['content-disposition'] || '';
+      expect(disposition).toMatch(/attachment/i);
+      expect(disposition).toMatch(/filename=.*\.pdf/i);
+
+      const contentLength = res.headers['content-length'] ? parseInt(res.headers['content-length'], 10) : null;
+      const bodyLength = res.body && Buffer.isBuffer(res.body) ? res.body.length : (res.text ? Buffer.byteLength(res.text) : 0);
+      if (contentLength !== null) {
+        expect(contentLength).toBeGreaterThan(0);
+      } else {
+        expect(bodyLength).toBeGreaterThan(0);
+      }
+    });
+  });
 });
