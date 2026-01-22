@@ -1,5 +1,5 @@
 import { exampleIp } from "../utils/constants.mjs";
-export const getpLocation = {
+export const getIpLocation = {
     fixture: true,
     "data": {
         "ip": exampleIp,
