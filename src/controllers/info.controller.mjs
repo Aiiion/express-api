@@ -26,7 +26,8 @@ export const ipLocation = async (req, res) => {
 
     if (!net.isIP(ip)) {
         return res.status(400).send({
-            error: 'Invalid IP address provided'
+            code: 400,
+            message: 'Invalid IP address provided'
         });
     }
 
