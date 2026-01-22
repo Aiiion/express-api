@@ -88,9 +88,11 @@ describe("API Routes", () => {
 
   describe('GET /cv', () => {
     it('should return a PDF file with correct headers and non-empty body', async () => {
-      const res = await request(app).get('/cv');
+      const res = await request(app).get('/cv').buffer(true);
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/application\/pdf/);
+      expect(res.body).toBeInstanceOf(Buffer);
+      expect(res.body.length).toBeGreaterThan(0);
     });
   });
 });
