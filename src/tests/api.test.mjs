@@ -5,7 +5,7 @@ import {
   airPollution,
   airPollutionForecast,
 } from "../fixtures/openWeatherMaps.fixture.mjs";
-import { ipLocation as getIpLocation } from "../fixtures/weatherApi.fixture.mjs";
+import { getIpLocation } from "../fixtures/weatherApi.fixture.mjs";
 
 // Mock the OpenWeatherMaps service
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
