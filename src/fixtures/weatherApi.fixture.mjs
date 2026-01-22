@@ -1,7 +1,8 @@
-export const ipLocation = {
+import { exampleIp } from "../utils/constants.mjs";
+export const getIpLocation = {
     fixture: true,
     "data": {
-        "ip": "94.253.32.54",
+        "ip": exampleIp,
         "type": "ipv4",
         "continent_code": "EU",
         "continent_name": "Europe",

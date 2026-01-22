@@ -5,7 +5,9 @@ import {
   airPollution,
   airPollutionForecast,
 } from "../fixtures/openWeatherMaps.fixture.mjs";
+import { getIpLocation } from "../fixtures/weatherApi.fixture.mjs";
 
+// Mock the OpenWeatherMaps service
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   default: {
     currentWeather: jest.fn().mockResolvedValue(weather.data),
@@ -15,7 +17,16 @@ jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   },
 }));
 
+// Mock the weatherApi service
+jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
+  default: {
+    ipLocation: jest.fn().mockResolvedValue(getIpLocation.data),
+  },
+}));
+
 import request from "supertest";
+import { exampleIp, exampleLatLon, exampleLat } from "../utils/constants.mjs";
+
 // Dynamically import app/start/stop after the mock is set up
 let app;
 let server;
@@ -23,15 +34,14 @@ let start;
 let stop;
 
 describe("API Routes", () => {
-  const validQueryParams = {
-    lat: "40.7128",
-    lon: "-74.0060",
-  };
+  
   const originalEnv = process.env.NODE_ENV;
-  const originalApiKey = process.env.OWM_API_KEY;
+  const originalOwmApiKey = process.env.OWM_API_KEY;
+  const originalWeatherApiKey = process.env.WEATHERAPI_API_KEY;
+  
 
   beforeAll(async () => {
-    process.env.OWM_API_KEY = 'test-key';
+    process.env.OWM_API_KEY = process.env.WEATHERAPI_API_KEY = 'test-key';
     process.env.NODE_ENV = 'test';
     // import app after env is set and mocks registered
     const mod = await import("../index.mjs");
@@ -45,50 +55,44 @@ describe("API Routes", () => {
   });
 
   afterAll(async () => {
-    process.env.OWM_API_KEY = originalApiKey;
+    process.env.OWM_API_KEY = originalOwmApiKey;
+    process.env.WEATHERAPI_API_KEY = originalWeatherApiKey;
     process.env.NODE_ENV = originalEnv;
     if (stop) await stop();
     else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
   });
 
-  describe("GET /", () => {
-    it("should return 200 OK", async () => {
-      const response = await request(app).get("/");
-      expect(response.status).toBe(200);
-    });
+  const simpleGetPaths = [
+    '/',
+    '/test',
+  ];
+
+  it.each(simpleGetPaths)('GET %s should return 200 OK', async (path) => {
+    const response = await request(app).get(path);
+    expect(response.status).toBe(200);
   });
 
-  describe("GET /test", () => {
-    it("should return 200 OK", async () => {
-      const response = await request(app).get("/test");
-      expect(response.status).toBe(200);
-    });
+  //get requests with query parameters
+  it.each([
+    ['/weather', exampleLatLon, 200],
+    ['/weather/pollution', exampleLatLon, 200],
+    ['/weather/aggregate', exampleLatLon, 200],
+    ['/weather/aggregate', { lat: exampleLat }, 400],
+    ['/weather/aggregate', { lat: exampleLat, lon: 'asd' }, 400],
+    ['/ip-location', {ip: exampleIp}, 200],
+    ['/ip-location', {ip: '9999.9999.9999.999'}, 400],
+  ])('GET %s with %o -> %i', async (path, query, expected) => {
+    const res = await request(app).get(path).query(query);
+    expect(res.status).toBe(expected);
   });
 
-  describe("GET /weather", () => {
-    it("should return 200 OK with valid parameters", async () => {
-      const response = await request(app)
-        .get("/weather")
-        .query(validQueryParams);
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe("GET /weather/pollution", () => {
-    it("should return 200 OK with valid parameters", async () => {
-      const response = await request(app)
-        .get("/weather/pollution")
-        .query(validQueryParams);
-      expect(response.status).toBe(200);
-    });
-  });
-
-  describe("GET /weather/aggregate", () => {
-    it("should return 200 OK with valid parameters", async () => {
-      const response = await request(app)
-        .get("/weather/aggregate")
-        .query(validQueryParams);
-      expect(response.status).toBe(200);
+  describe('GET /cv', () => {
+    it('should return a PDF file with correct headers and non-empty body', async () => {
+      const res = await request(app).get('/cv').buffer(true);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/pdf/);
+      expect(res.body).toBeInstanceOf(Buffer);
+      expect(res.body.length).toBeGreaterThan(0);
     });
   });
 });
