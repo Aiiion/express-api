@@ -1,7 +1,12 @@
 import smhiService from "../services/smhi.service.mjs";
+import smhiDto from "../dtos/smhi.dto.mjs";
 
-export const localWeatherProviders = {
+const localWeatherProviders = {
     SE: {
-        provider: smhiService,
+        name: "SMHI",
+        service: smhiService,
+        dto: smhiDto,
     }
 }
+
+export default localWeatherProviders;

@@ -5,16 +5,17 @@ import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 export const aggregate = async (req, res) => {
   const weather = await openWeatherMapsService.currentWeather(req.query);
   const pollution = await openWeatherMapsService.currentPollution(req.query);
-  
+
   let warnings = null;
   const bound = getCoordinateBound(req.query.lat, req.query.lon);
-  if (bound?.provider) {
-    try {
-      warnings = await bound.provider.weatherWarnings(req.query.lat, req.query.lon);
-    } catch (err) {
-      console.error('Failed to fetch weather warnings:', err.message);
-      warnings = null;
-    }
+  const provider = bound?.provider;
+  try {
+    warnings = await provider.service.weatherWarnings(req.query.lat, req.query.lon).then((warningsData) => {
+      return provider.dto.weatherWarnings(warningsData);
+    });
+  } catch (err) {
+    console.error('Failed to fetch weather warnings:', err.message);
+    warnings = null;
   }
 
   const forecast = await openWeatherMapsService.forecastWeather(req.query).then((forecastData) => {

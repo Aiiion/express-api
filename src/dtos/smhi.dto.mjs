@@ -1,11 +1,11 @@
 const smhiDto = {
-  weatherWarnings: (response) => {
-    if (!response || !response.data) return null;
-    const data = response.data;
+  weatherWarnings: (data) => {
+    if (!data) return null;
 
     return {
       severity: data.inner?.level || null,
       severityDescription: describeSeverity(data.inner?.level) || null,
+      title: data.inner?.en || null,
       description: data.inner?.en || null,
       type: data.inner?.type || null,
       warningsCount: data.inner?.warningsCount || 0,
