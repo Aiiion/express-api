@@ -1,3 +1,41 @@
+const weatherApiMap = {
+  weather: "data.current.condition.text",
+  description: null,
+  icon: "data.current.condition.icon",
+  dt: "data.current.last_updated_epoch",
+  "location.country_code": null,
+  "location.coords.lat": "data.location.lat",
+  "location.coords.lon": "data.location.lon",
+  "location.name": "data.location.name",
+  "location.timezone": "data.location.tz_id",
+  "temperature.temp_c": "data.current.temp_c",
+  "temperature.temp_f": "data.current.temp_f",
+  "temperature.min": null,
+  "temperature.max": null,
+  "temperature.feels_like_c": "data.current.feels_like_c",
+  "temperature.feels_like_f": "data.current.feels_like_f",
+  pressure: "data.current.pressure_mb",
+  humidity: "data.current.humidity",
+  visibility: "data.current.visibility_km",
+  "clouds.all": "data.current.cloud",
+  "elevation.sea_level": null,
+  "elevation.ground_level": null,
+  "wind.speed_kph": "data.current.wind_kph",
+  "wind.speed_mph": "data.current.wind_mph",
+  "wind.dir": "data.current.wind_dir",
+  "wind.gust_kph": "data.current.gust_kph",
+  "wind.gust_mph": "data.current.gust_mph",
+  "precipitation.amount_mm": "data.current.precip_mm",
+  "precipitation.amount_in": "data.current.precip_in",
+  "precipitation.condition_text": "data.current.condition.text",
+  sunrise: null,
+  sunset: null,
+  uv: "data.current.uv",
+  provider: "weatherapi.com"
+}
+
+//ramda path
+
 const weatherApiDto = {
   currentWeather: (data, metric = true) => {
     if (!data) return null;
@@ -43,8 +81,8 @@ const weatherApiDto = {
           ? 'snow'
           : (
             data.current.precip_mm == 0.0
-            ? 'none'
-            : 'rain'
+              ? 'none'
+              : 'rain'
           ),
       },
       sunrise: null,
