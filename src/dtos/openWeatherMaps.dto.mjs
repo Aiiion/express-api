@@ -29,7 +29,12 @@ const openWeatherMapsDto = {
                 sea_level: data?.main?.sea_level,
                 ground_level: data?.main?.grnd_level,
             },
-            wind: data?.wind,
+            wind: {
+                speed: item?.wind?.speed,
+                deg: item?.wind?.degree,
+                dir: null,
+                gust: null,
+            },
             precipitation: {
                 amount: percipitationType ? data[`${percipitationType}`]?.["1h"] : 0,
                 hours_measured: 1,
@@ -69,7 +74,12 @@ const openWeatherMapsDto = {
                     sea_level: item?.main?.sea_level,
                     ground_level: item?.main?.grnd_level,
                 },
-                wind: item?.wind,
+                wind: {
+                    speed: item?.wind?.speed,
+                    deg: item?.wind?.degree,
+                    dir: null,
+                    gust: null,
+                },
                 clouds: item?.clouds,
                 visibility: item?.visibility,
                 precipitation: {
@@ -80,7 +90,7 @@ const openWeatherMapsDto = {
             }
             formatted[day].push(timeObj);
         }
-        return {list: formatted, provider: "openweathermaps.org"};
+        return { list: formatted, provider: "openweathermaps.org" };
     }
 }
 
