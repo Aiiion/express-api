@@ -50,28 +50,28 @@ const openWeatherMapsDto = {
             if (!formatted[day]) {
                 formatted[day] = [];
             }
-            const item = forecastData.list[i];
-            const percipitationType = percipitationType(item);
+            const item = data?.list[i];
+            const percipitationType = getPercipitationType(item);
             const timeObj = {
-                dt: item.dt,
-                weather: item.weather.main,
-                description: item.weather.description,
-                icon: item.weather.icon,
+                dt: item?.dt,
+                weather: item?.weather?.main,
+                description: item?.weather?.description,
+                icon: item?.weather?.icon,
                 temprature: {
-                    temp: item.main?.temp,
-                    feels_like: item.main.feels_like,
-                    max: item.main?.temp_max,
-                    mix: item.main?.temp_mix,
+                    temp: item?.main?.temp,
+                    feels_like: item?.main?.feels_like,
+                    max: item?.main?.temp_max,
+                    mix: item?.main?.temp_mix,
                 },
-                pressure: item.main.pressure,
-                humidity: item.main.humidity,
+                pressure: item?.main?.pressure,
+                humidity: item?.main?.humidity,
                 elevation: {
-                    sea_level: item.main.sea_level,
-                    ground_level: item.main.grnd_level,
+                    sea_level: item?.main?.sea_level,
+                    ground_level: item?.main?.grnd_level,
                 },
-                wind: item.wind,
-                clouds: item.clouds,
-                visibility: item.visibility,
+                wind: item?.wind,
+                clouds: item?.clouds,
+                visibility: item?.visibility,
                 precipitation: {
                     amount: percipitationType ? data[`${percipitationType}`]?.["3h"] : 0,
                     hours_measured: 3,
