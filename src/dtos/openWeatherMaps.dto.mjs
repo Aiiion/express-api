@@ -57,11 +57,12 @@ const openWeatherMapsDto = {
             }
             const item = data?.list[i];
             const percipitationType = getPercipitationType(item);
+            const weatherEntry = Array.isArray(item?.weather) ? item.weather[0] : item?.weather;
             const timeObj = {
                 dt: item?.dt,
-                weather: item?.weather?.main,
-                description: item?.weather?.description,
-                icon: item?.weather?.icon,
+                weather: weatherEntry?.main,
+                description: weatherEntry?.description,
+                icon: weatherEntry?.icon,
                 temperature: {
                     temp: item?.main?.temp,
                     feels_like: item?.main?.feels_like,
