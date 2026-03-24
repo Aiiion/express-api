@@ -17,7 +17,7 @@ const weatherApiDto = {
         name: data?.location.name,
         timezone: data?.location.tz_id
       },
-      temprature: {
+      temperature: {
         temp: metric ? data?.current?.temp_c : data?.current?.temp_f,
         min: null,
         max: null,
@@ -35,6 +35,7 @@ const weatherApiDto = {
       },
       wind: {
         speed: metric ? data?.current?.wind_kph : data?.current?.wind_mph,
+        deg: data?.current?.wind_degree,
         dir: data?.current?.wind_dir,
         gust: metric ? data?.current?.gust_kph : data?.current?.gust_mph,
       },
@@ -79,7 +80,7 @@ const weatherApiDto = {
               weather: hour.condition?.text,
               description: hour.condition?.text,
               icon: hour.condition?.icon,
-              temprature: {
+              temperature: {
                 temp: metric ? hour.temp_c : hour.temp_f,
                 feels_like: metric ? hour.feelslike_c : hour.feelslike_f,
                 max: null,

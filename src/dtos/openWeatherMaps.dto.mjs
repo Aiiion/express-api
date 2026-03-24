@@ -15,7 +15,7 @@ const openWeatherMapsDto = {
                 name: data?.name,
                 timezone: data?.timezone
             },
-            temprature: {
+            temperature: {
                 temp: data?.main?.temp,
                 min: data?.main?.temp_min,
                 max: data?.main?.temp_max,
@@ -30,8 +30,8 @@ const openWeatherMapsDto = {
                 ground_level: data?.main?.grnd_level,
             },
             wind: {
-                speed: item?.wind?.speed,
-                deg: item?.wind?.degree,
+                speed: data?.wind?.speed,
+                deg: data?.wind?.deg,
                 dir: null,
                 gust: null,
             },
@@ -62,11 +62,11 @@ const openWeatherMapsDto = {
                 weather: item?.weather?.main,
                 description: item?.weather?.description,
                 icon: item?.weather?.icon,
-                temprature: {
+                temperature: {
                     temp: item?.main?.temp,
                     feels_like: item?.main?.feels_like,
                     max: item?.main?.temp_max,
-                    mix: item?.main?.temp_mix,
+                    min: item?.main?.temp_min,
                 },
                 pressure: item?.main?.pressure,
                 humidity: item?.main?.humidity,
@@ -76,7 +76,7 @@ const openWeatherMapsDto = {
                 },
                 wind: {
                     speed: item?.wind?.speed,
-                    deg: item?.wind?.degree,
+                    deg: item?.wind?.deg,
                     dir: null,
                     gust: null,
                 },
