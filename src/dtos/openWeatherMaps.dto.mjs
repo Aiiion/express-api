@@ -85,7 +85,7 @@ const openWeatherMapsDto = {
                 clouds: item?.clouds,
                 visibility: item?.visibility,
                 precipitation: {
-                    amount: percipitationType ? data[`${percipitationType}`]?.["3h"] : 0,
+                    amount: percipitationType ? item[`${percipitationType}`]?.["3h"] : 0,
                     hours_measured: 3,
                     type: percipitationType ?? "none",
                 },
