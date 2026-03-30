@@ -5,7 +5,8 @@ import { getCoordinateBound } from "../../utils/geoHelpers.mjs";
 export const index = async (req, res) => {
   const { lat, lon, days } = req.query;
   const metric = req.query.units !== "imperial"; // default to metric unless imperial is specified
-  const forecastDays = days ? parseInt(days) : 3;
+  const parsedDays = Number.parseInt(days, 10);
+  const forecastDays = Number.isNaN(parsedDays) ? 3 : parsedDays;
 
   // Use weatherAggregator service to get data from both openWeatherMaps and weatherApi
   const currentWeather = await weatherAggregatorService.currentWeather(
