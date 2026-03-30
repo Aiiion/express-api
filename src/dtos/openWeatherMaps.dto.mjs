@@ -3,7 +3,7 @@ import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 const openWeatherMapsDto = {
     currentWeather: (data) => {
         if (!data) return null;
-        const percipitationType = getPercipitationType(data);
+        const precipitationType = getPrecipitationType(data);
         const weatherEntry = Array.isArray(data?.weather) ? data.weather[0] : data?.weather;
         return {
             weather: weatherEntry?.main,
@@ -37,9 +37,9 @@ const openWeatherMapsDto = {
                 gust: null,
             },
             precipitation: {
-                amount: percipitationType ? data[`${percipitationType}`]?.["1h"] : 0,
+                amount: precipitationType ? data[`${precipitationType}`]?.["1h"] : 0,
                 hours_measured: 1,
-                type: percipitationType ?? "none",
+                type: precipitationType ?? "none",
             },
             sunrise: data.sys?.sunrise,
             sunset: data.sys?.sunset,
@@ -57,7 +57,7 @@ const openWeatherMapsDto = {
                 formatted[day] = [];
             }
             const item = data?.list[i];
-            const percipitationType = getPercipitationType(item);
+            const precipitationType = getPrecipitationType(item);
             const weatherEntry = Array.isArray(item?.weather) ? item.weather[0] : item?.weather;
             const timeObj = {
                 dt: item?.dt,
@@ -85,9 +85,9 @@ const openWeatherMapsDto = {
                 clouds: item?.clouds,
                 visibility: item?.visibility,
                 precipitation: {
-                    amount: percipitationType ? item[`${percipitationType}`]?.["3h"] : 0,
+                    amount: precipitationType ? item[`${precipitationType}`]?.["3h"] : 0,
                     hours_measured: 3,
-                    type: percipitationType ?? "none",
+                    type: precipitationType ?? "none",
                 },
             }
             formatted[day].push(timeObj);
@@ -96,7 +96,7 @@ const openWeatherMapsDto = {
     }
 }
 
-const getPercipitationType = (data) => {
+const getPrecipitationType = (data) => {
     switch (data) {
         case data.rain != undefined:
             return "rain";
