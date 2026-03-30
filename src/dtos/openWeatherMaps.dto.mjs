@@ -4,10 +4,11 @@ const openWeatherMapsDto = {
     currentWeather: (data) => {
         if (!data) return null;
         const percipitationType = getPercipitationType(data);
+        const weatherEntry = Array.isArray(data?.weather) ? data.weather[0] : data?.weather;
         return {
-            weather: data?.weather?.main,
-            description: data?.weather?.description,
-            icon: data?.weather?.icon,
+            weather: weatherEntry?.main,
+            description: weatherEntry?.description,
+            icon: weatherEntry?.icon,
             dt: data.dt,
             location: {
                 country_code: data?.sys?.country,
