@@ -1,55 +1,50 @@
-import axios from "axios";
 import { WEATHERAPI_API_URL } from "../utils/constants.mjs";
 
 const weatherApiService = {
     ipLocation: async (ip) => {
-        const response = await axios({
-            method: 'get',
-            url: WEATHERAPI_API_URL + `/ip.json`,
-            params: {
-                key: process.env.WEATHERAPI_API_KEY,
-                q: ip,
-            },
-            timeout: 2000,
+        const params = new URLSearchParams({
+            key: process.env.WEATHERAPI_API_KEY,
+            q: ip,
         });
-        return response.data;
+        const response = await fetch(`${WEATHERAPI_API_URL}/ip.json?${params}`, {
+            signal: AbortSignal.timeout(2000),
+        });
+        if (!response.ok) throw new Error(`WeatherAPI error: ${response.status} ${response.statusText}`);
+        return response.json();
     },
     weatherWarnings: async (lat, lon) => {
-        const response = await axios({
-            method: 'get',
-            url: WEATHERAPI_API_URL + `/alerts.json`,
-            params: {
-                key: process.env.WEATHERAPI_API_KEY,
-                q: `${lat},${lon}`,
-            },
-            timeout: 2000,
+        const params = new URLSearchParams({
+            key: process.env.WEATHERAPI_API_KEY,
+            q: `${lat},${lon}`,
         });
-        return response.data;
+        const response = await fetch(`${WEATHERAPI_API_URL}/alerts.json?${params}`, {
+            signal: AbortSignal.timeout(2000),
+        });
+        if (!response.ok) throw new Error(`WeatherAPI error: ${response.status} ${response.statusText}`);
+        return response.json();
     },
     currentWeather: async (lat, lon) => {
-        const response = await axios({
-            method: 'get',
-            url: WEATHERAPI_API_URL + `/current.json`,
-            params: {
-                key: process.env.WEATHERAPI_API_KEY,
-                q: `${lat},${lon}`,
-            },
-            timeout: 2000,
+        const params = new URLSearchParams({
+            key: process.env.WEATHERAPI_API_KEY,
+            q: `${lat},${lon}`,
         });
-        return response.data;
+        const response = await fetch(`${WEATHERAPI_API_URL}/current.json?${params}`, {
+            signal: AbortSignal.timeout(2000),
+        });
+        if (!response.ok) throw new Error(`WeatherAPI error: ${response.status} ${response.statusText}`);
+        return response.json();
     },
     forecastWeather: async (lat, lon, days = 3) => {
-        const response = await axios({
-            method: 'get',
-            url: WEATHERAPI_API_URL + `/forecast.json`,
-            params: {
-                key: process.env.WEATHERAPI_API_KEY,
-                q: `${lat},${lon}`,
-                days: days,
-            },
-            timeout: 2000,
+        const params = new URLSearchParams({
+            key: process.env.WEATHERAPI_API_KEY,
+            q: `${lat},${lon}`,
+            days: days,
         });
-        return response.data;
+        const response = await fetch(`${WEATHERAPI_API_URL}/forecast.json?${params}`, {
+            signal: AbortSignal.timeout(2000),
+        });
+        if (!response.ok) throw new Error(`WeatherAPI error: ${response.status} ${response.statusText}`);
+        return response.json();
     },
 };
 
