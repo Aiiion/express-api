@@ -25,7 +25,7 @@ export const index = async (req, res) => {
   );
 
   // Get pollution from openWeatherMaps (no aggregation available)
-  const pollution = await openWeatherMapsService.currentPollution(req.query);
+  const pollution = await openWeatherMapsService.currentPollution({lat: parseFloat(lat), lon: parseFloat(lon)});
 
   // Get weather warnings from local provider based on coordinates
   let warnings = null;
