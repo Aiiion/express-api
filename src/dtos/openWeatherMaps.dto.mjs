@@ -50,7 +50,8 @@ const openWeatherMapsDto = {
                 gust: null,
             },
             precipitation: {
-                amount: precipitationType ? data[`${precipitationType}`]?.["1h"] : 0,
+                // we should probably just take the howest hour then use that for hours measured
+                amount: precipitationType ? (data[`${precipitationType}`]?.["1h"] ?? 0) : 0,
                 hours_measured: 1,
                 type: precipitationType ?? "none",
             },
@@ -98,7 +99,8 @@ const openWeatherMapsDto = {
                 clouds: item?.clouds,
                 visibility: item?.visibility,
                 precipitation: {
-                    amount: precipitationType ? item[`${precipitationType}`]?.["3h"] : 0,
+                    // we should probably just take the howest hour then use that for hours measured
+                    amount: precipitationType ? (item[`${precipitationType}`]?.["3h"] ?? 0) : 0,
                     hours_measured: 3,
                     type: precipitationType ?? "none",
                 },
