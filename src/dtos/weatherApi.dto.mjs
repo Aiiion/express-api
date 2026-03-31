@@ -14,8 +14,8 @@ const weatherApiDto = {
           lat: data?.location?.lat,
           lon: data?.location?.lon,
         },
-        name: data?.location.name,
-        timezone: data?.location.tz_id
+        name: data?.location?.name,
+        timezone: data?.location?.tz_id
       },
       temperature: {
         temp: metric ? data?.current?.temp_c : data?.current?.temp_f,
