@@ -6,7 +6,9 @@ export const index = async (req, res) => {
   const { lat, lon, days } = req.query;
   const metric = req.query.units !== "imperial"; // default to metric unless imperial is specified
   const parsedDays = Number.parseInt(days, 10);
-  const forecastDays = Number.isNaN(parsedDays) ? 3 : parsedDays;
+  let forecastDays = Number.isNaN(parsedDays) ? 5 : parsedDays;
+  if(forecastDays > 6) forecastDays = 6;
+  
 
   // Use weatherAggregator service to get data from both openWeatherMaps and weatherApi
   const currentWeather = await weatherAggregatorService.currentWeather(
