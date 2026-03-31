@@ -29,6 +29,9 @@ export const weather = {
       speed: 3.6,
       deg: 230,
     },
+    rain: {
+      "1h": 3.16
+    },
     clouds: {
       all: 100,
     },
