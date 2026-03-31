@@ -103,7 +103,9 @@ const weatherApiDto = {
               clouds: {
                 all: hour.cloud,
               },
-              visibility: metric ? hour.vis_km * 1000 : hour.vis_miles * 1609.34, // Convert to meters
+              visibility: metric 
+                ? (hour.vis_km != null ? hour.vis_km * 1000 : null)
+                : (hour.vis_miles != null ? hour.vis_miles * 1609.34 : null),
               precipitation: {
                 amount: metric ? hour.precip_mm : hour.precip_in,
                 hours_measured: 1,
