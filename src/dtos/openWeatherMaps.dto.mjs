@@ -1,5 +1,18 @@
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
+const getPrecipitationType = (data) => {
+    if (data?.rain !== undefined) {
+        return "rain";
+    }
+    if (data?.snow !== undefined) {
+        return "snow";
+    }
+    if (data?.hail !== undefined) {
+        return "hail";
+    }
+    return null;
+}
+
 const openWeatherMapsDto = {
     currentWeather: (data) => {
         if (!data) return null;
@@ -96,16 +109,4 @@ const openWeatherMapsDto = {
     }
 }
 
-const getPrecipitationType = (data) => {
-    if (data?.rain !== undefined) {
-        return "rain";
-    }
-    if (data?.snow !== undefined) {
-        return "snow";
-    }
-    if (data?.hail !== undefined) {
-        return "hail";
-    }
-    return null;
-}
 export default openWeatherMapsDto;

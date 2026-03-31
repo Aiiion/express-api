@@ -1,5 +1,39 @@
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
+const getPrecipitationType = (hour) => {
+  // Check for snow
+  if (hour.snow_cm && hour.snow_cm > 0) {
+    return "snow";
+  }
+  // Check for rain (or any precipitation)
+  if ((hour.precip_mm && hour.precip_mm > 0) || (hour.precip_in && hour.precip_in > 0)) {
+    // Check condition text for specific types
+    const conditionText = hour.condition?.text?.toLowerCase() || '';
+    if (conditionText.includes('snow')) {
+      return "snow";
+    }
+    return "rain";
+  }
+  return "none";
+};
+
+const translateSeverity = (severity) => {
+  switch (severity) {
+    case "minor":
+      return "YELLOW";
+    case "moderate":
+      return "ORANGE";
+    case "severe":
+      return "RED";
+    case "extreme":
+      return "RED";
+    case "unknown":
+      return "YELLOW";
+    default:
+      return "Unknown";
+  }
+};
+
 const weatherApiDto = {
   currentWeather: (data, metric = true) => {
     if (!data) return null;
@@ -138,37 +172,4 @@ const weatherApiDto = {
   },
 };
 
-const getPrecipitationType = (hour) => {
-  // Check for snow
-  if (hour.snow_cm && hour.snow_cm > 0) {
-    return "snow";
-  }
-  // Check for rain (or any precipitation)
-  if ((hour.precip_mm && hour.precip_mm > 0) || (hour.precip_in && hour.precip_in > 0)) {
-    // Check condition text for specific types
-    const conditionText = hour.condition?.text?.toLowerCase() || '';
-    if (conditionText.includes('snow')) {
-      return "snow";
-    }
-    return "rain";
-  }
-  return "none";
-};
-
-const translateSeverity = (severity) => {
-  switch (severity) {
-    case "minor":
-      return "YELLOW";
-    case "moderate":
-      return "ORANGE";
-    case "severe":
-      return "RED";
-    case "extreme":
-      return "RED";
-    case "unknown":
-      return "YELLOW";
-    default:
-      return "Unknown";
-  }
-};
 export default weatherApiDto;
