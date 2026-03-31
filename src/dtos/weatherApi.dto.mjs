@@ -25,7 +25,9 @@ const weatherApiDto = {
       },
       pressure: data?.current?.pressure_mb,
       humidity: data?.current?.humidity,
-      visibility: data?.current?.visibility_km * 1000,
+      visibility: metric
+        ? (data?.current?.vis_km != null ? data.current.vis_km * 1000 : null)      // km → m
+        : (data?.current?.vis_miles != null ? data.current.vis_miles * 1609.34 : null), // miles → m
       clouds: {
         all: data?.current?.cloud,
       },
