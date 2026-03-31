@@ -21,7 +21,7 @@ const weatherApiDto = {
         temp: metric ? data?.current?.temp_c : data?.current?.temp_f,
         min: null,
         max: null,
-        feels_like: metric ? data?.current?.feels_like_c : data?.current?.feels_like_c,
+        feels_like: metric ? data?.current?.feels_like_c : data?.current?.feels_like_f,
       },
       pressure: data?.current?.pressure_mb,
       humidity: data?.current?.humidity,
