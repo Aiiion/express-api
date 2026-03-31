@@ -5,23 +5,35 @@ import {
   airPollution,
   airPollutionForecast,
 } from "../fixtures/openWeatherMaps.fixture.mjs";
-import { getIpLocation } from "../fixtures/weatherApi.fixture.mjs";
+import {
+  getIpLocation,
+  weather as weatherApiWeather,
+  weatherForecast as weatherApiWeatherForecast,
+} from "../fixtures/weatherApi.fixture.mjs";
+
+// Stable mock function references so individual tests can override behaviour
+const owmMocks = {
+  currentWeather: jest.fn().mockResolvedValue(weather.data),
+  forecastWeather: jest.fn().mockResolvedValue(weatherForecast.data),
+  currentPollution: jest.fn().mockResolvedValue(airPollution.data),
+  forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast.data),
+};
+
+const weatherApiMocks = {
+  ipLocation: jest.fn().mockResolvedValue(getIpLocation.data),
+  currentWeather: jest.fn().mockResolvedValue(weatherApiWeather.data),
+  forecastWeather: jest.fn().mockResolvedValue(weatherApiWeatherForecast.data),
+  weatherWarnings: jest.fn().mockResolvedValue({ alerts: { alert: [] } }),
+};
 
 // Mock the OpenWeatherMaps service
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
-  default: {
-    currentWeather: jest.fn().mockResolvedValue(weather.data),
-    forecastWeather: jest.fn().mockResolvedValue(weatherForecast.data),
-    currentPollution: jest.fn().mockResolvedValue(airPollution.data),
-    forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast.data),
-  },
+  default: owmMocks,
 }));
 
 // Mock the weatherApi service
 jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
-  default: {
-    ipLocation: jest.fn().mockResolvedValue(getIpLocation.data),
-  },
+  default: weatherApiMocks,
 }));
 
 import request from "supertest";
@@ -54,6 +66,17 @@ describe("API Routes", () => {
     }
   });
 
+  beforeEach(() => {
+    owmMocks.currentWeather.mockResolvedValue(weather.data);
+    owmMocks.forecastWeather.mockResolvedValue(weatherForecast.data);
+    owmMocks.currentPollution.mockResolvedValue(airPollution.data);
+    owmMocks.forecastPollution.mockResolvedValue(airPollutionForecast.data);
+    weatherApiMocks.ipLocation.mockResolvedValue(getIpLocation.data);
+    weatherApiMocks.currentWeather.mockResolvedValue(weatherApiWeather.data);
+    weatherApiMocks.forecastWeather.mockResolvedValue(weatherApiWeatherForecast.data);
+    weatherApiMocks.weatherWarnings.mockResolvedValue({ alerts: { alert: [] } });
+  });
+
   afterAll(async () => {
     process.env.OWM_API_KEY = originalOwmApiKey;
     process.env.WEATHERAPI_API_KEY = originalWeatherApiKey;
@@ -81,6 +104,8 @@ describe("API Routes", () => {
     ['/weather/aggregate', { lat: exampleLat, lon: 'asd' }, 400],
     ['/ip-location', {ip: exampleIp}, 200],
     ['/ip-location', {ip: '9999.9999.9999.999'}, 400],
+    ['/v1/weather', exampleLatLon, 200],
+    ['/v1/weather', { lat: exampleLat }, 400],
   ])('GET %s with %o -> %i', async (path, query, expected) => {
     const res = await request(app).get(path).query(query);
     expect(res.status).toBe(expected);
@@ -93,6 +118,38 @@ describe("API Routes", () => {
       expect(res.headers['content-type']).toMatch(/application\/pdf/);
       expect(res.body).toBeInstanceOf(Buffer);
       expect(res.body.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('GET /v1/weather', () => {
+    it('should return 200 with the expected response shape', async () => {
+      const res = await request(app).get('/v1/weather').query(exampleLatLon);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('data');
+      expect(res.body.data).toHaveProperty('currentWeather');
+      expect(res.body.data).toHaveProperty('forecastWeather');
+      expect(res.body.data).toHaveProperty('currentPollution');
+      expect(res.body.data).toHaveProperty('weatherWarnings');
+    });
+
+    it('should still return 200 when one weather provider fails', async () => {
+      owmMocks.currentWeather.mockRejectedValueOnce(new Error('OWM unavailable'));
+      owmMocks.forecastWeather.mockRejectedValueOnce(new Error('OWM unavailable'));
+      const res = await request(app).get('/v1/weather').query(exampleLatLon);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('data');
+      expect(res.body.data).toHaveProperty('currentWeather');
+      expect(res.body.data).toHaveProperty('forecastWeather');
+    });
+
+    it('should still return 200 when the WeatherAPI provider fails', async () => {
+      weatherApiMocks.currentWeather.mockRejectedValueOnce(new Error('WeatherAPI unavailable'));
+      weatherApiMocks.forecastWeather.mockRejectedValueOnce(new Error('WeatherAPI unavailable'));
+      const res = await request(app).get('/v1/weather').query(exampleLatLon);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('data');
+      expect(res.body.data).toHaveProperty('currentWeather');
+      expect(res.body.data).toHaveProperty('forecastWeather');
     });
   });
 });
