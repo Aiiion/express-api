@@ -97,15 +97,15 @@ const openWeatherMapsDto = {
 }
 
 const getPrecipitationType = (data) => {
-    switch (data) {
-        case data.rain != undefined:
-            return "rain";
-        case data.snow != undefined:
-            return "snow";
-        case data.hail != undefined:
-            return "hail";
-        default:
-            return null;
+    if (data?.rain !== undefined) {
+        return "rain";
     }
+    if (data?.snow !== undefined) {
+        return "snow";
+    }
+    if (data?.hail !== undefined) {
+        return "hail";
+    }
+    return null;
 }
 export default openWeatherMapsDto;
