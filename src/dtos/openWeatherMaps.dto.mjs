@@ -61,7 +61,7 @@ const openWeatherMapsDto = {
         }
     },
     forecastWeather: (data) => {
-        if (!data) return null;
+        if (!data || !data.list) return null;
         const formatted = {};
 
         for (let i = 0; i < data.list.length; i++) {
