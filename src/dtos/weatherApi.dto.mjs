@@ -76,15 +76,9 @@ const weatherApiDto = {
         gust: metric ? data?.current?.gust_kph : data?.current?.gust_mph,
       },
       precipitation: {
-        amount: metric ? data?.current?.precip_mm : data?.current?.precip_in,
+        amount: data?.current?.precip_mm,
         hours_measured: 1,
-        type: data?.current?.condition?.text?.includes('snow')
-          ? 'snow'
-          : (
-            data?.current?.precip_mm == 0.0
-              ? 'none'
-              : 'rain'
-          ),
+        type: getPrecipitationType(data?.current),
       },
       sunrise: null,
       sunset: null,
