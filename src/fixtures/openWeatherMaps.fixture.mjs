@@ -168,6 +168,19 @@ export const weatherForecast = {
         dt_txt: "2025-11-06 06:00:00",
       },
     ],
+    "city": {
+      "id": 2666238,
+      "name": "Upplands Vasby",
+      "coord": {
+        "lat": 59.496,
+        "lon": 17.891
+      },
+      "country": "SE",
+      "population": 36534,
+      "timezone": 7200,
+      "sunrise": 1775016895,
+      "sunset": 1775064570
+    }
   },
 };
 
