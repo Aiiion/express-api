@@ -89,6 +89,7 @@ const weatherApiDto = {
   forecastWeather: (data, metric = true) => {
     if (!data) return null;
     const formatted = {};
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
 
     // Iterate through each forecast day
     if (data.forecast?.forecastday) {
@@ -96,6 +97,11 @@ const weatherApiDto = {
         // Iterate through each hour in the day
         if (day.hour) {
           for (let hour of day.hour) {
+            // Skip past timestamps
+            if (hour.time_epoch <= now) {
+              continue;
+            }
+
             const dayName = translateEpochDay(hour.time_epoch);
             
             if (!formatted[dayName]) {
