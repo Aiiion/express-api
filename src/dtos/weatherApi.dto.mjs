@@ -1,4 +1,5 @@
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { kphToMs } from "../utils/mathHelpers.mjs";
 
 const getPrecipitationType = (hour) => {
   // Check for snow
@@ -70,10 +71,10 @@ const weatherApiDto = {
         ground_level: null,
       },
       wind: {
-        speed: metric ? data?.current?.wind_kph : data?.current?.wind_mph,
+        speed: metric ? kphToMs(data?.current?.wind_kph) : data?.current?.wind_mph,
         deg: data?.current?.wind_degree,
         dir: data?.current?.wind_dir,
-        gust: metric ? data?.current?.gust_kph : data?.current?.gust_mph,
+        gust: metric ? kphToMs(data?.current?.gust_kph) : data?.current?.gust_mph,
       },
       precipitation: {
         amount: data?.current?.precip_mm,
@@ -90,6 +91,7 @@ const weatherApiDto = {
     if (!data) return null;
     const formatted = {};
     const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const timezone = data.location?.tz_id;
 
     // Iterate through each forecast day
     if (data.forecast?.forecastday) {
@@ -102,7 +104,7 @@ const weatherApiDto = {
               continue;
             }
 
-            const dayName = translateEpochDay(hour.time_epoch);
+            const dayName = translateEpochDay(hour.time_epoch, timezone);
             
             if (!formatted[dayName]) {
               formatted[dayName] = [];
@@ -129,10 +131,10 @@ const weatherApiDto = {
                 ground_level: null,
               },
               wind: {
-                speed: metric ? hour.wind_kph : hour.wind_mph,
+                speed: metric ? kphToMs(hour.wind_kph) : hour.wind_mph,
                 deg: hour.wind_degree,
                 dir: hour.wind_dir,
-                gust: metric ? hour.gust_kph : hour.gust_mph,
+                gust: metric ? kphToMs(hour.gust_kph) : hour.gust_mph,
               },
               clouds: {
                 all: hour.cloud,
