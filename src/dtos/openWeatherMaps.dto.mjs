@@ -64,7 +64,7 @@ const openWeatherMapsDto = {
     forecastWeather: (data) => {
         if (!data || !data.list) return null;
         const formatted = {};
-        const timezone = data.timezone ? data.timezone / 3600 : undefined; // Convert from seconds to hours
+        const timezone = data.city.timezone ? data.city.timezone / 3600 : undefined; // Convert from seconds to hours
 
         for (let i = 0; i < data.list.length; i++) {
             const day = translateEpochDay(data.list[i].dt, timezone);
