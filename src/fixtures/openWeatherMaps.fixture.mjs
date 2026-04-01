@@ -168,6 +168,15 @@ export const weatherForecast = {
         dt_txt: "2025-11-06 06:00:00",
       },
     ],
+    city: {
+      id: 2666237,
+      name: "Upplands Väsby Municipality",
+      coord: { lat: 59.496, lon: 17.891 },
+      country: "SE",
+      timezone: 3600,
+      sunrise: 1762323507,
+      sunset: 1762353935,
+    },
   },
 };
 

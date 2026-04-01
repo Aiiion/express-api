@@ -22,7 +22,7 @@ export const aggregate = async (req, res) => {
     const upcoming = {};
 
     for (let i = 0; i < forecastData.list.length; i++) {
-      const day = translateEpochDay(forecastData.list[i].dt);
+      const day = translateEpochDay(forecastData.list[i].dt, forecastData.city?.timezone);
       if (!upcoming[day]) {
         upcoming[day] = [];
       }

@@ -66,7 +66,7 @@ const openWeatherMapsDto = {
         const formatted = {};
 
         for (let i = 0; i < data.list.length; i++) {
-            const day = translateEpochDay(data.list[i].dt);
+            const day = translateEpochDay(data.list[i].dt, data.city?.timezone);
             if (!formatted[day]) {
                 formatted[day] = [];
             }

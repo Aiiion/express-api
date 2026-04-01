@@ -96,7 +96,7 @@ const weatherApiDto = {
         // Iterate through each hour in the day
         if (day.hour) {
           for (let hour of day.hour) {
-            const dayName = translateEpochDay(hour.time_epoch);
+            const dayName = translateEpochDay(hour.time_epoch, data.location?.tz_id);
             
             if (!formatted[dayName]) {
               formatted[dayName] = [];
