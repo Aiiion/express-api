@@ -90,6 +90,7 @@ const weatherApiDto = {
     if (!data) return null;
     const formatted = {};
     const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const timezone = data.location?.tz_id;
 
     // Iterate through each forecast day
     if (data.forecast?.forecastday) {
@@ -102,7 +103,7 @@ const weatherApiDto = {
               continue;
             }
 
-            const dayName = translateEpochDay(hour.time_epoch);
+            const dayName = translateEpochDay(hour.time_epoch, timezone);
             
             if (!formatted[dayName]) {
               formatted[dayName] = [];
