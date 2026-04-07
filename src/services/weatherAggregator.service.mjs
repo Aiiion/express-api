@@ -258,7 +258,9 @@ const mergeAndAverage = (sources, parentPath = '') => {
     if (values.length === 0) return;
 
     // Handle different value types
-    const firstValue = values[0];
+    // Find first non-null value to determine type (null could mask actual numeric values)
+    const firstNonNullValue = values.find(v => v !== null);
+    const firstValue = firstNonNullValue !== undefined ? firstNonNullValue : values[0];
     
     // Special handling for fields that should not be averaged
     if (shouldNotAverage(key, parentPath)) {
