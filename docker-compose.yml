@@ -17,6 +17,11 @@ services:
       - DB_NAME=${DB_NAME}
       - OWM_API_KEY=${OWM_API_KEY}
       - WEATHERAPI_API_KEY=${WEATHERAPI_API_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_SENDER=${EMAIL_SENDER}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - express-api-network
     dns:
