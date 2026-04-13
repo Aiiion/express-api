@@ -10,29 +10,14 @@ weatherapi.com
 
 # Usage
 
-**Start this app up using docker (production):**
-
-docker compose build
-
-docker compose up
-
-**Or without docker (production):**
-
-npm install --omit=dev
-
-npm start
-
 *If you wish to host this API for yourself you will need API keys for certain services, see .env.example.*
 
-**Start this app up for development:**
+**Start this app up using docker:**
 
-npm install
-
-npm run start:dev
-
-**Run tests:**
-
-npm test
+```
+docker compose build
+docker compose up
+```
 
 # Endpoints
 
@@ -75,3 +60,7 @@ https://openweathermap.org/current
 https://openweathermap.org/forecast5 (weather data sorted in to days)
 
 https://openweathermap.org/api/air-pollution (only current)
+
+### (GET) **/v1/weather**
+
+Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources (openweathermap.org, weatherapi.com, smhi.se). Supports the same `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
