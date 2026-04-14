@@ -13,6 +13,14 @@ const JWT_EXPIRY = '3h';
  */
 export const initiateLogin = async (req, res) => {
     try {
+        // Verify password
+        if (req.body.password !== process.env.ADMIN_PASSWORD) {
+            return res.status(401).send({
+                code: 401,
+                message: 'Invalid password'
+            });
+        }
+
         // Generate random 6-digit code
         const verificationCode = crypto.randomInt(100000, 999999).toString();
 

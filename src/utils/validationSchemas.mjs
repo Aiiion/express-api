@@ -82,14 +82,6 @@ export const loginValidationSchema = {
 		},
 		notEmpty: {
 			errorMessage: 'Password cannot be empty',
-		},
-		custom: {
-			options: (value) => {
-				if (value !== process.env.ADMIN_PASSWORD) {
-					throw new Error('Invalid password');
-				}
-				return true;
-			},
-		},
+		}
 	},
 };
