@@ -117,9 +117,12 @@ describe("Auth Routes", () => {
         .send({ sessionToken: testSessionToken, code: testCode });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("token");
       expect(response.body.message).toBe("Authentication successful");
       expect(response.body.expiresIn).toBe("3h");
+
+      // Verify JWT is set as HTTP-only cookie
+      expect(response.headers['set-cookie']).toBeDefined();
+      expect(response.headers['set-cookie'].some(cookie => /jwt_token=/.test(cookie))).toBe(true);
 
       // Session should be cleared after successful verification
       expect(mcache.get(`auth_session_${testSessionToken}`)).toBeNull();
@@ -160,7 +163,10 @@ describe("Auth Routes", () => {
         .post("/v1/auth/verify")
         .send({ sessionToken: testSessionToken, code: testCode });
 
-      const { token } = verifyResponse.body;
+      // Extract JWT token from set-cookie header
+      const cookies = verifyResponse.headers['set-cookie'];
+      const jwtCookie = cookies.find(cookie => /jwt_token=/.test(cookie));
+      const token = jwtCookie.split(';')[0].split('=')[1];
 
       const response = await request(app)
         .get("/v1/auth/verify-token")
