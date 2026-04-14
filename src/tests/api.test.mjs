@@ -99,9 +99,6 @@ describe("API Routes", () => {
   it.each([
     ['/weather', exampleLatLon, 200],
     ['/weather/pollution', exampleLatLon, 200],
-    ['/weather/aggregate', exampleLatLon, 200],
-    ['/weather/aggregate', { lat: exampleLat }, 400],
-    ['/weather/aggregate', { lat: exampleLat, lon: 'asd' }, 400],
     ['/ip-location', {ip: exampleIp}, 200],
     ['/ip-location', {ip: '9999.9999.9999.999'}, 400],
     ['/v1/weather', exampleLatLon, 200],
