@@ -121,9 +121,10 @@ describe("Auth Routes", () => {
       expect(response.body.expiresIn).toBe("3h");
 
       // Verify JWT is set as HTTP-only cookie
-      expect(response.headers['set-cookie']).toBeDefined();
-      expect(response.headers['set-cookie'].some(cookie => /jwt_token=/.test(cookie))).toBe(true);
-
+      const setCookies = response.headers["set-cookie"] ?? [];
+      const jwtSetCookie = setCookies.find((cookie) => /^jwt_token=/.test(cookie));
+      expect(jwtSetCookie).toBeDefined();
+      expect(jwtSetCookie).toContain("HttpOnly");
       // Session should be cleared after successful verification
       expect(mcache.get(`auth_session_${testSessionToken}`)).toBeNull();
     });
