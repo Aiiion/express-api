@@ -1,6 +1,6 @@
 {
   "name": "express-api",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "description": "",
   "main": "index.mjs",
   "scripts": {
@@ -25,13 +25,19 @@
   "author": "",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.2.0",
     "express-validator": "^7.3.0",
+    "jsonwebtoken": "^9.0.3",
     "memory-cache": "^0.2.0",
     "pg": "^8.17.0",
+    "resend": "^6.11.0",
     "sequelize": "^6.37.0",
     "umzug": "^3.8.2"
   },
@@ -40,5 +46,8 @@
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4"
+  },
+  "overrides": {
+    "ajv": "^8.18.0"
   }
 }

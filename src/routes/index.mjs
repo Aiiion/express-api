@@ -1,10 +1,14 @@
 import { Router } from "express";
-import apiRouter from "./api.mjs";
+import weatherRouter from "./weather.mjs";
 import infoRouter from "./info.mjs"
+import authRouter from "./auth.mjs";
+import logsRouter from "./logs.mjs";
 
 const router = Router();
 
-router.use(apiRouter);
+router.use(weatherRouter);
 router.use(infoRouter);
+router.use(authRouter);
+router.use(logsRouter);
 
 export default router;
