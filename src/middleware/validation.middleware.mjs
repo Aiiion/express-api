@@ -1,14 +1,15 @@
 import { validationResult } from "express-validator";
 import jwt from 'jsonwebtoken';
 
-const jwtSecretCheck = () => {
-    if (!process.env.JWT_SECRET)
-        return res
-          .status(500)
-          .send({ 
+const jwtSecretCheck = (res) => {
+    if (!process.env.JWT_SECRET) {
+        res.status(500).send({ 
             code: 500,
             message: "JWT not configured" 
         });
+        return true;
+    }
+    return false;
 }
 
 export const validateResult = (req, res, next) => {
@@ -46,7 +47,7 @@ export const hasWeatherApiKey = (req, res, next) => {
 }
 
 export const hasJwtSecret = (req, res, next) => {
-    jwtSecretCheck();
+    if (jwtSecretCheck(res)) return;
     next();
 }
 
@@ -62,7 +63,7 @@ export const hasAdminPassword = (req, res, next) => {
 }
 
 export const authenticate = (req, res, next) => {
-    jwtSecretCheck();
+    if (jwtSecretCheck(res)) return;
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
