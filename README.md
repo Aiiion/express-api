@@ -12,16 +12,6 @@ weatherapi.com
 
 *If you wish to host this API for yourself you will need API keys for certain services, see .env.example.*
 
-**Required environment variables:**
-
-| Variable | Description |
-|---|---|
-| `RESEND_API_KEY` | API key from [resend.com](https://resend.com) used to send verification emails |
-| `EMAIL_SENDER` | The "from" address used when sending emails (must be a verified sender in Resend) |
-| `ADMIN_EMAIL` | The email address that login verification codes are sent to |
-| `ADMIN_PASSWORD` | The password required to initiate the login flow |
-| `JWT_SECRET` | Secret key used to sign and verify JWT tokens |
-
 **Start this app up using docker:**
 
 ```
