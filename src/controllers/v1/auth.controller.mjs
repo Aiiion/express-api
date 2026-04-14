@@ -5,6 +5,7 @@ import { sendEmail } from '../../services/email.service.mjs';
 
 const SESSION_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const JWT_EXPIRY = '3h';
+const MAX_FAILED_ATTEMPTS = 5;
 
 /**
  * Initiates login by verifying password and sending verification code via email
@@ -78,6 +79,23 @@ export const verifyCode = (req, res) => {
 
         // Verify the code
         if (sessionData.code !== code) {
+            // Track failed attempts
+            sessionData.failedAttempts = (sessionData.failedAttempts || 0) + 1;
+
+            if (sessionData.failedAttempts >= MAX_FAILED_ATTEMPTS) {
+                // Lock the session
+                mcache.del(`auth_session_${sessionToken}`);
+                return res.status(401).send({
+                    code: 401,
+                    message: 'Session locked due to too many failed attempts'
+                });
+            }
+
+            // Persist updated session with remaining TTL
+            const elapsed = Date.now() - sessionData.createdAt;
+            const remainingTTL = Math.max(SESSION_DURATION_MS - elapsed, 0);
+            mcache.put(`auth_session_${sessionToken}`, sessionData, remainingTTL);
+
             return res.status(401).send({
                 code: 401,
                 message: 'Invalid verification code'
