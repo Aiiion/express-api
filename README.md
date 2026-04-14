@@ -59,13 +59,14 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
 
 ## Authentication
 
-The API uses a two-step email-based authentication flow that issues a short-lived JWT.
+The API uses a two-step email-based authentication flow that issues a short-lived JWT stored in an HTTP-only cookie.
 
 **Flow:**
 
 1. `POST /v1/auth/login` — Submit the admin password. On success, a 6-digit verification code is emailed to `ADMIN_EMAIL` and a `sessionToken` is returned.
-2. `POST /v1/auth/verify` — Submit the `sessionToken` and the `code` received by email. On success, a signed JWT is returned (valid for 3 hours).
-3. `GET /v1/auth/verify-token` — Check whether a JWT is still valid by passing it as a `Bearer` token in the `Authorization` header.
+2. `POST /v1/auth/verify` — Submit the `sessionToken` and the `code` received by email. On success, a signed JWT (valid for 3 hours) is set as an HTTP-only cookie named `jwt_token`.
+3. `GET /v1/auth/verify-token` — Check whether the JWT cookie is still valid.
+4. `POST /v1/auth/logout` — Clear the JWT cookie to log out.
 
 ### (POST) **/v1/auth/login**
 
@@ -87,7 +88,7 @@ Initiates login. Requires the admin password in the request body.
 
 ### (POST) **/v1/auth/verify**
 
-Verifies the emailed code and returns a JWT.
+Verifies the emailed code and sets the JWT as an HTTP-only cookie.
 
 **Body:**
 ```json
@@ -98,20 +99,30 @@ Verifies the emailed code and returns a JWT.
 ```json
 {
   "message": "Authentication successful",
-  "token": "<jwt>",
   "expiresIn": "3h"
 }
 ```
 
+**Set-Cookie:** `jwt_token=<jwt>; HttpOnly; Secure; SameSite=Strict`
+
 ### (GET) **/v1/auth/verify-token**
 
-Checks whether a JWT is still valid.
+Checks whether the JWT cookie is still valid.
 
-**Header:** `Authorization: Bearer <jwt>`
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
 **Response (200):**
 ```json
 { "message": "Token is valid" }
+```
+
+### (POST) **/v1/auth/logout**
+
+Clears the JWT cookie.
+
+**Response (200):**
+```json
+{ "message": "Logged out successfully" }
 ```
 
 ---
@@ -120,9 +131,9 @@ Checks whether a JWT is still valid.
 
 ### (GET) **/v1/logs**
 
-Retrieves paginated request logs. Requires JWT authentication.
+Retrieves paginated request logs. Requires JWT authentication via HTTP-only cookie.
 
-**Header:** `Authorization: Bearer <jwt>`
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
 **Query Parameters:**
 - `page` (optional) — Page number (default: 1). Each page returns up to 100 logs.
