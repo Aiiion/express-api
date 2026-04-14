@@ -130,22 +130,16 @@ describe("Auth Routes", () => {
   });
 
   describe("GET /v1/auth/verify-token", () => {
-    it("should return 400 when Authorization header is missing", async () => {
+    it("should return 401 when jwt_token cookie is missing", async () => {
       const response = await request(app).get("/v1/auth/verify-token");
-      expect(response.status).toBe(400);
-    });
-
-    it("should return 400 when Authorization header format is invalid", async () => {
-      const response = await request(app)
-        .get("/v1/auth/verify-token")
-        .set("Authorization", "InvalidFormat");
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe("Authentication required");
     });
 
     it("should return 401 when token is invalid", async () => {
       const response = await request(app)
         .get("/v1/auth/verify-token")
-        .set("Authorization", "Bearer invalid-token");
+        .set("Cookie", "jwt_token=invalid-token");
       expect(response.status).toBe(401);
       expect(response.body.message).toBe("Invalid token");
     });
@@ -166,11 +160,10 @@ describe("Auth Routes", () => {
       // Extract JWT token from set-cookie header
       const cookies = verifyResponse.headers['set-cookie'];
       const jwtCookie = cookies.find(cookie => /jwt_token=/.test(cookie));
-      const token = jwtCookie.split(';')[0].split('=')[1];
 
       const response = await request(app)
         .get("/v1/auth/verify-token")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Cookie", jwtCookie);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Token is valid");
