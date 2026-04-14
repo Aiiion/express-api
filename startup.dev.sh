@@ -12,4 +12,4 @@ done
 
 echo "Postgres is available, running migrations and starting app in development mode"
 npm run migrate
-exec npm run start:dev
+exec npx nodemon --legacy-watch ./src/index.mjs
