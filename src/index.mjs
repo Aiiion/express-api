@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import routes from "./routes/index.mjs";
 import cors from 'cors';
 import { connect, closePool } from './services/db.service.mjs';
@@ -12,8 +13,10 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors({
-  origin: '*'
+  origin: '*',
+  credentials: true
 }));
 app.use(logRequest());
 app.use(routes);

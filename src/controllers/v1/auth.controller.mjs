@@ -5,7 +5,9 @@ import { sendEmail } from '../../services/email.service.mjs';
 
 const SESSION_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const JWT_EXPIRY = '3h';
+const JWT_EXPIRY_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
 const MAX_FAILED_ATTEMPTS = 5;
+const COOKIE_NAME = 'jwt_token';
 
 /**
  * Initiates login by verifying password and sending verification code via email
@@ -115,9 +117,16 @@ export const verifyCode = (req, res) => {
             { expiresIn: JWT_EXPIRY }
         );
 
+        // Set JWT as HTTP-only cookie
+        res.cookie(COOKIE_NAME, token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: JWT_EXPIRY_MS
+        });
+
         return res.status(200).send({
             message: 'Authentication successful',
-            token,
             expiresIn: JWT_EXPIRY
         });
 
@@ -133,35 +142,27 @@ export const verifyCode = (req, res) => {
 /**
  * Verifies JWT token validity
  * GET /auth/verify-token
- * Header: Authorization: Bearer <token>
+ * Cookie: jwt_token=<token>
+ * Note: Validation is handled by authenticate middleware
  */
 export const verifyToken = (req, res) => {
-    try {
-        const token = req.headers.authorization.split(' ')[1];
+    return res.status(200).send({
+        message: 'Token is valid'
+    });
+};
 
-        jwt.verify(token, process.env.JWT_SECRET);
+/**
+ * Logs out user by clearing the JWT cookie
+ * POST /auth/logout
+ */
+export const logout = (req, res) => {
+    res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
 
-        return res.status(200).send({
-            message: 'Token is valid'
-        });
-
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).send({
-                code: 401,
-                message: 'Token has expired'
-            });
-        }
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).send({
-                code: 401,
-                message: 'Invalid token'
-            });
-        }
-        console.error('verifyToken error:', error.message);
-        return res.status(500).send({
-            code: 500,
-            message: 'Failed to verify token'
-        });
-    }
+    return res.status(200).send({
+        message: 'Logged out successfully'
+    });
 };
