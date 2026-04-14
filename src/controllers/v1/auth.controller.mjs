@@ -1,7 +1,7 @@
 import mcache from 'memory-cache';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { sendEmail } from '../services/email.service.js';
+import { sendEmail } from '../../services/email.service.mjs';
 
 const SESSION_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const JWT_EXPIRY = '3h';
