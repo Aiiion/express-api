@@ -117,32 +117,30 @@ describe("Auth Routes", () => {
         .send({ sessionToken: testSessionToken, code: testCode });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("token");
       expect(response.body.message).toBe("Authentication successful");
       expect(response.body.expiresIn).toBe("3h");
 
+      // Verify JWT is set as HTTP-only cookie
+      const setCookies = response.headers["set-cookie"] ?? [];
+      const jwtSetCookie = setCookies.find((cookie) => /^jwt_token=/.test(cookie));
+      expect(jwtSetCookie).toBeDefined();
+      expect(jwtSetCookie).toContain("HttpOnly");
       // Session should be cleared after successful verification
       expect(mcache.get(`auth_session_${testSessionToken}`)).toBeNull();
     });
   });
 
   describe("GET /v1/auth/verify-token", () => {
-    it("should return 400 when Authorization header is missing", async () => {
+    it("should return 401 when jwt_token cookie is missing", async () => {
       const response = await request(app).get("/v1/auth/verify-token");
-      expect(response.status).toBe(400);
-    });
-
-    it("should return 400 when Authorization header format is invalid", async () => {
-      const response = await request(app)
-        .get("/v1/auth/verify-token")
-        .set("Authorization", "InvalidFormat");
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe("Authentication required");
     });
 
     it("should return 401 when token is invalid", async () => {
       const response = await request(app)
         .get("/v1/auth/verify-token")
-        .set("Authorization", "Bearer invalid-token");
+        .set("Cookie", "jwt_token=invalid-token");
       expect(response.status).toBe(401);
       expect(response.body.message).toBe("Invalid token");
     });
@@ -160,11 +158,13 @@ describe("Auth Routes", () => {
         .post("/v1/auth/verify")
         .send({ sessionToken: testSessionToken, code: testCode });
 
-      const { token } = verifyResponse.body;
+      // Extract JWT token from set-cookie header
+      const cookies = verifyResponse.headers['set-cookie'];
+      const jwtCookie = cookies.find(cookie => /jwt_token=/.test(cookie));
 
       const response = await request(app)
         .get("/v1/auth/verify-token")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Cookie", jwtCookie);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Token is valid");

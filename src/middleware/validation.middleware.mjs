@@ -62,22 +62,16 @@ export const hasAdminPassword = (req, res, next) => {
     next();
 }
 
+const COOKIE_NAME = 'jwt_token';
+
 export const authenticate = (req, res, next) => {
     if (jwtSecretCheck(res)) return;
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                code: 401,
-                message: 'Authorization header must be in format: Bearer <token>'
-            });
-        }
-
-        const token = authHeader.split(' ')[1];
+        const token = req.cookies[COOKIE_NAME];
         if (!token) {
             return res.status(401).json({
                 code: 401,
-                message: 'Token is required'
+                message: 'Authentication required'
             });
         }
 
