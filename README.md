@@ -10,29 +10,14 @@ weatherapi.com
 
 # Usage
 
-**Start this app up using docker (production):**
-
-docker compose build
-
-docker compose up
-
-**Or without docker (production):**
-
-npm install --omit=dev
-
-npm start
-
 *If you wish to host this API for yourself you will need API keys for certain services, see .env.example.*
 
-**Start this app up for development:**
+**Start this app up using docker:**
 
-npm install
-
-npm run start:dev
-
-**Run tests:**
-
-npm test
+```
+docker compose build
+docker compose up
+```
 
 # Endpoints
 
@@ -75,3 +60,66 @@ https://openweathermap.org/current
 https://openweathermap.org/forecast5 (weather data sorted in to days)
 
 https://openweathermap.org/api/air-pollution (only current)
+
+### (GET) **/v1/weather**
+
+Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources (openweathermap.org, weatherapi.com, smhi.se). Supports the same `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
+
+---
+
+## Authentication
+
+The API uses a two-step email-based authentication flow that issues a short-lived JWT.
+
+**Flow:**
+
+1. `POST /v1/auth/login` — Submit the admin password. On success, a 6-digit verification code is emailed to `ADMIN_EMAIL` and a `sessionToken` is returned.
+2. `POST /v1/auth/verify` — Submit the `sessionToken` and the `code` received by email. On success, a signed JWT is returned (valid for 3 hours).
+3. `GET /v1/auth/verify-token` — Check whether a JWT is still valid by passing it as a `Bearer` token in the `Authorization` header.
+
+### (POST) **/v1/auth/login**
+
+Initiates login. Requires the admin password in the request body.
+
+**Body:**
+```json
+{ "password": "your_admin_password" }
+```
+
+**Response (200):**
+```json
+{
+  "message": "Verification code sent to email",
+  "sessionToken": "<token>",
+  "expiresIn": 600
+}
+```
+
+### (POST) **/v1/auth/verify**
+
+Verifies the emailed code and returns a JWT.
+
+**Body:**
+```json
+{ "sessionToken": "<token>", "code": "123456" }
+```
+
+**Response (200):**
+```json
+{
+  "message": "Authentication successful",
+  "token": "<jwt>",
+  "expiresIn": "3h"
+}
+```
+
+### (GET) **/v1/auth/verify-token**
+
+Checks whether a JWT is still valid.
+
+**Header:** `Authorization: Bearer <jwt>`
+
+**Response (200):**
+```json
+{ "message": "Token is valid" }
+```

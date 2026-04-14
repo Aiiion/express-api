@@ -33,3 +33,25 @@ export const hasWeatherApiKey = (req, res, next) => {
         });
     next();
 }
+
+export const hasJwtSecret = (req, res, next) => {
+    if (!process.env.JWT_SECRET)
+        return res
+          .status(500)
+          .send({ 
+            code: 500,
+            message: "JWT not configured" 
+        });
+    next();
+}
+
+export const hasAdminPassword = (req, res, next) => {
+    if (!process.env.ADMIN_PASSWORD)
+        return res
+          .status(500)
+          .send({ 
+            code: 500,
+            message: "Authentication not configured" 
+        });
+    next();
+}

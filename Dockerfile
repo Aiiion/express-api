@@ -1,4 +1,4 @@
-FROM node:24.8.0-alpine3.22
+FROM node:25.9-alpine3.22
 
 # Use a standard workdir
 WORKDIR /usr/src/app
