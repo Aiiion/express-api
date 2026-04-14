@@ -51,16 +51,6 @@ Combines these current and forecast requests, you can use the same query as desc
 
 https://openweathermap.org/api/air-pollution
 
-### (GET) **/weather/aggregate** (Beta)
-
-Combines these three requests plus local weather warnings (warnings are currently only supported in Sweden). You can use the same query as described in the docs (but without appid)
-
-https://openweathermap.org/current
-
-https://openweathermap.org/forecast5 (weather data sorted in to days)
-
-https://openweathermap.org/api/air-pollution (only current)
-
 ### (GET) **/v1/weather**
 
 Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources (openweathermap.org, weatherapi.com, smhi.se). Supports the same `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
@@ -122,4 +112,41 @@ Checks whether a JWT is still valid.
 **Response (200):**
 ```json
 { "message": "Token is valid" }
+```
+
+---
+
+## Logs
+
+### (GET) **/v1/logs**
+
+Retrieves paginated request logs. Requires JWT authentication.
+
+**Header:** `Authorization: Bearer <jwt>`
+
+**Query Parameters:**
+- `page` (optional) — Page number (default: 1). Each page returns up to 100 logs.
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 31,
+      "ip": "::ffff:172.20.0.1",
+      "method": "GET",
+      "route": "/v1/logs",
+      "description": "Invalid token",
+      "code": 401,
+      "type": "WARN",
+      "created_at": "2026-04-14T12:37:03.966Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "perPage": 100,
+    "totalPages": 5,
+    "totalCount": 432
+  }
+}
 ```
