@@ -23,6 +23,38 @@ export const latLonValidationSchema = {
 	},
 };
 
+export const logsIndexValidationSchema = {
+	page: {
+		in: ['query'],
+		optional: true,
+		isInt: {
+			options: { min: 1 },
+			errorMessage: 'Page must be a positive integer',
+		},
+		toInt: true,
+	},
+	code: {
+		in: ['query'],
+		optional: true,
+		custom: {
+			options: (value) => {
+				const values = Array.isArray(value) ? value : [value];
+
+				return values.every((entry) => /^\d+$/.test(String(entry)));
+			},
+			errorMessage: 'Code must be an integer or a list of integers',
+		},
+	},
+	search: {
+		in: ['query'],
+		optional: true,
+		isString: {
+			errorMessage: 'Search must be a string',
+		},
+		trim: true,
+	},
+};
+
 export const verifyCodeValidationSchema = {
 	sessionToken: {
 		in: ['body'],
