@@ -5,7 +5,8 @@ export const distinct = async (model, field) => {
     const rows = await model.findAll({
       attributes: [[sequelize.fn('DISTINCT', sequelize.col(field)), field]],
       order: [[field, 'ASC']],
-      raw: true
+      raw: true,
+      limit: 1000 // Add a reasonable limit to prevent excessive data retrieval
     });
 
     return {
