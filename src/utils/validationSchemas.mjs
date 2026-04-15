@@ -23,27 +23,6 @@ export const latLonValidationSchema = {
 	},
 };
 
-export const bearerTokenValidationSchema = {
-	authorization: {
-		in: ['headers'],
-		exists: {
-			errorMessage: 'Authorization header is required',
-		},
-		custom: {
-			options: (value) => {
-				if (!value || !value.startsWith('Bearer ')) {
-					throw new Error('Authorization header must be in format: Bearer <token>');
-				}
-				const token = value.split(' ')[1];
-				if (!token || token.trim() === '') {
-					throw new Error('Token is required');
-				}
-				return true;
-			},
-		},
-	},
-};
-
 export const verifyCodeValidationSchema = {
 	sessionToken: {
 		in: ['body'],
