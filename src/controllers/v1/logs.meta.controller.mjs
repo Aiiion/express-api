@@ -29,7 +29,7 @@ export const show = async (req, res) => {
 
     if (!fields.includes(field)) {
       return res.status(400).json({
-        error: 'Invalid log field'
+        error: `Invalid log field '${field}'. Use /v1/logs/meta to list supported fields.`
       });
     }
 
