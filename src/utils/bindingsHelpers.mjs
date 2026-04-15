@@ -13,8 +13,7 @@ export const getModelTableName = (model) => {
 export const getMetaResourceModel = (req) => {
     const pathSegments = req.originalUrl.split('?')[0].split('/').filter(Boolean);
     const metaIndex = pathSegments.lastIndexOf('meta');
-    const resource = metaIndex > 0 ? pathSegments[metaIndex - 1] : undefined;
-
+    const resource = metaIndex > 0 ? pathSegments[metaIndex - 1]?.toLowerCase() : undefined;
     if (!resource) {
         return undefined;
     }
