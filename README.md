@@ -19,6 +19,21 @@ docker compose build
 docker compose up
 ```
 
+**Start the development environment using docker:**
+
+Full containerised dev (DB + API with hot-reload):
+
+```bash
+npm run docker:dev
+```
+
+Or run only the DB in Docker and the app natively (requires `DB_HOST=localhost` in `.env`):
+
+```bash
+docker compose -f docker-compose.dev.yml up db -d
+npm run start:dev
+```
+
 # Endpoints
 
 ### (GET) **/** 

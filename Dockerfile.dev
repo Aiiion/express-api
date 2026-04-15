@@ -1,0 +1,32 @@
+FROM node:25.9.0-alpine3.22
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+WORKDIR /usr/src/app
+
+# Copy package manifests first for cached installs
+COPY package*.json ./
+
+# Install all dependencies including devDependencies (nodemon, jest, etc.)
+RUN npm install
+
+# Install postgres client for pg_isready used in startup script
+RUN apk add --no-cache postgresql-client
+
+# Copy the rest of the application code
+COPY . .
+
+# Change ownership to non-root user
+RUN chown -R nodejs:nodejs /usr/src/app
+
+# Ensure startup scripts are executable
+RUN chmod +x ./startup.sh ./startup.dev.sh
+
+# Switch to non-root user
+USER nodejs
+
+# Expose the application port
+EXPOSE 3000
+
+ENTRYPOINT ["./startup.dev.sh"]
