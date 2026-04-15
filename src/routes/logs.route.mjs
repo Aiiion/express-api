@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { index } from "../controllers/v1/logs.controller.mjs";
+import { cache } from '../middleware/cache.middleware.mjs';
 import { show as metaShow, index as metaIndex } from "../controllers/v1/logs.meta.controller.mjs";
 import { authenticate } from "../middleware/validation.middleware.mjs";
 import cors from 'cors';
@@ -18,7 +19,7 @@ const logsCorsOptions = {
 router.use("/v1/logs", cors(logsCorsOptions));
 
 router.get("/v1/logs", authenticate, index);
-router.get("/v1/logs/meta", authenticate, metaIndex);
-router.get("/v1/logs/meta/:field", authenticate, metaShow);
+router.get("/v1/logs/meta", authenticate, cache(60 * 15), metaIndex);
+router.get("/v1/logs/meta/:field", authenticate, cache(60 * 5), metaShow);
 
 export default router;
