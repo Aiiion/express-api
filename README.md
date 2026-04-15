@@ -226,12 +226,11 @@ Returns the distinct values for a single log field. Requires JWT authentication 
 **Response (200):**
 ```json
 {
-  "data": [
-    200,
-    400,
-    401,
-    500
-  ]
+  "data": {
+    "field": "code",
+    "values": [200, 400, 401, 500],
+    "count": 4
+  }
 }
 ```
 
