@@ -24,7 +24,15 @@ export const index = async (req, res) => {
 export const show = async (req, res) => {
   try {
     const Log = sequelize.models.Log;
+    const fields = Object.keys(Log.getAttributes());
     const field = req.params.field;
+
+    if (!fields.includes(field)) {
+      return res.status(400).json({
+        error: 'Invalid log field'
+      });
+    }
+
     const result = await distinct(Log, field);
 
     return res.status(200).json({
