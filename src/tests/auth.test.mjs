@@ -1,4 +1,7 @@
 import { jest } from "@jest/globals";
+import jwt from "jsonwebtoken";
+import { Op } from "sequelize";
+import { sequelize } from "../models/index.mjs";
 
 // Mock the email service
 const sendEmailMock = jest.fn().mockResolvedValue({ success: true });
@@ -16,6 +19,7 @@ let stop;
 
 describe("Auth Routes", () => {
   const originalEnv = { ...process.env };
+  const getAuthCookie = () => `jwt_token=${jwt.sign({ sub: 'test-user' }, process.env.JWT_SECRET, { expiresIn: '3h' })}`;
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -168,6 +172,113 @@ describe("Auth Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Token is valid");
+    });
+  });
+
+  describe("GET /v1/logs/meta/:field", () => {
+    it("should return 404 when field is not a valid log column", async () => {
+      const response = await request(app)
+        .get("/v1/logs/meta/not_a_column")
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        code: 404,
+        message: "Field not found for the requested resource",
+      });
+    });
+  });
+
+  describe("GET /v1/logs", () => {
+    it("should filter by a single code", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+        .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 404 }] });
+
+      const response = await request(app)
+        .get("/v1/logs")
+        .query({ code: "404" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.where).toEqual({ code: 404 });
+      expect(queryOptions.limit).toBe(100);
+      expect(queryOptions.offset).toBe(0);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should filter by multiple codes", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+        .mockResolvedValue({ count: 2, rows: [{ id: 1, code: 400 }, { id: 2, code: 404 }] });
+
+      const response = await request(app)
+        .get("/v1/logs")
+        .query({ code: ["400", "404"] })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.where.code[Op.in]).toEqual([400, 404]);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should filter with search across route, ip and description", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+        .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 200 }] });
+
+      const response = await request(app)
+        .get("/v1/logs")
+        .query({ search: "api" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.where[Op.or]).toEqual([
+        { route: { [Op.iLike]: "%api%" } },
+        { ip: { [Op.iLike]: "%api%" } },
+        { description: { [Op.iLike]: "%api%" } },
+      ]);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should combine code and search filters with pagination", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+        .mockResolvedValue({ count: 150, rows: [{ id: 101, code: 500 }] });
+
+      const response = await request(app)
+        .get("/v1/logs")
+        .query({ code: "500", search: "error", page: "2" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.where.code).toBe(500);
+      expect(queryOptions.where[Op.or]).toEqual([
+        { route: { [Op.iLike]: "%error%" } },
+        { ip: { [Op.iLike]: "%error%" } },
+        { description: { [Op.iLike]: "%error%" } },
+      ]);
+      expect(queryOptions.limit).toBe(100);
+      expect(queryOptions.offset).toBe(100);
+      expect(response.body.pagination).toEqual({
+        page: 2,
+        perPage: 100,
+        totalPages: 2,
+        totalCount: 150,
+      });
+
+      findAndCountAllSpy.mockRestore();
     });
   });
 });

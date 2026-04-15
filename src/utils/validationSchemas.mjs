@@ -23,24 +23,35 @@ export const latLonValidationSchema = {
 	},
 };
 
-export const bearerTokenValidationSchema = {
-	authorization: {
-		in: ['headers'],
-		exists: {
-			errorMessage: 'Authorization header is required',
+export const logsIndexValidationSchema = {
+	page: {
+		in: ['query'],
+		optional: true,
+		isInt: {
+			options: { min: 1 },
+			errorMessage: 'Page must be a positive integer',
 		},
+		toInt: true,
+	},
+	code: {
+		in: ['query'],
+		optional: true,
 		custom: {
 			options: (value) => {
-				if (!value || !value.startsWith('Bearer ')) {
-					throw new Error('Authorization header must be in format: Bearer <token>');
-				}
-				const token = value.split(' ')[1];
-				if (!token || token.trim() === '') {
-					throw new Error('Token is required');
-				}
-				return true;
+				const values = Array.isArray(value) ? value : [value];
+
+				return values.every((entry) => /^\d+$/.test(String(entry)));
 			},
+			errorMessage: 'Code must be an integer or a list of integers',
 		},
+	},
+	search: {
+		in: ['query'],
+		optional: true,
+		isString: {
+			errorMessage: 'Search must be a string',
+		},
+		trim: true,
 	},
 };
 

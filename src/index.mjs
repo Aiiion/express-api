@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import routes from "./routes/index.mjs";
+import routes from "./routes/index.route.mjs";
 import cors from 'cors';
 import { connect, closePool } from './services/db.service.mjs';
 import { sequelize } from './models/index.mjs';

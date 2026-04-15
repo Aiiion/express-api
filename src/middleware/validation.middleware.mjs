@@ -1,5 +1,6 @@
 import { validationResult } from "express-validator";
 import jwt from 'jsonwebtoken';
+import { getMetaResourceModel } from '../utils/bindingsHelpers.mjs';
 
 const jwtSecretCheck = (res) => {
     if (!process.env.JWT_SECRET) {
@@ -23,6 +24,29 @@ export const validateResult = (req, res, next) => {
     }
     next();
 } 
+
+export const metaFieldExists = (req, res, next) => {
+    const model = getMetaResourceModel(req);
+    const field = req.params.field;
+
+    if (!model) {
+        return res.status(404).json({
+            code: 404,
+            message: 'Resource not found'
+        });
+    }
+
+    const validFields = Object.keys(model.getAttributes());
+
+    if (!validFields.includes(field)) {
+        return res.status(404).json({
+            code: 404,
+            message: 'Field not found for the requested resource'
+        });
+    }
+
+    next();
+};
 
 export const hasOwmKey = (req, res, next) => {
     if (!process.env.OWM_API_KEY)
