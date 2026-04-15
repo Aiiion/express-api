@@ -11,9 +11,14 @@ export const index = async (req, res) => {
     const where = {};
 
     if (req.query.code !== undefined) {
-      const code = parseInt(req.query.code, 10);
-      if (!isNaN(code)) {
-        where.code = code;
+      const codes = Array.isArray(req.query.code)
+        ? req.query.code.map(c => parseInt(c, 10)).filter(c => !isNaN(c))
+        : [parseInt(req.query.code, 10)].filter(c => !isNaN(c));
+
+      if (codes.length === 1) {
+        where.code = codes[0];
+      } else if (codes.length > 1) {
+        where.code = { [Op.in]: codes };
       }
     }
 
