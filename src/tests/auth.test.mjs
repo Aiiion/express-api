@@ -1,4 +1,5 @@
 import { jest } from "@jest/globals";
+import jwt from "jsonwebtoken";
 
 // Mock the email service
 const sendEmailMock = jest.fn().mockResolvedValue({ success: true });
@@ -16,6 +17,7 @@ let stop;
 
 describe("Auth Routes", () => {
   const originalEnv = { ...process.env };
+  const getAuthCookie = () => `jwt_token=${jwt.sign({ sub: 'test-user' }, process.env.JWT_SECRET, { expiresIn: '3h' })}`;
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -168,6 +170,20 @@ describe("Auth Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Token is valid");
+    });
+  });
+
+  describe("GET /v1/logs/meta/:field", () => {
+    it("should return 404 when field is not a valid log column", async () => {
+      const response = await request(app)
+        .get("/v1/logs/meta/not_a_column")
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        code: 404,
+        message: "Field not found for the requested resource",
+      });
     });
   });
 });
