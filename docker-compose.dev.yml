@@ -23,6 +23,7 @@ services:
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - CORS_ALLOWLIST=${CORS_ALLOWLIST}
     volumes:
       - ./src:/usr/src/app/src
     networks:
