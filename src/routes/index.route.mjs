@@ -1,8 +1,8 @@
 import { Router } from "express";
-import weatherRouter from "./weather.mjs";
-import infoRouter from "./info.mjs"
-import authRouter from "./auth.mjs";
-import logsRouter from "./logs.mjs";
+import weatherRouter from "./weather.route.mjs";
+import infoRouter from "./info.route.mjs"
+import authRouter from "./auth.route.mjs";
+import logsRouter from "./logs.route.mjs";
 
 const router = Router();
 

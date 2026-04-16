@@ -4,17 +4,15 @@ import { checkSchema } from 'express-validator';
 import { validateResult, hasJwtSecret, hasAdminPassword, authenticate } from '../middleware/validation.middleware.mjs';
 import { verifyCodeValidationSchema, loginValidationSchema } from '../utils/validationSchemas.mjs';
 import cors from 'cors';
+import { createStrictCorsOptionsDelegate } from '../utils/corsHelpers.mjs';
 
 const router = Router();
 
-// CORS configuration for auth routes with credentials support
-const authCorsOptions = {
-    origin: process.env.CORS_ORIGIN || true,
-    credentials: true,
+const authCorsOptions = createStrictCorsOptionsDelegate({
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Set-Cookie'],
-};
+});
 
 // Apply CORS to all auth routes
 router.use("/v1/auth", cors(authCorsOptions));

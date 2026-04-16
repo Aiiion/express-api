@@ -1,0 +1,54 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: express-api-dev
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - OWM_API_KEY=${OWM_API_KEY}
+      - WEATHERAPI_API_KEY=${WEATHERAPI_API_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_SENDER=${EMAIL_SENDER}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./src:/usr/src/app/src
+    networks:
+      - express-api-dev-network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  db:
+    image: postgres:15
+    container_name: express-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db-data-dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - express-api-dev-network
+
+volumes:
+  db-data-dev:
+
+networks:
+  express-api-dev-network:
+    driver: bridge

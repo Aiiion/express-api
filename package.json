@@ -1,11 +1,12 @@
 {
   "name": "express-api",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "",
   "main": "index.mjs",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "start:dev": "nodemon ./src/index.mjs",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up --build",
     "start": "node ./src/index.mjs",
     "migrate": "node ./src/scripts/run-migrations.mjs",
     "migrate:down": "node ./src/scripts/run-migrations.mjs down",

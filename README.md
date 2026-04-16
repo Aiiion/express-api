@@ -19,6 +19,21 @@ docker compose build
 docker compose up
 ```
 
+**Start the development environment using docker:**
+
+Full containerised dev (DB + API with hot-reload):
+
+```bash
+npm run docker:dev
+```
+
+Or run only the DB in Docker and the app natively (requires `DB_HOST=localhost` in `.env`):
+
+```bash
+docker compose -f docker-compose.dev.yml up db -d
+npm run start:dev
+```
+
 # Endpoints
 
 ### (GET) **/** 
@@ -137,6 +152,14 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
 
 **Query Parameters:**
 - `page` (optional) — Page number (default: 1). Each page returns up to 100 logs.
+- `search` (optional) — Case-insensitive text search across the `route`, `ip`, and `description` fields.
+- `code` (optional) — Filter by one or more HTTP status codes. Use either a single value like `?code=401` or repeat the parameter like `?code=400&code=401`.
+
+**Examples:**
+- `/v1/logs?page=2`
+- `/v1/logs?search=token`
+- `/v1/logs?code=401`
+- `/v1/logs?code=400&code=401&search=auth`
 
 **Response (200):**
 ```json
@@ -159,5 +182,65 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
     "totalPages": 5,
     "totalCount": 432
   }
+}
+```
+
+### (GET) **/v1/logs/meta**
+
+Returns the available log fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Response (200):**
+```json
+{
+  "data": {
+    "resource": "Log",
+    "values": [
+      "id",
+      "ip",
+      "method",
+      "route",
+      "description",
+      "code",
+      "type",
+      "created_at"
+    ],
+    "count": 8
+  }
+}
+```
+
+### (GET) **/v1/logs/meta/:field**
+
+Returns the distinct values for a single log field. Requires JWT authentication via HTTP-only cookie.
+
+Max 1000 values will be returned, limited tells if amount of data was limited
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Route Parameters:**
+- `field` — A valid log field name returned by `/v1/logs/meta`.
+
+**Example:**
+- `/v1/logs/meta/code`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "field": "code",
+    "values": [200, 400, 401, 500],
+    "count": 4,
+    "limited": false 
+  }
+}
+```
+
+**Response (404):**
+```json
+{
+  "code": 404,
+  "message": "Field not found for the requested resource"
 }
 ```
