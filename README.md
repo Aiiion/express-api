@@ -215,6 +215,8 @@ Returns the available log fields that can be queried through the meta endpoint f
 
 Returns the distinct values for a single log field. Requires JWT authentication via HTTP-only cookie.
 
+Max 1000 values will be returned, limited tells if amount of data was limited
+
 **Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
 **Route Parameters:**
@@ -229,7 +231,8 @@ Returns the distinct values for a single log field. Requires JWT authentication 
   "data": {
     "field": "code",
     "values": [200, 400, 401, 500],
-    "count": 4
+    "count": 4,
+    "limited": false 
   }
 }
 ```
