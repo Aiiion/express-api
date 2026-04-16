@@ -8,16 +8,14 @@ import { sequelize } from './models/index.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
 import initLog from './models/log.model.mjs';
+import { createStrictCorsOptionsDelegate } from './utils/corsHelpers.mjs';
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(cors(createStrictCorsOptionsDelegate()));
 app.use(logRequest());
 app.use(routes);
 app.use(handleError);

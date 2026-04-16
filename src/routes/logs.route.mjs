@@ -6,16 +6,14 @@ import { logsIndexValidationSchema } from '../utils/validationSchemas.mjs';
 import { checkSchema } from 'express-validator';
 import { authenticate, metaFieldExists, validateResult } from "../middleware/validation.middleware.mjs";
 import cors from 'cors';
+import { createStrictCorsOptionsDelegate } from '../utils/corsHelpers.mjs';
 
 const router = Router();
 
-// CORS configuration for logs routes with credentials support
-const logsCorsOptions = {
-    origin: process.env.CORS_ORIGIN || true,
-    credentials: true,
+const logsCorsOptions = createStrictCorsOptionsDelegate({
     methods: ['GET', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-};
+});
 
 // Apply CORS to all logs routes
 router.use("/v1/logs", cors(logsCorsOptions));
