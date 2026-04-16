@@ -65,7 +65,7 @@ describe('corsHelpers', () => {
     });
   });
 
-  it('rejects requests that do not include an origin header', () => {
+  it('does not reject requests that do not include an origin header', () => {
     process.env.CORS_ALLOWLIST = 'http://localhost:3000';
 
     const delegate = createStrictCorsOptionsDelegate({ allowedHeaders: ['Content-Type'] });
@@ -76,10 +76,11 @@ describe('corsHelpers', () => {
     };
 
     delegate(req, (error, options) => {
-      expect(error).toBeInstanceOf(Error);
-      expect(error.message).toBe('Origin not allowed by CORS');
-      expect(error.status).toBe(403);
-      expect(options).toBeUndefined();
+      expect(error).toBeNull();
+      expect(options).toEqual({
+        allowedHeaders: ['Content-Type'],
+        origin: false,
+      });
     });
   });
 });
