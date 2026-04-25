@@ -7,8 +7,7 @@ import initLog from '../models/log.model.mjs';
 dotenv.config();
 
 export const purgeOldLogs = async () => {
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - 6);
+  const cutoff = new Date(Date.now() - 183 * 86400000);
 
   const Log = sequelize.models.Log;
   const deleted = await Log.destroy({
