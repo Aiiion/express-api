@@ -5,7 +5,7 @@ import { Sequelize } from 'sequelize';
 
 export async function up({context: queryInterface}) {
   await queryInterface.addColumn('logs', 'user_agent', {
-    type: Sequelize.STRING,
+    type: Sequelize.TEXT,
     allowNull: true,
   });
 }
