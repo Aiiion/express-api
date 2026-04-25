@@ -12,8 +12,7 @@
     "migrate:down": "node ./src/scripts/run-migrations.mjs down",
     "db:sync": "node ./src/scripts/sync-db.mjs",
     "db:seed": "node ./src/scripts/run-seeders.mjs",
-    "db:seed:undo": "node ./src/scripts/run-seeders.mjs down",
-    "purge-logs": "node ./src/scripts/purge-old-logs.mjs"
+    "db:seed:undo": "node ./src/scripts/run-seeders.mjs down"
   },
   "jest": {
     "transform": {},
