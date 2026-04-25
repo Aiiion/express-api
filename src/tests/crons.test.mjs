@@ -40,7 +40,7 @@ describe("purgeOldLogs", () => {
 
     await purgeOldLogs();
 
-    const expectedCutoff = new Date("2025-10-25T05:00:00.000Z");
+    const expectedCutoff = new Date(now.getTime() - 183 * 86400000);
     const { where } = destroyMock.mock.calls[0][0];
     const actualCutoff = where.created_at[Object.getOwnPropertySymbols(where.created_at)[0]];
     expect(actualCutoff).toEqual(expectedCutoff);
