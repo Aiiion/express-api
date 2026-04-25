@@ -1,6 +1,6 @@
 {
   "name": "express-api",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "",
   "main": "index.mjs",
   "scripts": {
@@ -12,7 +12,8 @@
     "migrate:down": "node ./src/scripts/run-migrations.mjs down",
     "db:sync": "node ./src/scripts/sync-db.mjs",
     "db:seed": "node ./src/scripts/run-seeders.mjs",
-    "db:seed:undo": "node ./src/scripts/run-seeders.mjs down"
+    "db:seed:undo": "node ./src/scripts/run-seeders.mjs down",
+    "purge-logs": "node ./src/scripts/purge-old-logs.mjs"
   },
   "jest": {
     "transform": {},
@@ -36,6 +37,7 @@
     "express-validator": "^7.3.0",
     "jsonwebtoken": "^9.0.3",
     "memory-cache": "^0.2.0",
+    "node-cron": "^4.2.1",
     "pg": "^8.17.0",
     "resend": "^6.11.0",
     "sequelize": "^6.37.0",

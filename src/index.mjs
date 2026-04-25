@@ -9,6 +9,7 @@ import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
 import initLog from './models/log.model.mjs';
 import { createStrictCorsOptionsDelegate } from './utils/corsHelpers.mjs';
+import { registerCronJobs } from './cron.mjs';
 dotenv.config();
 
 const app = express();
@@ -30,6 +31,7 @@ const start = async (listenPort = port) => {
     // initialize sequelize models (no sync here; migrations manage schema)
     initLog(sequelize);
     await sequelize.authenticate();
+    registerCronJobs();
     return new Promise((resolve, reject) => {
       server = app.listen(listenPort, () => {
         console.log(`server running on port ${listenPort}.`);
