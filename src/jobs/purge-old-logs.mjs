@@ -14,7 +14,7 @@ export const purgeOldLogs = async () => {
     where: { created_at: { [Op.lt]: cutoff } },
   });
 
-  console.log(`Purged ${deleted} log(s) older than 6 months`);
+  console.log(`Purged ${deleted} log(s) older than 183 days (cutoff: ${cutoff.toISOString()})`);
   return deleted;
 };
 
