@@ -61,6 +61,7 @@ export const logRequest = () => {
         method: req.method,
         code: res.statusCode,
         description: null,
+        user_agent: req.headers['user-agent'] || null,
         type: codeToTypeMap(res.statusCode),
       };
 
