@@ -24,6 +24,7 @@ app.use(handleError);
 const port = process.env.PORT || 3000;
 
 let server;
+let cronHandle;
 
 const start = async (listenPort = port) => {
   try {
@@ -31,7 +32,9 @@ const start = async (listenPort = port) => {
     // initialize sequelize models (no sync here; migrations manage schema)
     initLog(sequelize);
     await sequelize.authenticate();
-    registerCronJobs();
+    if (!cronHandle) {
+      cronHandle = registerCronJobs();
+    }
     return new Promise((resolve, reject) => {
       server = app.listen(listenPort, () => {
         console.log(`server running on port ${listenPort}.`);
@@ -51,6 +54,10 @@ const stop = async () => {
       server.close((err) => (err ? reject(err) : resolve()));
     });
     server = undefined;
+  }
+  if (cronHandle) {
+    cronHandle.stop();
+    cronHandle = undefined;
   }
   try {
     await closePool();
