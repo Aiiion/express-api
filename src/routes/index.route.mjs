@@ -2,7 +2,7 @@ import { Router } from "express";
 import weatherRouter from "./weather.route.mjs";
 import infoRouter from "./info.route.mjs"
 import authRouter from "./auth.route.mjs";
-import logsRouter from "./logs.route.mjs";
+import logsRouter from "./requestLogs.route.mjs";
 
 const router = Router();
 

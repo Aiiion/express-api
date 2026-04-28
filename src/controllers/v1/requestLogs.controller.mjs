@@ -31,8 +31,8 @@ export const index = async (req, res) => {
       ];
     }
 
-    const Log = sequelize.models.Log;
-    const { count, rows } = await Log.findAndCountAll({
+    const RequestLog = sequelize.models.RequestLog;
+    const { count, rows } = await RequestLog.findAndCountAll({
       where,
       limit: LOGS_PER_PAGE,
       offset,
@@ -51,9 +51,9 @@ export const index = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('logs index error:', error.message);
+    console.error('request logs index error:', error.message);
     return res.status(500).json({
-      error: 'Failed to retrieve logs'
+      error: 'Failed to retrieve request logs'
     });
   }
 };

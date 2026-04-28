@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
 import { sequelize } from '../models/index.mjs';
-import initLog from '../models/log.model.mjs';
+import initRequestLog from '../models/requestLog.model.mjs';
 
 dotenv.config();
 
 // Initialize models
-initLog(sequelize);
+initRequestLog(sequelize);
 
 const run = async () => {
   if(process.env.NODE_ENV === 'production') {

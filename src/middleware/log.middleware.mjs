@@ -53,7 +53,7 @@ export const logRequest = () => {
     }
 
     res.on('finish', async () => {
-      const Log = sequelize.models.Log;
+      const Log = sequelize.models.RequestLog;
 
       const data = {
         ip: extractIp(req) || null,

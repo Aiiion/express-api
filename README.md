@@ -142,7 +142,7 @@ Clears the JWT cookie.
 
 ---
 
-## Logs
+## Request Logs
 
 ### (GET) **/v1/logs**
 
@@ -195,7 +195,7 @@ Returns the available log fields that can be queried through the meta endpoint f
 ```json
 {
   "data": {
-    "resource": "Log",
+    "resource": "RequestLog",
     "values": [
       "id",
       "ip",

@@ -5,7 +5,7 @@ const destroyMock = jest.fn();
 jest.unstable_mockModule("../models/index.mjs", () => ({
   sequelize: {
     models: {
-      Log: { destroy: destroyMock },
+      RequestLog: { destroy: destroyMock },
     },
   },
 }));
