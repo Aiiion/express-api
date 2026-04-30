@@ -169,7 +169,7 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
       "id": 31,
       "ip": "::ffff:172.20.0.1",
       "method": "GET",
-      "route": "/v1/logs",
+      "route": "/v1/requestLogs",
       "description": "Invalid token",
       "code": 401,
       "type": "WARN",
@@ -233,6 +233,109 @@ Max 1000 values will be returned, limited tells if amount of data was limited
     "values": [200, 400, 401, 500],
     "count": 4,
     "limited": false 
+  }
+}
+```
+
+**Response (404):**
+```json
+{
+  "code": 404,
+  "message": "Field not found for the requested resource"
+}
+```
+
+---
+
+## Error Logs
+
+### (GET) **/v1/error-logs**
+
+Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Query Parameters:**
+- `page` (optional) — Page number (default: 1). Each page returns up to 100 logs.
+- `search` (optional) — Case-insensitive text search across the `message`, `route`, and `stack_trace` fields.
+- `level` (optional) — Filter by one or more severity levels. Use either a single value like `?level=ERROR` or repeat the parameter like `?level=ERROR&level=FATAL`.
+
+**Examples:**
+- `/v1/error-logs?page=2`
+- `/v1/error-logs?search=timeout`
+- `/v1/error-logs?level=ERROR`
+- `/v1/error-logs?level=ERROR&level=FATAL&search=db`
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 5,
+      "level": "ERROR",
+      "message": "Database connection failed",
+      "stack_trace": "Error: connect ECONNREFUSED ...",
+      "route": "/v1/errorLogs",
+      "environment": "production",
+      "created_at": "2026-04-14T12:37:03.966Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "perPage": 100,
+    "totalPages": 1,
+    "totalCount": 5
+  }
+}
+```
+
+### (GET) **/v1/error-logs/meta**
+
+Returns the available error log fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Response (200):**
+```json
+{
+  "data": {
+    "resource": "ErrorLog",
+    "values": [
+      "id",
+      "level",
+      "message",
+      "stack_trace",
+      "route",
+      "environment",
+      "created_at"
+    ],
+    "count": 7
+  }
+}
+```
+
+### (GET) **/v1/error-logs/meta/:field**
+
+Returns the distinct values for a single error log field. Requires JWT authentication via HTTP-only cookie.
+
+Max 1000 values will be returned, limited tells if amount of data was limited
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Route Parameters:**
+- `field` — A valid error log field name returned by `/v1/error-logs/meta`.
+
+**Example:**
+- `/v1/error-logs/meta/level`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "field": "level",
+    "values": ["DEBUG", "ERROR", "FATAL", "INFO", "WARN"],
+    "count": 5,
+    "limited": false
   }
 }
 ```
