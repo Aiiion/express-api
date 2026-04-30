@@ -72,6 +72,39 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
 
 ---
 
+## V1 API Index
+
+### (GET) **/v1**
+
+Lists all available REST resources and aggregates in the v1 API. Weather is listed separately as an aggregate since it proxies external data sources rather than representing a managed resource.
+
+**Response (200):**
+```json
+{
+  "resources": [
+    {
+      "name": "RequestLog",
+      "endpoint": "/v1/logs",
+      "meta": "/v1/logs/meta"
+    },
+    {
+      "name": "ErrorLog",
+      "endpoint": "/v1/error-logs",
+      "meta": "/v1/error-logs/meta"
+    }
+  ],
+  "aggregates": [
+    {
+      "name": "Weather",
+      "description": "Aggregated weather data from multiple external sources",
+      "endpoint": "/v1/weather"
+    }
+  ]
+}
+```
+
+---
+
 ## Authentication
 
 The API uses a two-step email-based authentication flow that issues a short-lived JWT stored in an HTTP-only cookie.
