@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
+import { devLog, devError } from '../utils/logger.mjs';
 
 dotenv.config();
 
@@ -16,9 +17,9 @@ const closePool = async () => pool.end();
 const connect = async () => {
   try {
     await pool.query('SELECT 1');
-    console.log('Postgres connected');
+    devLog('Postgres connected');
   } catch (err) {
-    console.error('Postgres connection error:', err);
+    devError('Postgres connection error:', err);
     throw err;
   }
 };

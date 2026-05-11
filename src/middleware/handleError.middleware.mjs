@@ -1,9 +1,15 @@
-export const handleError = (err, req, res, next) => {
-    console.error('Error occurred:', err.stack || err);
-    if (res.headersSent) return next(err);
+import { logError } from '../services/errorLog.service.mjs';
+import { devError } from '../utils/logger.mjs';
+
+export const handleError = async (err, req, res, next) => {
+    devError('Error occurred:', err.stack || err);
     const statusCode = err.status || err.statusCode || 500;
-    return res.status(statusCode).json({ 
+
+    await logError(err, { route: req.originalUrl });
+    if (res.headersSent) return next(err);
+
+    return res.status(statusCode).json({
         code: statusCode,
-        message: err.message, 
+        message: err.message,
     });
 }

@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { Umzug, SequelizeStorage } from 'umzug';
 import { sequelize } from '../models/index.mjs';
+import { devLog, devError } from '../utils/logger.mjs';
 
 dotenv.config();
 
@@ -16,17 +17,17 @@ const run = async () => {
   try {
     await sequelize.authenticate();
     if (action === 'down') {
-      console.log('DB connection ok, reverting last migration...');
+      devLog('DB connection ok, reverting last migration...');
       await umzug.down();
-      console.log('Migration reverted');
+      devLog('Migration reverted');
     } else {
-      console.log('DB connection ok, running migrations...');
+      devLog('DB connection ok, running migrations...');
       await umzug.up();
-      console.log('Migrations applied');
+      devLog('Migrations applied');
     }
     process.exit(0);
   } catch (err) {
-    console.error('Migration failed', err);
+    devError('Migration failed', err);
     process.exit(1);
   }
 };

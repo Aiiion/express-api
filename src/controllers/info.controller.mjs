@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import net from 'net';
 import { extractIp } from "../utils/ipHelpers.mjs";
 import weatherApiService from "../services/weatherApi.service.mjs";
+import { devError } from "../utils/logger.mjs";
 
 export const test = (req, res) => res.status(200).send({message: 'API is running'});
 
@@ -37,7 +38,7 @@ export const ipLocation = async (req, res) => {
             data: locationData
         });
     } catch (error) {
-        console.error('ipLocation error:', error.message);
+        devError('ipLocation error:', error.message);
         return res.status(500).send({
             error: `Failed to retrieve location data for ${ip}`
         });

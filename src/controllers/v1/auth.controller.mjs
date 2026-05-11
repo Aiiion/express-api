@@ -2,6 +2,7 @@ import mcache from 'memory-cache';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../services/email.service.mjs';
+import { devError } from '../../utils/logger.mjs';
 
 const SESSION_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const JWT_EXPIRY = '3h';
@@ -52,7 +53,7 @@ export const initiateLogin = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('initiateLogin error:', error.message);
+        devError('initiateLogin error:', error.message);
         return res.status(500).send({
             code: 500,
             message: 'Failed to initiate login'
@@ -131,7 +132,7 @@ export const verifyCode = (req, res) => {
         });
 
     } catch (error) {
-        console.error('verifyCode error:', error.message)
+        devError('verifyCode error:', error.message)
         return res.status(500).send({
             code: 500,
             message: 'Failed to verify code'

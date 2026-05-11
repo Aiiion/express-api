@@ -191,7 +191,7 @@ describe("Auth Routes", () => {
 
   describe("GET /v1/logs", () => {
     it("should filter by a single code", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 404 }] });
 
       const response = await request(app)
@@ -211,7 +211,7 @@ describe("Auth Routes", () => {
     });
 
     it("should filter by multiple codes", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 2, rows: [{ id: 1, code: 400 }, { id: 2, code: 404 }] });
 
       const response = await request(app)
@@ -229,7 +229,7 @@ describe("Auth Routes", () => {
     });
 
     it("should filter with search across route, ip and description", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 200 }] });
 
       const response = await request(app)
@@ -251,7 +251,7 @@ describe("Auth Routes", () => {
     });
 
     it("should combine code and search filters with pagination", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 150, rows: [{ id: 101, code: 500 }] });
 
       const response = await request(app)

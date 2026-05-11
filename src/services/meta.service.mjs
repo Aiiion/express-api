@@ -1,4 +1,5 @@
 import { sequelize } from '../models/index.mjs';
+import { devError } from '../utils/logger.mjs';
 
 export const distinct = async (model, field) => {
   const LIMIT = 1000; // Define a reasonable limit for distinct values to prevent performance issues
@@ -17,7 +18,7 @@ export const distinct = async (model, field) => {
       limited: rows.length === LIMIT // Indicate if the results were limited
     };
   } catch (error) {
-    console.error(`Failed to retrieve distinct values for ${field}:`, error.message);
+    devError(`Failed to retrieve distinct values for ${field}:`, error.message);
     throw error;
   }
 };

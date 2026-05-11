@@ -7,7 +7,8 @@ import { connect, closePool } from './services/db.service.mjs';
 import { sequelize } from './models/index.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
-import initLog from './models/log.model.mjs';
+import initRequestLog from './models/requestLog.model.mjs';
+import initErrorLog from './models/errorLog.model.mjs';
 import { createStrictCorsOptionsDelegate } from './utils/corsHelpers.mjs';
 import { registerCronJobs } from './cron.mjs';
 dotenv.config();
@@ -30,7 +31,8 @@ const start = async (listenPort = port) => {
   try {
     await connect();
     // initialize sequelize models (no sync here; migrations manage schema)
-    initLog(sequelize);
+    initRequestLog(sequelize);
+    initErrorLog(sequelize);
     await sequelize.authenticate();
     if (!cronHandle) {
       cronHandle = registerCronJobs();
