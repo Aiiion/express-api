@@ -84,13 +84,13 @@ Lists all available REST resources and aggregates in the v1 API. Weather is list
   "resources": [
     {
       "name": "RequestLog",
-      "endpoint": "/v1/logs",
-      "meta": "/v1/logs/meta"
+      "endpoint": "/v1/requestLogs",
+      "meta": "/v1/requestLogs/meta"
     },
     {
       "name": "ErrorLog",
-      "endpoint": "/v1/error-logs",
-      "meta": "/v1/error-logs/meta"
+      "endpoint": "/v1/errorLogs",
+      "meta": "/v1/errorLogs/meta"
     }
   ],
   "aggregates": [
@@ -177,7 +177,7 @@ Clears the JWT cookie.
 
 ## Request Logs
 
-### (GET) **/v1/logs**
+### (GET) **/v1/requestLogs**
 
 Retrieves paginated request logs. Requires JWT authentication via HTTP-only cookie.
 
@@ -189,10 +189,10 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
 - `code` (optional) — Filter by one or more HTTP status codes. Use either a single value like `?code=401` or repeat the parameter like `?code=400&code=401`.
 
 **Examples:**
-- `/v1/logs?page=2`
-- `/v1/logs?search=token`
-- `/v1/logs?code=401`
-- `/v1/logs?code=400&code=401&search=auth`
+- `/v1/requestLogs?page=2`
+- `/v1/requestLogs?search=token`
+- `/v1/requestLogs?code=401`
+- `/v1/requestLogs?code=400&code=401&search=auth`
 
 **Response (200):**
 ```json
@@ -218,7 +218,7 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
 }
 ```
 
-### (GET) **/v1/logs/meta**
+### (GET) **/v1/requestLogs/meta**
 
 Returns the available log fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
 
@@ -244,7 +244,7 @@ Returns the available log fields that can be queried through the meta endpoint f
 }
 ```
 
-### (GET) **/v1/logs/meta/:field**
+### (GET) **/v1/requestLogs/meta/:field**
 
 Returns the distinct values for a single log field. Requires JWT authentication via HTTP-only cookie.
 
@@ -253,10 +253,10 @@ Max 1000 values will be returned, limited tells if amount of data was limited
 **Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
 **Route Parameters:**
-- `field` — A valid log field name returned by `/v1/logs/meta`.
+- `field` — A valid log field name returned by `/v1/requestLogs/meta`.
 
 **Example:**
-- `/v1/logs/meta/code`
+- `/v1/requestLogs/meta/code`
 
 **Response (200):**
 ```json
@@ -282,7 +282,7 @@ Max 1000 values will be returned, limited tells if amount of data was limited
 
 ## Error Logs
 
-### (GET) **/v1/error-logs**
+### (GET) **/v1/errorLogs**
 
 Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie.
 
@@ -318,7 +318,7 @@ Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie
 }
 ```
 
-### (GET) **/v1/error-logs/meta**
+### (GET) **/v1/errorLogs/meta**
 
 Returns the available error log fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
 
@@ -342,7 +342,7 @@ Returns the available error log fields that can be queried through the meta endp
 }
 ```
 
-### (GET) **/v1/error-logs/meta/:field**
+### (GET) **/v1/errorLogs/meta/:field**
 
 Returns the distinct values for a single error log field. Requires JWT authentication via HTTP-only cookie.
 
@@ -351,17 +351,17 @@ Max 1000 values will be returned, limited tells if amount of data was limited
 **Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
 **Route Parameters:**
-- `field` — A valid error log field name returned by `/v1/error-logs/meta`.
+- `field` — A valid error log field name returned by `/v1/errorLogs/meta`.
 
 **Example:**
-- `/v1/error-logs/meta/route`
+- `/v1/errorLogs/meta/route`
 
 **Response (200):**
 ```json
 {
   "data": {
     "field": "route",
-    "values": ["/v1/logs", "/v1/error-logs"],
+    "values": ["/v1/requestLogs", "/v1/errorLogs"],
     "count": 2,
     "limited": false
   }
