@@ -6,6 +6,5 @@ export const devLog = (...args) => {
 };
 
 export const devError = (...args) => {
-  if (isProduction()) return;
   console.error(...args);
 };
