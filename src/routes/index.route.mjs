@@ -3,6 +3,7 @@ import weatherRouter from "./weather.route.mjs";
 import infoRouter from "./info.route.mjs"
 import authRouter from "./auth.route.mjs";
 import logsRouter from "./v1/requestLogs.route.mjs";
+import errorLogsRouter from "./v1/errorLogs.route.mjs";
 import v1Router from "./v1/index.route.mjs";
 
 const router = Router();
@@ -11,6 +12,7 @@ router.use(weatherRouter);
 router.use(infoRouter);
 router.use(authRouter);
 router.use(logsRouter);
+router.use(errorLogsRouter);
 router.use(v1Router);
 
 router.use((req, res) => {
