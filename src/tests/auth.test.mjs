@@ -175,10 +175,10 @@ describe("Auth Routes", () => {
     });
   });
 
-  describe("GET /v1/logs/meta/:field", () => {
+  describe("GET /v1/requestLogs/meta/:field", () => {
     it("should return 404 when field is not a valid log column", async () => {
       const response = await request(app)
-        .get("/v1/logs/meta/not_a_column")
+        .get("/v1/requestLogs/meta/not_a_column")
         .set("Cookie", getAuthCookie());
 
       expect(response.status).toBe(404);
@@ -189,13 +189,13 @@ describe("Auth Routes", () => {
     });
   });
 
-  describe("GET /v1/logs", () => {
+  describe("GET /v1/requestLogs", () => {
     it("should filter by a single code", async () => {
       const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 404 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ code: "404" })
         .set("Cookie", getAuthCookie());
 
@@ -215,7 +215,7 @@ describe("Auth Routes", () => {
         .mockResolvedValue({ count: 2, rows: [{ id: 1, code: 400 }, { id: 2, code: 404 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ code: ["400", "404"] })
         .set("Cookie", getAuthCookie());
 
@@ -233,7 +233,7 @@ describe("Auth Routes", () => {
         .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 200 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ search: "api" })
         .set("Cookie", getAuthCookie());
 
@@ -255,7 +255,7 @@ describe("Auth Routes", () => {
         .mockResolvedValue({ count: 150, rows: [{ id: 101, code: 500 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ code: "500", search: "error", page: "2" })
         .set("Cookie", getAuthCookie());
 
