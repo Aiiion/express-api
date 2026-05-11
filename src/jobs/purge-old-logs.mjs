@@ -2,20 +2,26 @@ import dotenv from 'dotenv';
 import { Op } from 'sequelize';
 import { fileURLToPath } from 'url';
 import { sequelize } from '../models/index.mjs';
-import initLog from '../models/log.model.mjs';
+import initRequestLog from '../models/requestLog.model.mjs';
+import initErrorLog from '../models/errorLog.model.mjs';
+import { devError } from '../utils/logger.mjs';
 
 dotenv.config();
 
 export const purgeOldLogs = async () => {
   const cutoff = new Date(Date.now() - 183 * 86400000);
 
-  const Log = sequelize.models.Log;
-  const deleted = await Log.destroy({
+  const RequestLog = sequelize.models.RequestLog;
+  const deletedRequests = await RequestLog.destroy({
     where: { created_at: { [Op.lt]: cutoff } },
   });
 
-  console.log(`Purged ${deleted} log(s) older than 183 days (cutoff: ${cutoff.toISOString()})`);
-  return deleted;
+  const ErrorLog = sequelize.models.ErrorLog;
+  const deletedErrors = await ErrorLog.destroy({
+    where: { created_at: { [Op.lt]: cutoff } },
+  });
+
+  return { deletedRequests, deletedErrors };
 };
 
 // Run standalone when executed directly
@@ -23,11 +29,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   (async () => {
     try {
       await sequelize.authenticate();
-      initLog(sequelize);
+      initRequestLog(sequelize);
+      initErrorLog(sequelize);
       await purgeOldLogs();
       process.exit(0);
     } catch (err) {
-      console.error('Failed to purge old logs:', err);
+      devError('Failed to purge old logs:', err);
       process.exit(1);
     }
   })();

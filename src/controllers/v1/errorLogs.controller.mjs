@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { sequelize } from '../../models/index.mjs';
+import { devError } from '../../utils/logger.mjs';
 
 const LOGS_PER_PAGE = 100;
 
@@ -10,29 +11,17 @@ export const index = async (req, res) => {
 
     const where = {};
 
-    if (req.query.code !== undefined) {
-      const codes = Array.isArray(req.query.code)
-        ? req.query.code.map(c => parseInt(c, 10)).filter(c => !isNaN(c))
-        : [parseInt(req.query.code, 10)].filter(c => !isNaN(c));
-
-      if (codes.length === 1) {
-        where.code = codes[0];
-      } else if (codes.length > 1) {
-        where.code = { [Op.in]: codes };
-      }
-    }
-
     if (req.query.search) {
       const pattern = `%${req.query.search}%`;
       where[Op.or] = [
+        { message: { [Op.iLike]: pattern } },
         { route: { [Op.iLike]: pattern } },
-        { ip: { [Op.iLike]: pattern } },
-        { description: { [Op.iLike]: pattern } }
+        { stack_trace: { [Op.iLike]: pattern } }
       ];
     }
 
-    const Log = sequelize.models.Log;
-    const { count, rows } = await Log.findAndCountAll({
+    const ErrorLog = sequelize.models.ErrorLog;
+    const { count, rows } = await ErrorLog.findAndCountAll({
       where,
       limit: LOGS_PER_PAGE,
       offset,
@@ -51,9 +40,9 @@ export const index = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('logs index error:', error.message);
+    devError('error logs index error:', error.message);
     return res.status(500).json({
-      error: 'Failed to retrieve logs'
+      error: 'Failed to retrieve error logs'
     });
   }
 };

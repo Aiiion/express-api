@@ -28,11 +28,11 @@ export async function up({context: queryInterface}) {
     { ip: '198.51.100.98', method: 'GET', route: '/weather/aggregate', code: 200, description: 'Aggregate data retrieved', type: 'INFO', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', created_at: new Date('2001-01-15T16:15:00Z') }
   ];
 
-  await queryInterface.bulkInsert('logs', logs);
+  await queryInterface.bulkInsert('request_logs', logs);
 }
 
 export async function down({context: queryInterface}) {
   const start = new Date('2001-01-01T00:00:00Z');
   const end = new Date('2001-12-31T23:59:59.999Z');
-  await queryInterface.bulkDelete('logs', { created_at: { [Op.between]: [start, end] } });
+  await queryInterface.bulkDelete('request_logs', { created_at: { [Op.between]: [start, end] } });
 }

@@ -72,6 +72,39 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
 
 ---
 
+## V1 API Index
+
+### (GET) **/v1**
+
+Lists all available REST resources and aggregates in the v1 API. Weather is listed separately as an aggregate since it proxies external data sources rather than representing a managed resource.
+
+**Response (200):**
+```json
+{
+  "resources": [
+    {
+      "name": "RequestLog",
+      "endpoint": "/v1/requestLogs",
+      "meta": "/v1/requestLogs/meta"
+    },
+    {
+      "name": "ErrorLog",
+      "endpoint": "/v1/errorLogs",
+      "meta": "/v1/errorLogs/meta"
+    }
+  ],
+  "aggregates": [
+    {
+      "name": "Weather",
+      "description": "Aggregated weather data from multiple external sources",
+      "endpoint": "/v1/weather"
+    }
+  ]
+}
+```
+
+---
+
 ## Authentication
 
 The API uses a two-step email-based authentication flow that issues a short-lived JWT stored in an HTTP-only cookie.
@@ -142,9 +175,9 @@ Clears the JWT cookie.
 
 ---
 
-## Logs
+## Request Logs
 
-### (GET) **/v1/logs**
+### (GET) **/v1/requestLogs**
 
 Retrieves paginated request logs. Requires JWT authentication via HTTP-only cookie.
 
@@ -156,10 +189,10 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
 - `code` (optional) — Filter by one or more HTTP status codes. Use either a single value like `?code=401` or repeat the parameter like `?code=400&code=401`.
 
 **Examples:**
-- `/v1/logs?page=2`
-- `/v1/logs?search=token`
-- `/v1/logs?code=401`
-- `/v1/logs?code=400&code=401&search=auth`
+- `/v1/requestLogs?page=2`
+- `/v1/requestLogs?search=token`
+- `/v1/requestLogs?code=401`
+- `/v1/requestLogs?code=400&code=401&search=auth`
 
 **Response (200):**
 ```json
@@ -169,7 +202,7 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
       "id": 31,
       "ip": "::ffff:172.20.0.1",
       "method": "GET",
-      "route": "/v1/logs",
+      "route": "/v1/requestLogs",
       "description": "Invalid token",
       "code": 401,
       "type": "WARN",
@@ -185,7 +218,7 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
 }
 ```
 
-### (GET) **/v1/logs/meta**
+### (GET) **/v1/requestLogs/meta**
 
 Returns the available log fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
 
@@ -195,7 +228,7 @@ Returns the available log fields that can be queried through the meta endpoint f
 ```json
 {
   "data": {
-    "resource": "Log",
+    "resource": "RequestLog",
     "values": [
       "id",
       "ip",
@@ -211,7 +244,7 @@ Returns the available log fields that can be queried through the meta endpoint f
 }
 ```
 
-### (GET) **/v1/logs/meta/:field**
+### (GET) **/v1/requestLogs/meta/:field**
 
 Returns the distinct values for a single log field. Requires JWT authentication via HTTP-only cookie.
 
@@ -220,10 +253,10 @@ Max 1000 values will be returned, limited tells if amount of data was limited
 **Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
 **Route Parameters:**
-- `field` — A valid log field name returned by `/v1/logs/meta`.
+- `field` — A valid log field name returned by `/v1/requestLogs/meta`.
 
 **Example:**
-- `/v1/logs/meta/code`
+- `/v1/requestLogs/meta/code`
 
 **Response (200):**
 ```json
@@ -233,6 +266,104 @@ Max 1000 values will be returned, limited tells if amount of data was limited
     "values": [200, 400, 401, 500],
     "count": 4,
     "limited": false 
+  }
+}
+```
+
+**Response (404):**
+```json
+{
+  "code": 404,
+  "message": "Field not found for the requested resource"
+}
+```
+
+---
+
+## Error Logs
+
+### (GET) **/v1/errorLogs**
+
+Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Query Parameters:**
+- `page` (optional) — Page number (default: 1). Each page returns up to 100 logs.
+- `search` (optional) — Case-insensitive text search across the `message`, `route`, and `stack_trace` fields.
+
+**Examples:**
+- `/v1/errorLogs?page=2`
+- `/v1/errorLogs?search=timeout`
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 5,
+      "message": "Database connection failed",
+      "stack_trace": "Error: connect ECONNREFUSED ...",
+      "route": "/v1/errorLogs",
+      "environment": "production",
+      "created_at": "2026-04-14T12:37:03.966Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "perPage": 100,
+    "totalPages": 1,
+    "totalCount": 5
+  }
+}
+```
+
+### (GET) **/v1/errorLogs/meta**
+
+Returns the available error log fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Response (200):**
+```json
+{
+  "data": {
+    "resource": "ErrorLog",
+    "values": [
+      "id",
+      "message",
+      "stack_trace",
+      "route",
+      "environment",
+      "created_at"
+    ],
+    "count": 6
+  }
+}
+```
+
+### (GET) **/v1/errorLogs/meta/:field**
+
+Returns the distinct values for a single error log field. Requires JWT authentication via HTTP-only cookie.
+
+Max 1000 values will be returned, limited tells if amount of data was limited
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Route Parameters:**
+- `field` — A valid error log field name returned by `/v1/errorLogs/meta`.
+
+**Example:**
+- `/v1/errorLogs/meta/route`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "field": "route",
+    "values": ["/v1/requestLogs", "/v1/errorLogs"],
+    "count": 2,
+    "limited": false
   }
 }
 ```

@@ -8,6 +8,7 @@ import {
 } from "../fixtures/weatherApi.fixture.mjs";
 import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
+import { devError } from "../utils/logger.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
 
 /**
@@ -85,7 +86,7 @@ describe('DTO Structure Consistency', () => {
       );
       
       if (!comparison.areEqual) {
-        console.error(comparison.report);
+        devError(comparison.report);
       }
       
       expect(comparison.areEqual).toBe(true);
@@ -128,11 +129,11 @@ describe('DTO Structure Consistency', () => {
       );
       
       if (!topLevelComparison.areEqual) {
-        console.error('Top level:', topLevelComparison.report);
+        devError('Top level:', topLevelComparison.report);
       }
       
       if (!dayStructureComparison.areEqual) {
-        console.error('Day structure:', dayStructureComparison.report);
+        devError('Day structure:', dayStructureComparison.report);
       }
       
       expect(topLevelComparison.areEqual).toBe(true);
@@ -188,7 +189,7 @@ describe('DTO Structure Consistency', () => {
       );
       
       if (!comparison.areEqual) {
-        console.error(comparison.report);
+        devError(comparison.report);
       }
       
       expect(comparison.areEqual).toBe(true);

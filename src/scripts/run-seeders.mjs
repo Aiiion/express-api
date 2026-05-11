@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { Umzug, SequelizeStorage } from 'umzug';
 import { sequelize } from '../models/index.mjs';
+import { devLog, devError } from '../utils/logger.mjs';
 
 dotenv.config();
 
@@ -19,17 +20,17 @@ const run = async () => {
   try {
     await sequelize.authenticate();
     if (action === 'down') {
-      console.log('DB connection ok, reverting last seeder...');
+      devLog('DB connection ok, reverting last seeder...');
       await umzug.down();
-      console.log('Seeder reverted');
+      devLog('Seeder reverted');
     } else {
-      console.log('DB connection ok, running seeders...');
+      devLog('DB connection ok, running seeders...');
       await umzug.up();
-      console.log('Seeders applied');
+      devLog('Seeders applied');
     }
     process.exit(0);
   } catch (err) {
-    console.error('Seeder failed', err);
+    devError('Seeder failed', err);
     process.exit(1);
   }
 };

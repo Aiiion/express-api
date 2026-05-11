@@ -175,10 +175,10 @@ describe("Auth Routes", () => {
     });
   });
 
-  describe("GET /v1/logs/meta/:field", () => {
+  describe("GET /v1/requestLogs/meta/:field", () => {
     it("should return 404 when field is not a valid log column", async () => {
       const response = await request(app)
-        .get("/v1/logs/meta/not_a_column")
+        .get("/v1/requestLogs/meta/not_a_column")
         .set("Cookie", getAuthCookie());
 
       expect(response.status).toBe(404);
@@ -189,13 +189,13 @@ describe("Auth Routes", () => {
     });
   });
 
-  describe("GET /v1/logs", () => {
+  describe("GET /v1/requestLogs", () => {
     it("should filter by a single code", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 404 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ code: "404" })
         .set("Cookie", getAuthCookie());
 
@@ -211,11 +211,11 @@ describe("Auth Routes", () => {
     });
 
     it("should filter by multiple codes", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 2, rows: [{ id: 1, code: 400 }, { id: 2, code: 404 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ code: ["400", "404"] })
         .set("Cookie", getAuthCookie());
 
@@ -229,11 +229,11 @@ describe("Auth Routes", () => {
     });
 
     it("should filter with search across route, ip and description", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 1, rows: [{ id: 1, code: 200 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ search: "api" })
         .set("Cookie", getAuthCookie());
 
@@ -251,11 +251,11 @@ describe("Auth Routes", () => {
     });
 
     it("should combine code and search filters with pagination", async () => {
-      const findAndCountAllSpy = jest.spyOn(sequelize.models.Log, "findAndCountAll")
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.RequestLog, "findAndCountAll")
         .mockResolvedValue({ count: 150, rows: [{ id: 101, code: 500 }] });
 
       const response = await request(app)
-        .get("/v1/logs")
+        .get("/v1/requestLogs")
         .query({ code: "500", search: "error", page: "2" })
         .set("Cookie", getAuthCookie());
 
@@ -276,6 +276,92 @@ describe("Auth Routes", () => {
         perPage: 100,
         totalPages: 2,
         totalCount: 150,
+      });
+
+      findAndCountAllSpy.mockRestore();
+    });
+  });
+
+  describe("GET /v1/errorLogs/meta/:field", () => {
+    it("should return 404 when field is not a valid error log column", async () => {
+      const response = await request(app)
+        .get("/v1/errorLogs/meta/not_a_column")
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        code: 404,
+        message: "Field not found for the requested resource",
+      });
+    });
+  });
+
+  describe("GET /v1/errorLogs", () => {
+    it("should return 401 when not authenticated", async () => {
+      const response = await request(app).get("/v1/errorLogs");
+      expect(response.status).toBe(401);
+    });
+
+    it("should return 200 with paginated results", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.ErrorLog, "findAndCountAll")
+        .mockResolvedValue({ count: 1, rows: [{ id: 1, message: "Test error" }] });
+
+      const response = await request(app)
+        .get("/v1/errorLogs")
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.limit).toBe(100);
+      expect(queryOptions.offset).toBe(0);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should filter with search across message, route and stack_trace", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.ErrorLog, "findAndCountAll")
+        .mockResolvedValue({ count: 1, rows: [{ id: 1, message: "TypeError" }] });
+
+      const response = await request(app)
+        .get("/v1/errorLogs")
+        .query({ search: "TypeError" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.where[Op.or]).toEqual([
+        { message: { [Op.iLike]: "%TypeError%" } },
+        { route: { [Op.iLike]: "%TypeError%" } },
+        { stack_trace: { [Op.iLike]: "%TypeError%" } },
+      ]);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should return correct pagination metadata", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.ErrorLog, "findAndCountAll")
+        .mockResolvedValue({ count: 250, rows: [{ id: 101, message: "Server error" }] });
+
+      const response = await request(app)
+        .get("/v1/errorLogs")
+        .query({ page: "3" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.limit).toBe(100);
+      expect(queryOptions.offset).toBe(200);
+      expect(response.body.pagination).toEqual({
+        page: 3,
+        perPage: 100,
+        totalPages: 3,
+        totalCount: 250,
       });
 
       findAndCountAllSpy.mockRestore();

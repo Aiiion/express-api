@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => {
-  const Log = sequelize.define('Log', {
+  const RequestLog = sequelize.define('RequestLog', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     ip: { type: DataTypes.TEXT },
     method: { type: DataTypes.ENUM('GET','POST','PUT','DELETE','PATCH','OPTIONS','HEAD') },
@@ -12,12 +12,12 @@ export default (sequelize) => {
     type: { type: DataTypes.ENUM('DEBUG','INFO','WARN','ERROR','FATAL') },
     created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
   }, {
-    tableName: 'logs',
+    tableName: 'request_logs',
     timestamps: false,
     indexes: [
-      { fields: ['ip'], name: 'idx_logs_ip' }
+      { fields: ['ip'], name: 'idx_request_logs_ip' }
     ]
   });
 
-  return Log;
+  return RequestLog;
 };
