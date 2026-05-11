@@ -13,4 +13,8 @@ router.use(authRouter);
 router.use(logsRouter);
 router.use(v1Router);
 
+router.use((req, res) => {
+    res.status(404).json({ code: 404, message: 'Not Found' });
+});
+
 export default router;
