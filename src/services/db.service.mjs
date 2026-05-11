@@ -4,6 +4,12 @@ import { devLog, devError } from '../utils/logger.mjs';
 
 dotenv.config();
 
+const REQUIRED_DB_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missingVars = REQUIRED_DB_VARS.filter((key) => !process.env[key]);
+if (missingVars.length > 0) {
+  throw new Error(`Missing required database environment variables: ${missingVars.join(', ')}`);
+}
+
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
