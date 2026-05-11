@@ -1,5 +1,6 @@
 import { sequelize } from '../models/index.mjs';
 import { extractIp } from '../utils/ipHelpers.mjs';
+import { devError } from '../utils/logger.mjs';
 
 // Express middleware to create a log row after response finishes.
 export const logRequest = () => {
@@ -75,7 +76,7 @@ export const logRequest = () => {
                 if (typeof parsedBody === 'object') body = parsedBody;
               }
             }
-            catch (e) { console.error(e) }
+            catch (e) { devError(e) }
           try {
             if (typeof body === 'object') {
               if (body.message) data.description = body.message;
@@ -91,7 +92,7 @@ export const logRequest = () => {
         await Log.create(data);
       } catch (err) {
         // don't crash the app for logging failures
-        console.error('Failed to create log entry:', err);
+        devError('Failed to create log entry:', err);
       }
     });
 

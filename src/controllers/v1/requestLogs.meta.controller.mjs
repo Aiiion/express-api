@@ -1,5 +1,6 @@
 import { distinct } from '../../services/meta.service.mjs';
 import { sequelize } from '../../models/index.mjs';
+import { devError } from '../../utils/logger.mjs';
 
 export const index = async (req, res) => {
   try {
@@ -14,7 +15,7 @@ export const index = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('request logs meta index error:', error.message);
+    devError('request logs meta index error:', error.message);
     return res.status(500).json({
       error: 'Failed to retrieve request log columns'
     });
@@ -39,7 +40,7 @@ export const show = async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('request logs meta show error:', error.message);
+    devError('request logs meta show error:', error.message);
     return res.status(500).json({
       error: 'Failed to retrieve request log field values'
     });

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { sequelize } from '../models/index.mjs';
 import initRequestLog from '../models/requestLog.model.mjs';
 import initErrorLog from '../models/errorLog.model.mjs';
+import { devError } from '../utils/logger.mjs';
 
 dotenv.config();
 
@@ -33,7 +34,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       await purgeOldLogs();
       process.exit(0);
     } catch (err) {
-      console.error('Failed to purge old logs:', err);
+      devError('Failed to purge old logs:', err);
       process.exit(1);
     }
   })();

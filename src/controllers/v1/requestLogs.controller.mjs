@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { sequelize } from '../../models/index.mjs';
+import { devError } from '../../utils/logger.mjs';
 
 const LOGS_PER_PAGE = 100;
 
@@ -51,7 +52,7 @@ export const index = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('request logs index error:', error.message);
+    devError('request logs index error:', error.message);
     return res.status(500).json({
       error: 'Failed to retrieve request logs'
     });

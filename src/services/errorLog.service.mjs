@@ -1,4 +1,5 @@
 import { sequelize } from '../models/index.mjs';
+import { devError } from '../utils/logger.mjs';
 
 /**
  * Writes an entry to the error_logs table.
@@ -22,6 +23,6 @@ export const logError = async (err, context = {}) => {
       environment: context.environment ?? process.env.NODE_ENV ?? null,
     });
   } catch (logErr) {
-    console.error('Failed to write error log:', logErr);
+    devError('Failed to write error log:', logErr);
   }
 };

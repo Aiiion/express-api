@@ -1,6 +1,7 @@
 import openWeatherMapsService from "../../services/openWeatherMaps.service.mjs";
 import weatherAggregatorService from "../../services/weatherAggregator.service.mjs";
 import { getCoordinateBound } from "../../utils/geoHelpers.mjs";
+import { devError } from "../../utils/logger.mjs";
 
 export const index = async (req, res) => {
   const { lat, lon, days } = req.query;
@@ -36,7 +37,7 @@ export const index = async (req, res) => {
       return provider.dto.weatherWarnings(warningsData);
     });
   } catch (err) {
-    console.error('Failed to fetch weather warnings:', err.message);
+    devError('Failed to fetch weather warnings:', err.message);
     warnings = null;
   }
 

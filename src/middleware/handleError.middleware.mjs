@@ -1,7 +1,8 @@
 import { logError } from '../services/errorLog.service.mjs';
+import { devError } from '../utils/logger.mjs';
 
 export const handleError = async (err, req, res, next) => {
-    console.error('Error occurred:', err.stack || err);
+    devError('Error occurred:', err.stack || err);
     if (res.headersSent) return next(err);
     const statusCode = err.status || err.statusCode || 500;
 
