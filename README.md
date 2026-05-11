@@ -293,8 +293,8 @@ Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie
 - `search` (optional) — Case-insensitive text search across the `message`, `route`, and `stack_trace` fields.
 
 **Examples:**
-- `/v1/error-logs?page=2`
-- `/v1/error-logs?search=timeout`
+- `/v1/errorLogs?page=2`
+- `/v1/errorLogs?search=timeout`
 
 **Response (200):**
 ```json
