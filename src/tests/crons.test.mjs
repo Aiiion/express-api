@@ -69,4 +69,11 @@ describe("purgeOldLogs", () => {
 
     await expect(purgeOldLogs()).rejects.toThrow("DB error");
   });
+
+  it("propagates errors thrown by ErrorLog.destroy", async () => {
+    requestDestroyMock.mockResolvedValue(0);
+    errorDestroyMock.mockRejectedValue(new Error("ErrorLog DB error"));
+
+    await expect(purgeOldLogs()).rejects.toThrow("ErrorLog DB error");
+  });
 });
