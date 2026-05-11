@@ -3,7 +3,6 @@ import { DataTypes } from 'sequelize';
 export default (sequelize) => {
   const ErrorLog = sequelize.define('ErrorLog', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    level: { type: DataTypes.ENUM('DEBUG','INFO','WARN','ERROR','FATAL'), allowNull: false, defaultValue: 'ERROR' },
     message: { type: DataTypes.TEXT, allowNull: false },
     stack_trace: { type: DataTypes.TEXT, allowNull: true },
     route: { type: DataTypes.TEXT, allowNull: true },

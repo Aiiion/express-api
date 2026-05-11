@@ -291,13 +291,10 @@ Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie
 **Query Parameters:**
 - `page` (optional) — Page number (default: 1). Each page returns up to 100 logs.
 - `search` (optional) — Case-insensitive text search across the `message`, `route`, and `stack_trace` fields.
-- `level` (optional) — Filter by one or more severity levels. Use either a single value like `?level=ERROR` or repeat the parameter like `?level=ERROR&level=FATAL`.
 
 **Examples:**
 - `/v1/error-logs?page=2`
 - `/v1/error-logs?search=timeout`
-- `/v1/error-logs?level=ERROR`
-- `/v1/error-logs?level=ERROR&level=FATAL&search=db`
 
 **Response (200):**
 ```json
@@ -305,7 +302,6 @@ Retrieves paginated error logs. Requires JWT authentication via HTTP-only cookie
   "data": [
     {
       "id": 5,
-      "level": "ERROR",
       "message": "Database connection failed",
       "stack_trace": "Error: connect ECONNREFUSED ...",
       "route": "/v1/errorLogs",
@@ -335,14 +331,13 @@ Returns the available error log fields that can be queried through the meta endp
     "resource": "ErrorLog",
     "values": [
       "id",
-      "level",
       "message",
       "stack_trace",
       "route",
       "environment",
       "created_at"
     ],
-    "count": 7
+    "count": 6
   }
 }
 ```
@@ -359,15 +354,15 @@ Max 1000 values will be returned, limited tells if amount of data was limited
 - `field` — A valid error log field name returned by `/v1/error-logs/meta`.
 
 **Example:**
-- `/v1/error-logs/meta/level`
+- `/v1/error-logs/meta/route`
 
 **Response (200):**
 ```json
 {
   "data": {
-    "field": "level",
-    "values": ["DEBUG", "ERROR", "FATAL", "INFO", "WARN"],
-    "count": 5,
+    "field": "route",
+    "values": ["/v1/logs", "/v1/error-logs"],
+    "count": 2,
     "limited": false
   }
 }

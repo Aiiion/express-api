@@ -9,7 +9,6 @@ export const handleError = async (err, req, res, next) => {
         const ErrorLog = sequelize.models.ErrorLog;
         if (ErrorLog) {
             await ErrorLog.create({
-                level: statusCode >= 500 ? 'ERROR' : 'WARN',
                 message: err.message || 'Unknown error',
                 stack_trace: err.stack || null,
                 route: req.originalUrl || null,

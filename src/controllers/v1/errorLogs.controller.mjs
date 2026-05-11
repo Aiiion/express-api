@@ -10,18 +10,6 @@ export const index = async (req, res) => {
 
     const where = {};
 
-    if (req.query.level !== undefined) {
-      const levels = Array.isArray(req.query.level)
-        ? req.query.level
-        : [req.query.level];
-
-      if (levels.length === 1) {
-        where.level = levels[0];
-      } else if (levels.length > 1) {
-        where.level = { [Op.in]: levels };
-      }
-    }
-
     if (req.query.search) {
       const pattern = `%${req.query.search}%`;
       where[Op.or] = [
