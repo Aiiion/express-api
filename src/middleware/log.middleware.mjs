@@ -54,7 +54,7 @@ export const logRequest = () => {
     }
 
     res.on('finish', async () => {
-      const Log = sequelize.models.RequestLog;
+      const RequestLog = sequelize.models.RequestLog;
 
       const data = {
         ip: extractIp(req) || null,
@@ -89,7 +89,7 @@ export const logRequest = () => {
       }
 
       try {
-        await Log.create(data);
+        await RequestLog.create(data);
       } catch (err) {
         // don't crash the app for logging failures
         devError('Failed to create log entry:', err);
