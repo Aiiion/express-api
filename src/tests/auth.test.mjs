@@ -281,4 +281,90 @@ describe("Auth Routes", () => {
       findAndCountAllSpy.mockRestore();
     });
   });
+
+  describe("GET /v1/errorLogs/meta/:field", () => {
+    it("should return 404 when field is not a valid error log column", async () => {
+      const response = await request(app)
+        .get("/v1/errorLogs/meta/not_a_column")
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        code: 404,
+        message: "Field not found for the requested resource",
+      });
+    });
+  });
+
+  describe("GET /v1/errorLogs", () => {
+    it("should return 401 when not authenticated", async () => {
+      const response = await request(app).get("/v1/errorLogs");
+      expect(response.status).toBe(401);
+    });
+
+    it("should return 200 with paginated results", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.ErrorLog, "findAndCountAll")
+        .mockResolvedValue({ count: 1, rows: [{ id: 1, message: "Test error" }] });
+
+      const response = await request(app)
+        .get("/v1/errorLogs")
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.limit).toBe(100);
+      expect(queryOptions.offset).toBe(0);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should filter with search across message, route and stack_trace", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.ErrorLog, "findAndCountAll")
+        .mockResolvedValue({ count: 1, rows: [{ id: 1, message: "TypeError" }] });
+
+      const response = await request(app)
+        .get("/v1/errorLogs")
+        .query({ search: "TypeError" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.where[Op.or]).toEqual([
+        { message: { [Op.iLike]: "%TypeError%" } },
+        { route: { [Op.iLike]: "%TypeError%" } },
+        { stack_trace: { [Op.iLike]: "%TypeError%" } },
+      ]);
+
+      findAndCountAllSpy.mockRestore();
+    });
+
+    it("should return correct pagination metadata", async () => {
+      const findAndCountAllSpy = jest.spyOn(sequelize.models.ErrorLog, "findAndCountAll")
+        .mockResolvedValue({ count: 250, rows: [{ id: 101, message: "Server error" }] });
+
+      const response = await request(app)
+        .get("/v1/errorLogs")
+        .query({ page: "3" })
+        .set("Cookie", getAuthCookie());
+
+      expect(response.status).toBe(200);
+      expect(findAndCountAllSpy).toHaveBeenCalledTimes(1);
+
+      const queryOptions = findAndCountAllSpy.mock.calls[0][0];
+      expect(queryOptions.limit).toBe(100);
+      expect(queryOptions.offset).toBe(200);
+      expect(response.body.pagination).toEqual({
+        page: 3,
+        perPage: 100,
+        totalPages: 3,
+        totalCount: 250,
+      });
+
+      findAndCountAllSpy.mockRestore();
+    });
+  });
 });
