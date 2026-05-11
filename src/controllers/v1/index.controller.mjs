@@ -3,13 +3,13 @@ export const index = (req, res) => {
     resources: [
       {
         name: 'RequestLog',
-        endpoint: '/v1/logs',
-        meta: '/v1/logs/meta'
+        endpoint: '/v1/requestLogs',
+        meta: '/v1/requestLogs/meta'
       },
       {
         name: 'ErrorLog',
-        endpoint: '/v1/error-logs',
-        meta: '/v1/error-logs/meta'
+        endpoint: '/v1/errorLogs',
+        meta: '/v1/errorLogs/meta'
       }
     ],
     aggregates: [
