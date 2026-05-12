@@ -3,8 +3,9 @@ import { devError } from '../utils/logger.mjs';
 
 export const cache = (duration) => {
   return async (req, res, next) => {
-    if(process.env.NODE_ENV === 'test')
+    if(process.env.NODE_ENV === 'test') {
       return next()
+    }
 
     let key = '__express__' + (req.originalUrl || req.url)
     let cachedBody = null
