@@ -1,7 +1,7 @@
-import mcache from 'memory-cache';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../services/email.service.mjs';
+import { deleteValue, getJsonValue, setJsonValue } from '../../services/redis.service.mjs';
 import { devError } from '../../utils/logger.mjs';
 
 const SESSION_DURATION_MS = 10 * 60 * 1000; // 10 minutes
@@ -31,11 +31,11 @@ export const initiateLogin = async (req, res) => {
         // Generate session token
         const sessionToken = crypto.randomBytes(32).toString('hex');
 
-        // Store code in cache with session token as key (10 minutes)
-        mcache.put(`auth_session_${sessionToken}`, {
+        // Store code in Redis with session token as key (10 minutes)
+        await setJsonValue(`auth_session_${sessionToken}`, {
             code: verificationCode,
             createdAt: Date.now()
-        }, SESSION_DURATION_MS);
+        }, Math.ceil(SESSION_DURATION_MS / 1000));
 
         // Send email with verification code
         await sendEmail(
@@ -66,12 +66,12 @@ export const initiateLogin = async (req, res) => {
  * POST /auth/verify
  * Body: { sessionToken: string, code: string }
  */
-export const verifyCode = (req, res) => {
+export const verifyCode = async (req, res) => {
     try {
         const { sessionToken, code } = req.body;
 
-        // Retrieve session data from cache
-        const sessionData = mcache.get(`auth_session_${sessionToken}`);
+        // Retrieve session data from Redis
+        const sessionData = await getJsonValue(`auth_session_${sessionToken}`);
 
         if (!sessionData) {
             return res.status(401).send({
@@ -87,7 +87,7 @@ export const verifyCode = (req, res) => {
 
             if (sessionData.failedAttempts >= MAX_FAILED_ATTEMPTS) {
                 // Lock the session
-                mcache.del(`auth_session_${sessionToken}`);
+                await deleteValue(`auth_session_${sessionToken}`);
                 return res.status(401).send({
                     code: 401,
                     message: 'Session locked due to too many failed attempts'
@@ -97,7 +97,18 @@ export const verifyCode = (req, res) => {
             // Persist updated session with remaining TTL
             const elapsed = Date.now() - sessionData.createdAt;
             const remainingTTL = Math.max(SESSION_DURATION_MS - elapsed, 0);
-            mcache.put(`auth_session_${sessionToken}`, sessionData, remainingTTL);
+            if (remainingTTL <= 0) {
+                await deleteValue(`auth_session_${sessionToken}`);
+                return res.status(401).send({
+                    code: 401,
+                    message: 'Invalid or expired session token'
+                });
+            }
+            await setJsonValue(
+                `auth_session_${sessionToken}`,
+                sessionData,
+                Math.ceil(remainingTTL / 1000),
+            );
 
             return res.status(401).send({
                 code: 401,
@@ -105,8 +116,8 @@ export const verifyCode = (req, res) => {
             });
         }
 
-        // Clear the session from cache (one-time use)
-        mcache.del(`auth_session_${sessionToken}`);
+        // Clear the session from Redis (one-time use)
+        await deleteValue(`auth_session_${sessionToken}`);
 
         // Generate JWT token
         const token = jwt.sign(

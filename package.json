@@ -35,9 +35,9 @@
     "express": "^5.2.0",
     "express-validator": "^7.3.0",
     "jsonwebtoken": "^9.0.3",
-    "memory-cache": "^0.2.0",
     "node-cron": "^4.2.1",
     "pg": "^8.17.0",
+    "redis": "^5.12.1",
     "resend": "^6.11.0",
     "sequelize": "^6.37.0",
     "umzug": "^3.8.2"

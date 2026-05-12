@@ -1,21 +1,29 @@
-import mcache from 'memory-cache';
+import { getJsonValue, setJsonValue } from '../services/redis.service.mjs';
+import { devError } from '../utils/logger.mjs';
 
 export const cache = (duration) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if(process.env.NODE_ENV === 'test')
       return next()
 
-    let key = '__express__' + req.originalUrl || req.url
-    let cachedBody = mcache.get(key)
-    if (cachedBody) {
-      res.send(JSON.parse(cachedBody))
+    let key = '__express__' + (req.originalUrl || req.url)
+    let cachedBody = null
+
+    try {
+      cachedBody = await getJsonValue(key)
+    } catch (err) {
+      devError('Failed to read cache entry:', err)
+    }
+
+    if (cachedBody !== null) {
+      res.send(cachedBody)
       return
     } else {
-      res.sendResponse = res.send
+      const sendResponse = res.send.bind(res)
       res.send = (body) => {
-        //time arg is in ms
-        mcache.put(key, body, duration * 1000);
-        res.sendResponse(body)
+        setJsonValue(key, body, duration)
+          .catch((err) => devError('Failed to write cache entry:', err))
+        return sendResponse(body)
       }
       next()
     }
