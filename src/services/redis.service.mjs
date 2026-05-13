@@ -199,6 +199,26 @@ export const getQueuedRequestLogs = async () => {
   return client.lRange(REQUEST_LOGS_QUEUE_KEY, 0, -1);
 };
 
+/**
+ * Returns the oldest (tail) entry in the request-log queue without removing it,
+ * or null when the queue is empty.  The queue is a Redis list where new items are
+ * pushed to the head (lPush/unshift), so the tail (index -1) is always the oldest.
+ */
+export const peekOldestRequestLog = async () => {
+  let raw;
+
+  if (isTestEnv()) {
+    const list = getTestList(REQUEST_LOGS_QUEUE_KEY);
+    raw = list.length > 0 ? list[list.length - 1] : null;
+  } else {
+    const client = await getClient();
+    raw = await client.lIndex(REQUEST_LOGS_QUEUE_KEY, -1);
+  }
+
+  if (!raw) return null;
+  return JSON.parse(raw);
+};
+
 export const clearProcessingRequestLogs = async () => {
   if (isTestEnv()) {
     testStore.delete(REQUEST_LOGS_PROCESSING_KEY);

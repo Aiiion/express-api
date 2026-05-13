@@ -18,7 +18,7 @@ jest.unstable_mockModule('../models/index.mjs', () => ({
   },
 }));
 
-const { flushRequestLogs } = await import('../jobs/flush-request-logs.mjs');
+const { flushRequestLogs, PARTIAL_FLUSH_AGE_THRESHOLD_MS } = await import('../jobs/flush-request-logs.mjs');
 
 describe('flushRequestLogs', () => {
   beforeEach(async () => {
@@ -37,7 +37,8 @@ describe('flushRequestLogs', () => {
         method: 'GET',
         code: 200,
         type: 'INFO',
-        created_at: new Date(`2026-05-12T00:00:${String(index % 60).padStart(2, '0')}.000Z`).toISOString(),
+        // Fresh timestamps so the partial-flush age threshold is not triggered.
+        created_at: new Date().toISOString(),
       });
     }
 
@@ -82,6 +83,61 @@ describe('flushRequestLogs', () => {
       inserted: 40,
     });
     expect(await getRequestLogQueueLength()).toBe(0);
+    expect(await getRequestLogProcessingLength()).toBe(0);
+  });
+
+  it('flushes a partial batch when the oldest queued log exceeds the age threshold', async () => {
+    bulkCreateMock.mockResolvedValue([]);
+
+    const staleTimestamp = new Date(
+      Date.now() - PARTIAL_FLUSH_AGE_THRESHOLD_MS - 60_000, // 1 minute past threshold
+    ).toISOString();
+
+    for (let index = 0; index < 15; index += 1) {
+      await enqueueRequestLog({
+        route: `/logs/${index}`,
+        method: 'GET',
+        code: 200,
+        type: 'INFO',
+        created_at: staleTimestamp,
+      });
+    }
+
+    const result = await flushRequestLogs();
+
+    expect(result).toEqual({
+      skipped: false,
+      batches: 1,
+      inserted: 15,
+    });
+    expect(bulkCreateMock).toHaveBeenCalledTimes(1);
+    expect(bulkCreateMock.mock.calls[0][0]).toHaveLength(15);
+    expect(await getRequestLogQueueLength()).toBe(0);
+    expect(await getRequestLogProcessingLength()).toBe(0);
+  });
+
+  it('does not flush a partial batch when the oldest queued log is within the age threshold', async () => {
+    bulkCreateMock.mockResolvedValue([]);
+
+    for (let index = 0; index < 15; index += 1) {
+      await enqueueRequestLog({
+        route: `/logs/${index}`,
+        method: 'GET',
+        code: 200,
+        type: 'INFO',
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    const result = await flushRequestLogs();
+
+    expect(result).toEqual({
+      skipped: false,
+      batches: 0,
+      inserted: 0,
+    });
+    expect(bulkCreateMock).not.toHaveBeenCalled();
+    expect(await getRequestLogQueueLength()).toBe(15);
     expect(await getRequestLogProcessingLength()).toBe(0);
   });
 });
