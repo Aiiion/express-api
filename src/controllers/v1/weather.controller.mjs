@@ -11,35 +11,30 @@ export const index = async (req, res) => {
   if(forecastDays > 6) forecastDays = 6;
   
 
-  // Use weatherAggregator service to get data from both openWeatherMaps and weatherApi
-  const currentWeather = await weatherAggregatorService.currentWeather(
-    parseFloat(lat),
-    parseFloat(lon),
-    metric
-  );
-
-  const forecastWeather = await weatherAggregatorService.forecastWeather(
-    parseFloat(lat),
-    parseFloat(lon),
-    metric,
-    forecastDays
-  );
-
-  // Get pollution from openWeatherMaps (no aggregation available)
-  const pollution = await openWeatherMapsService.currentPollution({lat: parseFloat(lat), lon: parseFloat(lon)});
-
-  // Get weather warnings from local provider based on coordinates
-  let warnings = null;
-  const bound = getCoordinateBound(parseFloat(lat), parseFloat(lon));
+  const parsedLat = parseFloat(lat);
+  const parsedLon = parseFloat(lon);
+  const bound = getCoordinateBound(parsedLat, parsedLon);
   const provider = bound?.provider;
-  try {
-    warnings = await provider.service.weatherWarnings(parseFloat(lat), parseFloat(lon)).then((warningsData) => {
+
+  const getWarnings = async () => {
+    try {
+      const warningsData = await provider.service.weatherWarnings(parsedLat, parsedLon);
       return provider.dto.weatherWarnings(warningsData);
-    });
-  } catch (err) {
-    devError('Failed to fetch weather warnings:', err.message);
-    warnings = null;
-  }
+    } catch (err) {
+      devError('Failed to fetch weather warnings:', err.message);
+      return null;
+    }
+  };
+
+  // Use weatherAggregator service to get data from both openWeatherMaps and weatherApi
+  // Get pollution from openWeatherMaps (no aggregation available)
+  // Get weather warnings from local provider based on coordinates
+  const [currentWeather, forecastWeather, pollution, warnings] = await Promise.all([
+    weatherAggregatorService.currentWeather(parsedLat, parsedLon, metric),
+    weatherAggregatorService.forecastWeather(parsedLat, parsedLon, metric, forecastDays),
+    openWeatherMapsService.currentPollution({ lat: parsedLat, lon: parsedLon }),
+    getWarnings(),
+  ]);
 
   return res.status(200).send({
     data: {
