@@ -14,7 +14,7 @@ export const REQUEST_LOG_BATCH_SIZE = 40;
 // Logs older than this threshold are flushed even when the queue has fewer
 // entries than batchSize, preventing indefinite accumulation of partial batches.
 export const PARTIAL_FLUSH_AGE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
-const REQUEST_LOG_LOCK_TTL_SECONDS = 110;
+const REQUEST_LOG_LOCK_TTL_SECONDS = 130;
 
 const parseRequestLogEntry = (entry) => {
   const parsedEntry = JSON.parse(entry);
