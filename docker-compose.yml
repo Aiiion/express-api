@@ -47,7 +47,7 @@ services:
       - express-api-network
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.8-m03-alpine3.23
     container_name: express-redis
     restart: always
     ports:
