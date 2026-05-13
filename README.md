@@ -15,8 +15,7 @@ weatherapi.com
 **Start this app up using docker:**
 
 ```
-docker compose build
-docker compose up
+docker compose up --build
 ```
 
 **Start the development environment using docker:**
@@ -27,10 +26,10 @@ Full containerised dev (DB + API with hot-reload):
 npm run docker:dev
 ```
 
-Or run only the DB in Docker and the app natively (requires `DB_HOST=localhost` in `.env`):
+Or run only the DB and Redis in Docker and the app natively (requires `DB_HOST=localhost` and `REDIS_URL=redis://localhost:6379` in `.env`):
 
 ```bash
-docker compose -f docker-compose.dev.yml up db -d
+docker compose -f docker-compose.dev.yml up db redis -d
 npm run start:dev
 ```
 

@@ -8,6 +8,7 @@ services:
     command: ["npm", "start"]
     depends_on:
       - db
+      - redis
     environment:
       - NODE_ENV=${NODE_ENV}
       - DB_HOST=${DB_HOST}
@@ -23,6 +24,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ALLOWLIST=${CORS_ALLOWLIST}
+      - REDIS_URL=${REDIS_URL}
     networks:
       - express-api-network
     dns:
@@ -41,6 +43,15 @@ services:
       - db-data:/var/lib/postgresql/data
     ports:
       - "${DB_PORT}:5432"
+    networks:
+      - express-api-network
+
+  redis:
+    image: redis:8.8-m03-alpine3.23
+    container_name: express-redis
+    restart: always
+    ports:
+      - "6379:6379"
     networks:
       - express-api-network
 

@@ -9,6 +9,7 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+      - redis
     environment:
       - NODE_ENV=development
       - DB_HOST=db
@@ -24,6 +25,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ALLOWLIST=${CORS_ALLOWLIST}
+      - REDIS_URL=${REDIS_URL}
     volumes:
       - ./src:/usr/src/app/src
     networks:
@@ -44,6 +46,15 @@ services:
       - db-data-dev:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - express-api-dev-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: express-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
     networks:
       - express-api-dev-network
 

@@ -9,6 +9,7 @@ import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
 import initRequestLog from './models/requestLog.model.mjs';
 import initErrorLog from './models/errorLog.model.mjs';
+import { closeRedisConnection, ensureRedisConnection } from './services/redis.service.mjs';
 import { createStrictCorsOptionsDelegate } from './utils/corsHelpers.mjs';
 import { registerCronJobs } from './cron.mjs';
 dotenv.config();
@@ -30,6 +31,7 @@ let cronHandle;
 const start = async (listenPort = port) => {
   try {
     await connect();
+    await ensureRedisConnection();
     // initialize sequelize models (no sync here; migrations manage schema)
     initRequestLog(sequelize);
     initErrorLog(sequelize);
@@ -64,6 +66,7 @@ const stop = async () => {
   try {
     await closePool();
     await sequelize.close();
+    await closeRedisConnection();
   } catch (e) {
     // ignore close errors
   }
