@@ -81,7 +81,7 @@ export const flushRequestLogs = async (batchSize = REQUEST_LOG_BATCH_SIZE) => {
         break;
       }
 
-      await RequestLog.bulkCreate(batch, { validate: true });
+      await RequestLog.bulkCreate(batch, { validate: true, ignoreDuplicates: true });
       await clearProcessingRequestLogs();
 
       batches += 1;

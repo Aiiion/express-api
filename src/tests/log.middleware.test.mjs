@@ -51,6 +51,7 @@ describe('logRequest middleware', () => {
       description: 'Invalid request',
       user_agent: 'jest-agent',
     });
+    expect(requestLog.stable_id).toEqual(expect.any(String));
     expect(requestLog.created_at).toEqual(expect.any(String));
   });
 });

@@ -52,6 +52,7 @@ describe('flushRequestLogs', () => {
     expect(bulkCreateMock).toHaveBeenCalledTimes(2);
     expect(bulkCreateMock.mock.calls[0][0]).toHaveLength(40);
     expect(bulkCreateMock.mock.calls[1][0]).toHaveLength(40);
+    expect(bulkCreateMock.mock.calls[0][1]).toMatchObject({ ignoreDuplicates: true });
     expect(await getRequestLogQueueLength()).toBe(16);
     expect(await getRequestLogProcessingLength()).toBe(0);
   });

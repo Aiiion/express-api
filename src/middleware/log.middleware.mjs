@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { enqueueRequestLog } from '../services/redis.service.mjs';
 import { extractIp } from '../utils/ipHelpers.mjs';
 import { devError } from '../utils/logger.mjs';
@@ -55,6 +56,7 @@ export const logRequest = () => {
 
     res.on('finish', async () => {
       const data = {
+        stable_id: randomUUID(),
         ip: extractIp(req) || null,
         route: req.originalUrl || req.url || null,
         method: req.method,
