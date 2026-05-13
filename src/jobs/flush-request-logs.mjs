@@ -26,8 +26,8 @@ const parseRequestLogEntry = (entry) => {
 };
 
 export const flushRequestLogs = async (batchSize = REQUEST_LOG_BATCH_SIZE) => {
-  const lockAcquired = await acquireRequestLogsFlushLock(REQUEST_LOG_LOCK_TTL_SECONDS);
-  if (!lockAcquired) {
+  const lockToken = await acquireRequestLogsFlushLock(REQUEST_LOG_LOCK_TTL_SECONDS);
+  if (!lockToken) {
     return {
       skipped: true,
       batches: 0,
@@ -94,6 +94,6 @@ export const flushRequestLogs = async (batchSize = REQUEST_LOG_BATCH_SIZE) => {
       inserted,
     };
   } finally {
-    await releaseRequestLogsFlushLock();
+    await releaseRequestLogsFlushLock(lockToken);
   }
 };
