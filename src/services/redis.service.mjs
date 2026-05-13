@@ -199,6 +199,26 @@ export const getQueuedRequestLogs = async () => {
   return client.lRange(REQUEST_LOGS_QUEUE_KEY, 0, -1);
 };
 
+/**
+ * Returns the oldest (tail) entry in the request-log queue without removing it,
+ * or null when the queue is empty.  The queue is a Redis list where new items are
+ * pushed to the head (lPush/unshift), so the tail (index -1) is always the oldest.
+ */
+export const peekOldestRequestLog = async () => {
+  let raw;
+
+  if (isTestEnv()) {
+    const list = getTestList(REQUEST_LOGS_QUEUE_KEY);
+    raw = list.length > 0 ? list[list.length - 1] : null;
+  } else {
+    const client = await getClient();
+    raw = await client.lIndex(REQUEST_LOGS_QUEUE_KEY, -1);
+  }
+
+  if (!raw) return null;
+  return JSON.parse(raw);
+};
+
 export const clearProcessingRequestLogs = async () => {
   if (isTestEnv()) {
     testStore.delete(REQUEST_LOGS_PROCESSING_KEY);
@@ -210,26 +230,48 @@ export const clearProcessingRequestLogs = async () => {
 };
 
 export const acquireRequestLogsFlushLock = async (ttlSeconds) => {
-  const lockValue = String(Date.now());
+  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   if (isTestEnv()) {
     const entry = getTestEntry(REQUEST_LOGS_FLUSH_LOCK_KEY);
-    if (entry) return false;
-    setTestString(REQUEST_LOGS_FLUSH_LOCK_KEY, lockValue, ttlSeconds);
-    return true;
+    if (entry) return null;
+    setTestString(REQUEST_LOGS_FLUSH_LOCK_KEY, token, ttlSeconds);
+    return token;
   }
 
   const client = await getClient();
-  const result = await client.set(REQUEST_LOGS_FLUSH_LOCK_KEY, lockValue, {
+  const result = await client.set(REQUEST_LOGS_FLUSH_LOCK_KEY, token, {
     EX: ttlSeconds,
     NX: true,
   });
 
-  return result === 'OK';
+  return result === 'OK' ? token : null;
 };
 
-export const releaseRequestLogsFlushLock = async () => {
-  await deleteValue(REQUEST_LOGS_FLUSH_LOCK_KEY);
+// Lua script that deletes the lock key only when the stored value matches the
+// supplied token, preventing a worker from releasing another worker's lock.
+const RELEASE_LOCK_SCRIPT = `
+  if redis.call('get', KEYS[1]) == ARGV[1] then
+    return redis.call('del', KEYS[1])
+  else
+    return 0
+  end
+`;
+
+export const releaseRequestLogsFlushLock = async (token) => {
+  if (isTestEnv()) {
+    const entry = getTestEntry(REQUEST_LOGS_FLUSH_LOCK_KEY);
+    if (entry && entry.value === token) {
+      testStore.delete(REQUEST_LOGS_FLUSH_LOCK_KEY);
+    }
+    return;
+  }
+
+  const client = await getClient();
+  await client.eval(RELEASE_LOCK_SCRIPT, {
+    keys: [REQUEST_LOGS_FLUSH_LOCK_KEY],
+    arguments: [token],
+  });
 };
 
 export const clearRedisTestData = async () => {

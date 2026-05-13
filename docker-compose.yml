@@ -51,9 +51,14 @@ services:
     container_name: express-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "6379"
     networks:
       - express-api-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   db-data:

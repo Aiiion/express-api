@@ -17,6 +17,9 @@ export const index = async (req, res) => {
   const provider = bound?.provider;
 
   const getWarnings = async () => {
+    if (!provider) {
+      return null;
+    }
     try {
       const warningsData = await provider.service.weatherWarnings(parsedLat, parsedLon);
       return provider.dto.weatherWarnings(warningsData);
