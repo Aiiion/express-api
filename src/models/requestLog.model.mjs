@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 export default (sequelize) => {
   const RequestLog = sequelize.define('RequestLog', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    stable_id: { type: DataTypes.UUID, allowNull: true, unique: true },
+    stable_id: { type: DataTypes.UUID, allowNull: false, unique: true },
     ip: { type: DataTypes.TEXT },
     method: { type: DataTypes.ENUM('GET','POST','PUT','DELETE','PATCH','OPTIONS','HEAD') },
     route: { type: DataTypes.TEXT },
