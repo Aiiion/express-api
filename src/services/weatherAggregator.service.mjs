@@ -473,7 +473,8 @@ const weatherAggregatorService = {
         providers.push(normalizedOwm.provider || "openweathermaps.org");
       }
     } else {
-      errors.push({ provider: "openweathermaps.org", message: owmResult.reason.message });
+      const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
+      errors.push({ provider: "openweathermaps.org", message: owmMsg });
     }
 
     if (weatherApiResult.status === "fulfilled") {
@@ -483,7 +484,8 @@ const weatherAggregatorService = {
         providers.push(normalizedWeatherApi.provider || "weatherapi.com");
       }
     } else {
-      errors.push({ provider: "weatherapi.com", message: weatherApiResult.reason.message });
+      const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
+      errors.push({ provider: "weatherapi.com", message: waMsg });
     }
 
     // Merge forecast data

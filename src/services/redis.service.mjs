@@ -103,13 +103,23 @@ export const getJsonValue = async (key) => {
   if (isTestEnv()) {
     const entry = getTestEntry(key);
     if (!entry || entry.type !== 'string') return null;
-    return JSON.parse(entry.value);
+    try {
+      return JSON.parse(entry.value);
+    } catch {
+      testStore.delete(key);
+      return null;
+    }
   }
 
   const client = await getClient();
   const serializedValue = await client.get(key);
   if (!serializedValue) return null;
-  return JSON.parse(serializedValue);
+  try {
+    return JSON.parse(serializedValue);
+  } catch {
+    await client.del(key);
+    return null;
+  }
 };
 
 export const deleteValue = async (key) => {
