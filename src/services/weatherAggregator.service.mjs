@@ -401,41 +401,31 @@ const weatherAggregatorService = {
     const errors = [];
     const providers = [];
 
-    // Fetch from OpenWeatherMaps
-    try {
-      const owmQuery = {
-        lat,
-        lon,
-        units: metric ? "metric" : "imperial",
-      };
-      const owmData = await openWeatherMapsService.currentWeather(owmQuery);
-      const normalizedOwm = openWeatherMapsDto.currentWeather(owmData);
-      
+    const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
+
+    const [owmResult, weatherApiResult] = await Promise.allSettled([
+      openWeatherMapsService.currentWeather(owmQuery),
+      weatherApiService.currentWeather(lat, lon),
+    ]);
+
+    if (owmResult.status === "fulfilled") {
+      const normalizedOwm = openWeatherMapsDto.currentWeather(owmResult.value);
       if (normalizedOwm) {
         sources.push(normalizedOwm);
         providers.push(normalizedOwm.provider || "openweathermaps.org");
       }
-    } catch (error) {
-      errors.push({
-        provider: "openweathermaps.org",
-        message: error.message,
-      });
+    } else {
+      errors.push({ provider: "openweathermaps.org", message: owmResult.reason.message });
     }
 
-    // Fetch from WeatherAPI
-    try {
-      const weatherApiData = await weatherApiService.currentWeather(lat, lon);
-      const normalizedWeatherApi = weatherApiDto.currentWeather(weatherApiData, metric);
-      
+    if (weatherApiResult.status === "fulfilled") {
+      const normalizedWeatherApi = weatherApiDto.currentWeather(weatherApiResult.value, metric);
       if (normalizedWeatherApi) {
         sources.push(normalizedWeatherApi);
         providers.push(normalizedWeatherApi.provider || "weatherapi.com");
       }
-    } catch (error) {
-      errors.push({
-        provider: "weatherapi.com",
-        message: error.message,
-      });
+    } else {
+      errors.push({ provider: "weatherapi.com", message: weatherApiResult.reason.message });
     }
 
     // Merge and average the data
@@ -469,41 +459,33 @@ const weatherAggregatorService = {
     const errors = [];
     const providers = [];
 
-    // Fetch from OpenWeatherMaps
-    try {
-      const owmQuery = {
-        lat,
-        lon,
-        units: metric ? "metric" : "imperial",
-      };
-      const owmData = await openWeatherMapsService.forecastWeather(owmQuery);
-      const normalizedOwm = openWeatherMapsDto.forecastWeather(owmData);
-      
+    const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
+
+    const [owmResult, weatherApiResult] = await Promise.allSettled([
+      openWeatherMapsService.forecastWeather(owmQuery),
+      weatherApiService.forecastWeather(lat, lon, days),
+    ]);
+
+    if (owmResult.status === "fulfilled") {
+      const normalizedOwm = openWeatherMapsDto.forecastWeather(owmResult.value);
       if (normalizedOwm) {
         sources.push(normalizedOwm);
         providers.push(normalizedOwm.provider || "openweathermaps.org");
       }
-    } catch (error) {
-      errors.push({
-        provider: "openweathermaps.org",
-        message: error.message,
-      });
+    } else {
+      const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
+      errors.push({ provider: "openweathermaps.org", message: owmMsg });
     }
 
-    // Fetch from WeatherAPI
-    try {
-      const weatherApiData = await weatherApiService.forecastWeather(lat, lon, days);
-      const normalizedWeatherApi = weatherApiDto.forecastWeather(weatherApiData, metric);
-      
+    if (weatherApiResult.status === "fulfilled") {
+      const normalizedWeatherApi = weatherApiDto.forecastWeather(weatherApiResult.value, metric);
       if (normalizedWeatherApi) {
         sources.push(normalizedWeatherApi);
         providers.push(normalizedWeatherApi.provider || "weatherapi.com");
       }
-    } catch (error) {
-      errors.push({
-        provider: "weatherapi.com",
-        message: error.message,
-      });
+    } else {
+      const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
+      errors.push({ provider: "weatherapi.com", message: waMsg });
     }
 
     // Merge forecast data

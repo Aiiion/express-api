@@ -1,4 +1,5 @@
-import { sequelize } from '../models/index.mjs';
+import { randomUUID } from 'crypto';
+import { enqueueRequestLog } from '../services/redis.service.mjs';
 import { extractIp } from '../utils/ipHelpers.mjs';
 import { devError } from '../utils/logger.mjs';
 
@@ -54,9 +55,8 @@ export const logRequest = () => {
     }
 
     res.on('finish', async () => {
-      const RequestLog = sequelize.models.RequestLog;
-
       const data = {
+        stable_id: randomUUID(),
         ip: extractIp(req) || null,
         route: req.originalUrl || req.url || null,
         method: req.method,
@@ -64,6 +64,7 @@ export const logRequest = () => {
         description: null,
         user_agent: req.headers['user-agent'] || null,
         type: codeToTypeMap(res.statusCode),
+        created_at: new Date().toISOString(),
       };
 
       if (data.type === 'ERROR' || data.type === 'WARN') {
@@ -89,10 +90,9 @@ export const logRequest = () => {
       }
 
       try {
-        await RequestLog.create(data);
+        await enqueueRequestLog(data);
       } catch (err) {
-        // don't crash the app for logging failures
-        devError('Failed to create log entry:', err);
+        devError('Failed to queue log entry:', err);
       }
     });
 

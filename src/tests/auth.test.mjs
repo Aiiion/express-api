@@ -10,7 +10,11 @@ jest.unstable_mockModule("../services/email.service.mjs", () => ({
 }));
 
 import request from "supertest";
-import mcache from "memory-cache";
+import {
+  clearRedisTestData,
+  getJsonValue,
+  setJsonValue,
+} from "../services/redis.service.mjs";
 
 let app;
 let server;
@@ -37,9 +41,9 @@ describe("Auth Routes", () => {
     }
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sendEmailMock.mockClear();
-    mcache.clear();
+    await clearRedisTestData();
   });
 
   afterAll(async () => {
@@ -111,10 +115,10 @@ describe("Auth Routes", () => {
       // Set up a known session in cache
       const testSessionToken = "test-session-token";
       const testCode = "123456";
-      mcache.put(`auth_session_${testSessionToken}`, {
+      await setJsonValue(`auth_session_${testSessionToken}`, {
         code: testCode,
         createdAt: Date.now(),
-      });
+      }, 600);
 
       const response = await request(app)
         .post("/v1/auth/verify")
@@ -130,7 +134,7 @@ describe("Auth Routes", () => {
       expect(jwtSetCookie).toBeDefined();
       expect(jwtSetCookie).toContain("HttpOnly");
       // Session should be cleared after successful verification
-      expect(mcache.get(`auth_session_${testSessionToken}`)).toBeNull();
+      expect(await getJsonValue(`auth_session_${testSessionToken}`)).toBeNull();
     });
   });
 
@@ -153,10 +157,10 @@ describe("Auth Routes", () => {
       // First get a valid token through the auth flow
       const testSessionToken = "test-session-for-token";
       const testCode = "654321";
-      mcache.put(`auth_session_${testSessionToken}`, {
+      await setJsonValue(`auth_session_${testSessionToken}`, {
         code: testCode,
         createdAt: Date.now(),
-      });
+      }, 600);
 
       const verifyResponse = await request(app)
         .post("/v1/auth/verify")
