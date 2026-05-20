@@ -1,5 +1,6 @@
 export const OWM_API_URL = "https://api.openweathermap.org/data/2.5";
 export const SMHI_WPT_API_URL = "https://wpt-a.smhi.se/backend-weatherpage";
+export const SMHI_FORECAST_API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1";
 export const WEATHERAPI_API_URL = "https://api.weatherapi.com/v1";
 export const EMAIL = "alex@bierhance.se";
 export const exampleIp = "94.253.32.54";

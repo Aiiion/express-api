@@ -1,7 +1,10 @@
 import openWeatherMapsService from "./openWeatherMaps.service.mjs";
 import weatherApiService from "./weatherApi.service.mjs";
+import smhiService from "./smhi.service.mjs";
 import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
+import smhiDto from "../dtos/smhi.dto.mjs";
+import { logError } from "./errorLog.service.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
@@ -403,9 +406,10 @@ const weatherAggregatorService = {
 
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
 
-    const [owmResult, weatherApiResult] = await Promise.allSettled([
+    const [owmResult, weatherApiResult, smhiResult] = await Promise.allSettled([
       openWeatherMapsService.currentWeather(owmQuery),
       weatherApiService.currentWeather(lat, lon),
+      smhiService.forecastWeather(lat, lon),
     ]);
 
     if (owmResult.status === "fulfilled") {
@@ -416,6 +420,7 @@ const weatherAggregatorService = {
       }
     } else {
       errors.push({ provider: "openweathermaps.org", message: owmResult.reason.message });
+      logError(owmResult.reason, { route: "weatherAggregator.currentWeather" });
     }
 
     if (weatherApiResult.status === "fulfilled") {
@@ -426,6 +431,18 @@ const weatherAggregatorService = {
       }
     } else {
       errors.push({ provider: "weatherapi.com", message: weatherApiResult.reason.message });
+      logError(weatherApiResult.reason, { route: "weatherAggregator.currentWeather" });
+    }
+
+    if (smhiResult.status === "fulfilled") {
+      const normalizedSmhi = smhiDto.currentWeather(smhiResult.value);
+      if (normalizedSmhi) {
+        sources.push(normalizedSmhi);
+        providers.push(normalizedSmhi.provider || "smhi.se");
+      }
+    } else {
+      errors.push({ provider: "smhi.se", message: smhiResult.reason.message });
+      logError(smhiResult.reason, { route: "weatherAggregator.currentWeather" });
     }
 
     // Merge and average the data
@@ -461,9 +478,10 @@ const weatherAggregatorService = {
 
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
 
-    const [owmResult, weatherApiResult] = await Promise.allSettled([
+    const [owmResult, weatherApiResult, smhiResult] = await Promise.allSettled([
       openWeatherMapsService.forecastWeather(owmQuery),
       weatherApiService.forecastWeather(lat, lon, days),
+      smhiService.forecastWeather(lat, lon),
     ]);
 
     if (owmResult.status === "fulfilled") {
@@ -475,6 +493,7 @@ const weatherAggregatorService = {
     } else {
       const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
       errors.push({ provider: "openweathermaps.org", message: owmMsg });
+      logError(owmResult.reason, { route: "weatherAggregator.forecastWeather" });
     }
 
     if (weatherApiResult.status === "fulfilled") {
@@ -486,6 +505,19 @@ const weatherAggregatorService = {
     } else {
       const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
       errors.push({ provider: "weatherapi.com", message: waMsg });
+      logError(weatherApiResult.reason, { route: "weatherAggregator.forecastWeather" });
+    }
+
+    if (smhiResult.status === "fulfilled") {
+      const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value);
+      if (normalizedSmhi) {
+        sources.push(normalizedSmhi);
+        providers.push(normalizedSmhi.provider || "smhi.se");
+      }
+    } else {
+      const smhiMsg = smhiResult?.reason?.message ?? String(smhiResult?.reason) ?? "Unknown error";
+      errors.push({ provider: "smhi.se", message: smhiMsg });
+      logError(smhiResult.reason, { route: "weatherAggregator.forecastWeather" });
     }
 
     // Merge forecast data
