@@ -56,6 +56,10 @@ jest.unstable_mockModule("../dtos/smhi.dto.mjs", () => ({
   default: smhiDtoMocks,
 }));
 
+jest.unstable_mockModule("../services/errorLog.service.mjs", () => ({
+  logError: jest.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Pre-normalized test data (what the DTOs would return after transforming raw
 // API responses). Using controlled values makes expected aggregations precise.
