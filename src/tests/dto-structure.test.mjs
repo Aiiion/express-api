@@ -196,8 +196,8 @@ describe('DTO Structure Consistency', () => {
       const smhiKeys = getObjectStructure(smhiResult.list[smhiDays[0]]);
 
       const topLevelComparison = compareStructures(
-        new Set(['list', 'provider']),
-        new Set(['list', 'provider']),
+        new Set(Object.keys(owmResult)),
+        new Set(Object.keys(smhiResult)),
         'openWeatherMaps',
         'smhi'
       );
