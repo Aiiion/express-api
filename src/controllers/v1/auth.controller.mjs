@@ -17,12 +17,11 @@ const MAX_FAILED_ATTEMPTS = 5;
  */
 export const initiateLogin = async (req, res) => {
     try {
-        // Verify password using constant-time comparison to prevent timing attacks
-        const inputBuf = Buffer.from(req.body.password);
-        const adminBuf = Buffer.from(process.env.ADMIN_PASSWORD);
-        const lengthsMatch = inputBuf.length === adminBuf.length;
-        const valuesMatch = crypto.timingSafeEqual(inputBuf, lengthsMatch ? adminBuf : inputBuf);
-        if (!lengthsMatch || !valuesMatch) {
+        // Hash both passwords to fixed-size digests so timingSafeEqual needs no
+        // length pre-check, removing any length-based timing side-channel.
+        const inputHash = crypto.createHash('sha256').update(req.body.password).digest();
+        const adminHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
+        if (!crypto.timingSafeEqual(inputHash, adminHash)) {
             return res.status(401).send({
                 code: 401,
                 message: 'Invalid password'
