@@ -48,7 +48,7 @@ describe("API Routes", () => {
   const originalEnv = process.env.NODE_ENV;
   const originalOwmApiKey = process.env.OWM_API_KEY;
   const originalWeatherApiKey = process.env.WEATHERAPI_API_KEY;
-  
+  const originalResendApiKey = process.env.RESEND_API_KEY;
 
   beforeAll(async () => {
     process.env.OWM_API_KEY = process.env.WEATHERAPI_API_KEY = 'test-key';
@@ -76,9 +76,14 @@ describe("API Routes", () => {
   });
 
   afterAll(async () => {
-    process.env.OWM_API_KEY = originalOwmApiKey;
-    process.env.WEATHERAPI_API_KEY = originalWeatherApiKey;
-    process.env.NODE_ENV = originalEnv;
+    const restoreEnvVar = (key, original) => {
+      if (original === undefined) delete process.env[key];
+      else process.env[key] = original;
+    };
+    restoreEnvVar('OWM_API_KEY', originalOwmApiKey);
+    restoreEnvVar('WEATHERAPI_API_KEY', originalWeatherApiKey);
+    restoreEnvVar('RESEND_API_KEY', originalResendApiKey);
+    restoreEnvVar('NODE_ENV', originalEnv);
     if (stop) await stop();
     else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
   });
