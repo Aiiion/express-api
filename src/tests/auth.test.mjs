@@ -31,6 +31,7 @@ describe("Auth Routes", () => {
     process.env.ADMIN_EMAIL = "admin@test.com";
     process.env.JWT_SECRET = "test-jwt-secret";
     process.env.OWM_API_KEY = "test-key";
+    process.env.RESEND_API_KEY = 'resend_token_123';
 
     const mod = await import("../index.mjs");
     app = mod.default;

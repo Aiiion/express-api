@@ -52,6 +52,7 @@ describe("API Routes", () => {
 
   beforeAll(async () => {
     process.env.OWM_API_KEY = process.env.WEATHERAPI_API_KEY = 'test-key';
+    process.env.RESEND_API_KEY = 'resend_token_123';
     process.env.NODE_ENV = 'test';
     // import app after env is set and mocks registered
     const mod = await import("../index.mjs");
