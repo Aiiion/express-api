@@ -23,7 +23,7 @@ export const latLonValidationSchema = {
 	},
 };
 
-export const logsIndexValidationSchema = {
+export const paginationValidationSchema = {
 	page: {
 		in: ['query'],
 		optional: true,
@@ -33,6 +33,22 @@ export const logsIndexValidationSchema = {
 		},
 		toInt: true,
 	},
+};
+
+export const searchValidationSchema = {
+	search: {
+		in: ['query'],
+		optional: true,
+		isString: {
+			errorMessage: 'Search must be a string',
+		},
+		trim: true,
+	},
+};
+
+export const requestLogsIndexValidationSchema = {
+	...paginationValidationSchema,
+	...searchValidationSchema,
 	code: {
 		in: ['query'],
 		optional: true,
@@ -45,14 +61,11 @@ export const logsIndexValidationSchema = {
 			errorMessage: 'Code must be an integer or a list of integers',
 		},
 	},
-	search: {
-		in: ['query'],
-		optional: true,
-		isString: {
-			errorMessage: 'Search must be a string',
-		},
-		trim: true,
-	},
+};
+
+export const errorLogsIndexValidationSchema = {
+	...paginationValidationSchema,
+	...searchValidationSchema,
 };
 
 export const verifyCodeValidationSchema = {
