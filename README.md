@@ -55,6 +55,129 @@ Gets the location related to your IP address
 
 Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources (openweathermap.org, weatherapi.com, smhi.se). Supports the same `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
 
+**Query Parameters:**
+
+| Parameter | Required | Type  | Description |
+|-----------|----------|-------|-------------|
+| `lat`     | ✅       | float | Latitude (-90 to 90) |
+| `lon`     | ✅       | float | Longitude (-180 to 180) |
+| `days`    | ❌       | int   | Number of forecast days (1–6, default `5`) |
+| `units`   | ❌       | string | Unit system: `metric` (default) or `imperial` |
+
+**Response (200):**
+```json
+{
+  "data": {
+    "currentWeather": {
+      "weather": "Clear",
+      "description": "clear sky",
+      "icon": "01d",
+      "dt": 1748000000,
+      "location": {
+        "country_code": "SE",
+        "coords": { "lat": 59.33, "lon": 18.07 },
+        "name": "Stockholm",
+        "timezone": "Europe/Stockholm"
+      },
+      "temperature": {
+        "temp": 18.4,
+        "min": 15.2,
+        "max": 21.1,
+        "feels_like": 17.9
+      },
+      "pressure": 1015,
+      "humidity": 52,
+      "visibility": 10000,
+      "clouds": { "all": 5 },
+      "elevation": {
+        "sea_level": 1015,
+        "ground_level": 1012
+      },
+      "wind": {
+        "speed": 3.6,
+        "deg": 200,
+        "dir": "SSW",
+        "gust": 5.1
+      },
+      "precipitation": {
+        "amount": 0,
+        "hours_measured": 1,
+        "type": "none"
+      },
+      "sunrise": 1748010000,
+      "sunset": 1748065000,
+      "uv": 4,
+      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se"]
+    },
+    "forecastWeather": {
+      "list": {
+        "Monday": [
+          {
+            "dt": 1748001600,
+            "weather": "Partly cloudy",
+            "description": "Partly cloudy",
+            "icon": "03d",
+            "temperature": {
+              "temp": 17.2,
+              "feels_like": 16.8,
+              "max": 19.0,
+              "min": 15.5
+            },
+            "pressure": 1013,
+            "humidity": 58,
+            "elevation": { "sea_level": null, "ground_level": null },
+            "wind": {
+              "speed": 4.1,
+              "deg": 210,
+              "dir": "SSW",
+              "gust": 6.0
+            },
+            "clouds": { "all": 40 },
+            "visibility": 10000,
+            "precipitation": {
+              "amount": 0.2,
+              "hours_measured": 1,
+              "type": "rain"
+            }
+          }
+        ]
+      },
+      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se"]
+    },
+    "currentPollution": {
+      "coord": { "lon": 18.07, "lat": 59.33 },
+      "list": [
+        {
+          "main": { "aqi": 1 },
+          "components": {
+            "co": 201.94,
+            "no": 0.0,
+            "no2": 0.93,
+            "o3": 68.66,
+            "so2": 0.64,
+            "pm2_5": 0.49,
+            "pm10": 0.54,
+            "nh3": 0.12
+          },
+          "dt": 1748000000
+        }
+      ]
+    },
+    "weatherWarnings": {
+      "severity": "YELLOW",
+      "severityDescription": "Certain risks to the public. Take extra care in areas susceptible to changing weather.",
+      "title": "Wind warning",
+      "description": "Strong winds expected this afternoon.",
+      "type": "Wind",
+      "warningsCount": 1,
+      "raw": []
+    }
+  }
+}
+```
+
+> **Note:** `weatherWarnings` is `null` if no warnings are active or the location falls outside a supported warning region. Temperature is in °C for `metric` and °F for `imperial`; wind speed in m/s (`metric`) or mph (`imperial`).
+
 ---
 
 ## V1 API Index
