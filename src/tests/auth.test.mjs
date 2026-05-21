@@ -48,9 +48,10 @@ describe("Auth Routes", () => {
   });
 
   afterAll(async () => {
-    Object.keys(originalEnv).forEach((key) => {
-      process.env[key] = originalEnv[key];
+    Object.keys(process.env).forEach((key) => {
+      if (!(key in originalEnv)) delete process.env[key];
     });
+    Object.assign(process.env, originalEnv);
     if (stop) await stop();
     else if (server && typeof server.close === "function")
       await new Promise((r) => server.close(r));
