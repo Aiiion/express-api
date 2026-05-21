@@ -17,8 +17,11 @@ const MAX_FAILED_ATTEMPTS = 5;
  */
 export const initiateLogin = async (req, res) => {
     try {
-        // Verify password
-        if (req.body.password !== process.env.ADMIN_PASSWORD) {
+        // Hash both passwords to fixed-size digests so timingSafeEqual needs no
+        // length pre-check, removing any length-based timing side-channel.
+        const inputHash = crypto.createHash('sha256').update(req.body.password).digest();
+        const adminHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
+        if (!crypto.timingSafeEqual(inputHash, adminHash)) {
             return res.status(401).send({
                 code: 401,
                 message: 'Invalid password'
