@@ -11,7 +11,7 @@ const smhiService = {
 
         const response = await fetch(
             `${SMHI_FORECAST_API_URL}/geotype/point/lon/${lon}/lat/${lat}/data.json`,
-            { signal: AbortSignal.timeout(5000) }
+            { signal: AbortSignal.timeout(2000) }
         );
         if (!response.ok) throw new Error(`SMHI error: ${response.status} ${response.statusText}`);
         const data = await response.json();

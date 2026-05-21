@@ -5,7 +5,7 @@ const OWM_CACHE_TTL = 600; // 10 minutes
 
 const owmFetch = async (path, query) => {
     const params = new URLSearchParams({ ...query, appid: process.env.OWM_API_KEY });
-    const res = await fetch(`${OWM_API_URL}${path}?${params}`);
+    const res = await fetch(`${OWM_API_URL}${path}?${params}`, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) throw new Error(`OpenWeatherMap error: ${res.status} ${res.statusText}`);
     return res.json();
 };
