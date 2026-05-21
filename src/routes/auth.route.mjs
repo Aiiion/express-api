@@ -6,6 +6,8 @@ import { verifyCodeValidationSchema, loginValidationSchema } from '../utils/vali
 import cors from 'cors';
 import { createStrictCorsOptionsDelegate } from '../utils/corsHelpers.mjs';
 import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import { sendRedisCommand } from '../services/redis.service.mjs';
 
 const router = Router();
 
@@ -15,13 +17,19 @@ const authCorsOptions = createStrictCorsOptionsDelegate({
     exposedHeaders: ['Set-Cookie'],
 });
 
-const loginLimiter = rateLimit({
+const loginLimiterOptions = {
     windowMs: 15 * 60 * 1000,
     max: 10,
     standardHeaders: true,
     legacyHeaders: false,
     message: { code: 429, message: 'Too many login attempts, please try again later' },
-});
+};
+
+if (process.env.NODE_ENV !== 'test') {
+    loginLimiterOptions.store = new RedisStore({ sendCommand: sendRedisCommand });
+}
+
+const loginLimiter = rateLimit(loginLimiterOptions);
 
 // Apply CORS to all auth routes
 router.use("/v1/auth", cors(authCorsOptions));

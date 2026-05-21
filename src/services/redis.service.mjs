@@ -289,6 +289,11 @@ export const clearRedisTestData = async () => {
   testStore.clear();
 };
 
+export const sendRedisCommand = async (...args) => {
+  const client = await getClient();
+  return client.sendCommand(args);
+};
+
 export const withCache = async (key, ttlSeconds, fn) => {
   let cached = null;
   try {

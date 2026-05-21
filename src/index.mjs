@@ -17,6 +17,7 @@ dotenv.config();
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(helmet({
     // CORS middleware already restricts cross-origin access; setting CORP to
     // cross-origin avoids a conflict for clients with COEP enabled.
