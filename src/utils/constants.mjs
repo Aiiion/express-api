@@ -11,3 +11,4 @@ export const exampleLatLon = {
     lon: exampleLon,
 };
 export const GITHUB = "https://github.com/Aiiion/express-api";
+export const COOKIE_NAME = 'jwt_token';

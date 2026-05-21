@@ -506,4 +506,70 @@ describe("weatherAggregatorService", () => {
       expect(result.errors).toHaveLength(3);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // allWeather
+  // -------------------------------------------------------------------------
+  describe("allWeather", () => {
+    beforeEach(() => {
+      owmDtoMocks.forecastWeather.mockReturnValue(owmNormalizedForecast);
+      weatherApiDtoMocks.forecastWeather.mockReturnValue(weatherApiNormalizedForecast);
+      smhiDtoMocks.forecastWeather.mockReturnValue(smhiNormalizedForecast);
+    });
+
+    it("returns both currentWeather and forecastWeather", async () => {
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(result).toHaveProperty("currentWeather");
+      expect(result).toHaveProperty("forecastWeather");
+    });
+
+    it("calls smhiService.forecastWeather exactly once", async () => {
+      smhiServiceMocks.forecastWeather.mockClear();
+
+      await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(smhiServiceMocks.forecastWeather).toHaveBeenCalledTimes(1);
+    });
+
+    it("currentWeather averages data from all three providers", async () => {
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(result.currentWeather.temperature.temp).toBeCloseTo(8.0);
+      expect(result.currentWeather.humidity).toBeCloseTo(75);
+      expect(result.currentWeather.providers).toEqual(
+        expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "smhi.se"])
+      );
+    });
+
+    it("forecastWeather merges data from all three providers", async () => {
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(result.forecastWeather.list).toHaveProperty("Monday");
+      expect(result.forecastWeather.providers).toEqual(
+        expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "smhi.se"])
+      );
+    });
+
+    it("propagates SMHI failure to both currentWeather and forecastWeather errors", async () => {
+      smhiServiceMocks.forecastWeather.mockRejectedValue(new Error("SMHI down"));
+
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(result.currentWeather.errors).toHaveLength(1);
+      expect(result.currentWeather.errors[0].provider).toBe("smhi.se");
+      expect(result.forecastWeather.errors).toHaveLength(1);
+      expect(result.forecastWeather.errors[0].provider).toBe("smhi.se");
+    });
+
+    it("currentWeather and forecastWeather errors are independent when different providers fail", async () => {
+      owmServiceMocks.currentWeather.mockRejectedValue(new Error("OWM current down"));
+      weatherApiServiceMocks.forecastWeather.mockRejectedValue(new Error("WeatherAPI forecast down"));
+
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(result.currentWeather.errors[0].provider).toBe("openweathermaps.org");
+      expect(result.forecastWeather.errors[0].provider).toBe("weatherapi.com");
+    });
+  });
 });
