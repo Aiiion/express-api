@@ -9,6 +9,9 @@ import { logError } from "./errorLog.service.mjs";
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
 
+// Fields whose averaged value should be rounded to the nearest integer
+const ROUND_INTEGER_FIELDS = new Set(['humidity']);
+
 // Nested paths that should NOT be averaged (coordinates)
 const NO_AVERAGE_PATHS = new Set(['location.coords', 'coords', 'wind.deg', 'wind.dir']);
 
@@ -279,7 +282,8 @@ const mergeAndAverage = (sources, parentPath = '') => {
       }
     } else if (typeof firstValue === 'number') {
       // Average numeric values
-      result[key] = averageValues(values);
+      const avg = averageValues(values);
+      result[key] = ROUND_INTEGER_FIELDS.has(key) ? Math.round(avg) : avg;
     } else if (typeof firstValue === 'string') {
       // Special handling for icon - prefer WeatherAPI
       if (key === 'icon') {
