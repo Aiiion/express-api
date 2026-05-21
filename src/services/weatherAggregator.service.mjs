@@ -1,7 +1,10 @@
 import openWeatherMapsService from "./openWeatherMaps.service.mjs";
 import weatherApiService from "./weatherApi.service.mjs";
+import smhiService from "./smhi.service.mjs";
 import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
+import smhiDto from "../dtos/smhi.dto.mjs";
+import { logError } from "./errorLog.service.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
@@ -388,6 +391,132 @@ const mergeForecastData = (sources) => {
   };
 };
 
+/**
+ * Processes settled current weather results from all providers into a merged response.
+ * @param {PromiseSettledResult} owmResult
+ * @param {PromiseSettledResult} weatherApiResult
+ * @param {PromiseSettledResult} smhiResult
+ * @param {boolean} metric
+ * @returns {Object}
+ */
+const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric = true) => {
+  const sources = [];
+  const errors = [];
+  const providers = [];
+
+  if (owmResult.status === "fulfilled") {
+    const normalizedOwm = openWeatherMapsDto.currentWeather(owmResult.value);
+    if (normalizedOwm) {
+      sources.push(normalizedOwm);
+      providers.push(normalizedOwm.provider || "openweathermaps.org");
+    }
+  } else {
+    const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "openweathermaps.org", message: owmMsg });
+    logError(owmResult.reason, { route: "weatherAggregator.currentWeather" });
+  }
+
+  if (weatherApiResult.status === "fulfilled") {
+    const normalizedWeatherApi = weatherApiDto.currentWeather(weatherApiResult.value, metric);
+    if (normalizedWeatherApi) {
+      sources.push(normalizedWeatherApi);
+      providers.push(normalizedWeatherApi.provider || "weatherapi.com");
+    }
+  } else {
+    const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "weatherapi.com", message: waMsg });
+    logError(weatherApiResult.reason, { route: "weatherAggregator.currentWeather" });
+  }
+
+  if (smhiResult.status === "fulfilled") {
+    const normalizedSmhi = smhiDto.currentWeather(smhiResult.value, metric);
+    if (normalizedSmhi) {
+      sources.push(normalizedSmhi);
+      providers.push(normalizedSmhi.provider || "smhi.se");
+    }
+  } else {
+    const smhiMsg = smhiResult?.reason?.message ?? String(smhiResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "smhi.se", message: smhiMsg });
+    logError(smhiResult.reason, { route: "weatherAggregator.currentWeather" });
+  }
+
+  const averaged = mergeAndAverage(sources);
+
+  if (!averaged) {
+    return { error: "All weather providers failed", errors };
+  }
+
+  return {
+    ...averaged,
+    providers,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+};
+
+/**
+ * Processes settled forecast weather results from all providers into a merged response.
+ * @param {PromiseSettledResult} owmResult
+ * @param {PromiseSettledResult} weatherApiResult
+ * @param {PromiseSettledResult} smhiResult
+ * @param {boolean} metric
+ * @returns {Object}
+ */
+const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metric = true) => {
+  const sources = [];
+  const errors = [];
+  const providers = [];
+
+  if (owmResult.status === "fulfilled") {
+    const normalizedOwm = openWeatherMapsDto.forecastWeather(owmResult.value);
+    if (normalizedOwm) {
+      sources.push(normalizedOwm);
+      providers.push(normalizedOwm.provider || "openweathermaps.org");
+    }
+  } else {
+    const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "openweathermaps.org", message: owmMsg });
+    logError(owmResult.reason, { route: "weatherAggregator.forecastWeather" });
+  }
+
+  if (weatherApiResult.status === "fulfilled") {
+    const normalizedWeatherApi = weatherApiDto.forecastWeather(weatherApiResult.value, metric);
+    if (normalizedWeatherApi) {
+      sources.push(normalizedWeatherApi);
+      providers.push(normalizedWeatherApi.provider || "weatherapi.com");
+    }
+  } else {
+    const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "weatherapi.com", message: waMsg });
+    logError(weatherApiResult.reason, { route: "weatherAggregator.forecastWeather" });
+  }
+
+  if (smhiResult.status === "fulfilled") {
+    const timezone = weatherApiResult.value?.location?.tz_id
+      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
+    const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric, timezone);
+    if (normalizedSmhi) {
+      sources.push(normalizedSmhi);
+      providers.push(normalizedSmhi.provider || "smhi.se");
+    }
+  } else {
+    const smhiMsg = smhiResult?.reason?.message ?? String(smhiResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "smhi.se", message: smhiMsg });
+    logError(smhiResult.reason, { route: "weatherAggregator.forecastWeather" });
+  }
+
+  const merged = mergeForecastData(sources);
+
+  if (!merged) {
+    return { error: "All weather providers failed", errors };
+  }
+
+  return {
+    ...merged,
+    providers,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+};
+
 const weatherAggregatorService = {
   /**
    * Aggregates current weather data from multiple sources
@@ -397,53 +526,13 @@ const weatherAggregatorService = {
    * @returns {Promise<Object>} Averaged weather data from all sources
    */
   currentWeather: async (lat, lon, metric = true) => {
-    const sources = [];
-    const errors = [];
-    const providers = [];
-
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
-
-    const [owmResult, weatherApiResult] = await Promise.allSettled([
+    const [owmResult, weatherApiResult, smhiResult] = await Promise.allSettled([
       openWeatherMapsService.currentWeather(owmQuery),
       weatherApiService.currentWeather(lat, lon),
+      smhiService.forecastWeather(lat, lon),
     ]);
-
-    if (owmResult.status === "fulfilled") {
-      const normalizedOwm = openWeatherMapsDto.currentWeather(owmResult.value);
-      if (normalizedOwm) {
-        sources.push(normalizedOwm);
-        providers.push(normalizedOwm.provider || "openweathermaps.org");
-      }
-    } else {
-      errors.push({ provider: "openweathermaps.org", message: owmResult.reason.message });
-    }
-
-    if (weatherApiResult.status === "fulfilled") {
-      const normalizedWeatherApi = weatherApiDto.currentWeather(weatherApiResult.value, metric);
-      if (normalizedWeatherApi) {
-        sources.push(normalizedWeatherApi);
-        providers.push(normalizedWeatherApi.provider || "weatherapi.com");
-      }
-    } else {
-      errors.push({ provider: "weatherapi.com", message: weatherApiResult.reason.message });
-    }
-
-    // Merge and average the data
-    const averaged = mergeAndAverage(sources);
-
-    // If both providers failed, return error structure
-    if (!averaged) {
-      return {
-        error: "All weather providers failed",
-        errors,
-      };
-    }
-
-    return {
-      ...averaged,
-      providers,
-      errors: errors.length > 0 ? errors : undefined,
-    };
+    return processCurrentWeather(owmResult, weatherApiResult, smhiResult, metric);
   },
 
   /**
@@ -455,55 +544,45 @@ const weatherAggregatorService = {
    * @returns {Promise<Object>} Averaged forecast data from all sources
    */
   forecastWeather: async (lat, lon, metric = true, days = 3) => {
-    const sources = [];
-    const errors = [];
-    const providers = [];
-
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
-
-    const [owmResult, weatherApiResult] = await Promise.allSettled([
+    const [owmResult, weatherApiResult, smhiResult] = await Promise.allSettled([
       openWeatherMapsService.forecastWeather(owmQuery),
       weatherApiService.forecastWeather(lat, lon, days),
+      smhiService.forecastWeather(lat, lon),
+    ]);
+    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metric);
+  },
+
+  /**
+   * Fetches all external provider APIs once and returns both current and forecast weather.
+   * Use this in preference to calling currentWeather + forecastWeather separately to avoid
+   * making duplicate requests to shared providers (e.g. SMHI).
+   * @param {number} lat - Latitude
+   * @param {number} lon - Longitude
+   * @param {boolean} metric - Use metric units (default: true)
+   * @param {number} days - Number of forecast days (default: 3)
+   * @returns {Promise<{ currentWeather: Object, forecastWeather: Object }>}
+   */
+  allWeather: async (lat, lon, metric = true, days = 3) => {
+    const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
+    const [
+      owmCurrentResult,
+      owmForecastResult,
+      weatherApiCurrentResult,
+      weatherApiForecastResult,
+      smhiResult,
+    ] = await Promise.allSettled([
+      openWeatherMapsService.currentWeather(owmQuery),
+      openWeatherMapsService.forecastWeather(owmQuery),
+      weatherApiService.currentWeather(lat, lon),
+      weatherApiService.forecastWeather(lat, lon, days),
+      smhiService.forecastWeather(lat, lon),
     ]);
 
-    if (owmResult.status === "fulfilled") {
-      const normalizedOwm = openWeatherMapsDto.forecastWeather(owmResult.value);
-      if (normalizedOwm) {
-        sources.push(normalizedOwm);
-        providers.push(normalizedOwm.provider || "openweathermaps.org");
-      }
-    } else {
-      const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
-      errors.push({ provider: "openweathermaps.org", message: owmMsg });
-    }
+    const currentWeather = processCurrentWeather(owmCurrentResult, weatherApiCurrentResult, smhiResult, metric);
+    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metric);
 
-    if (weatherApiResult.status === "fulfilled") {
-      const normalizedWeatherApi = weatherApiDto.forecastWeather(weatherApiResult.value, metric);
-      if (normalizedWeatherApi) {
-        sources.push(normalizedWeatherApi);
-        providers.push(normalizedWeatherApi.provider || "weatherapi.com");
-      }
-    } else {
-      const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
-      errors.push({ provider: "weatherapi.com", message: waMsg });
-    }
-
-    // Merge forecast data
-    const merged = mergeForecastData(sources);
-
-    // If both providers failed, return error structure
-    if (!merged) {
-      return {
-        error: "All weather providers failed",
-        errors,
-      };
-    }
-
-    return {
-      ...merged,
-      providers,
-      errors: errors.length > 0 ? errors : undefined,
-    };
+    return { currentWeather, forecastWeather };
   },
 };
 

@@ -29,12 +29,11 @@ export const index = async (req, res) => {
     }
   };
 
-  // Use weatherAggregator service to get data from both openWeatherMaps and weatherApi
+  // Use weatherAggregator service to fetch all provider data in a single pass.
   // Get pollution from openWeatherMaps (no aggregation available)
   // Get weather warnings from local provider based on coordinates
-  const [currentWeather, forecastWeather, pollution, warnings] = await Promise.all([
-    weatherAggregatorService.currentWeather(parsedLat, parsedLon, metric),
-    weatherAggregatorService.forecastWeather(parsedLat, parsedLon, metric, forecastDays),
+  const [{ currentWeather, forecastWeather }, pollution, warnings] = await Promise.all([
+    weatherAggregatorService.allWeather(parsedLat, parsedLon, metric, forecastDays),
     openWeatherMapsService.currentPollution({ lat: parsedLat, lon: parsedLon }),
     getWarnings(),
   ]);

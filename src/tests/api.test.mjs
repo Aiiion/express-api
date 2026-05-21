@@ -3,7 +3,6 @@ import {
   weather,
   weatherForecast,
   airPollution,
-  airPollutionForecast,
 } from "../fixtures/openWeatherMaps.fixture.mjs";
 import {
   getIpLocation,
@@ -16,7 +15,6 @@ const owmMocks = {
   currentWeather: jest.fn().mockResolvedValue(weather.data),
   forecastWeather: jest.fn().mockResolvedValue(weatherForecast.data),
   currentPollution: jest.fn().mockResolvedValue(airPollution.data),
-  forecastPollution: jest.fn().mockResolvedValue(airPollutionForecast.data),
 };
 
 const weatherApiMocks = {
@@ -50,10 +48,11 @@ describe("API Routes", () => {
   const originalEnv = process.env.NODE_ENV;
   const originalOwmApiKey = process.env.OWM_API_KEY;
   const originalWeatherApiKey = process.env.WEATHERAPI_API_KEY;
-  
+  const originalResendApiKey = process.env.RESEND_API_KEY;
 
   beforeAll(async () => {
     process.env.OWM_API_KEY = process.env.WEATHERAPI_API_KEY = 'test-key';
+    process.env.RESEND_API_KEY = 'resend_token_123';
     process.env.NODE_ENV = 'test';
     // import app after env is set and mocks registered
     const mod = await import("../index.mjs");
@@ -70,7 +69,6 @@ describe("API Routes", () => {
     owmMocks.currentWeather.mockResolvedValue(weather.data);
     owmMocks.forecastWeather.mockResolvedValue(weatherForecast.data);
     owmMocks.currentPollution.mockResolvedValue(airPollution.data);
-    owmMocks.forecastPollution.mockResolvedValue(airPollutionForecast.data);
     weatherApiMocks.ipLocation.mockResolvedValue(getIpLocation.data);
     weatherApiMocks.currentWeather.mockResolvedValue(weatherApiWeather.data);
     weatherApiMocks.forecastWeather.mockResolvedValue(weatherApiWeatherForecast.data);
@@ -78,9 +76,14 @@ describe("API Routes", () => {
   });
 
   afterAll(async () => {
-    process.env.OWM_API_KEY = originalOwmApiKey;
-    process.env.WEATHERAPI_API_KEY = originalWeatherApiKey;
-    process.env.NODE_ENV = originalEnv;
+    const restoreEnvVar = (key, original) => {
+      if (original === undefined) delete process.env[key];
+      else process.env[key] = original;
+    };
+    restoreEnvVar('OWM_API_KEY', originalOwmApiKey);
+    restoreEnvVar('WEATHERAPI_API_KEY', originalWeatherApiKey);
+    restoreEnvVar('RESEND_API_KEY', originalResendApiKey);
+    restoreEnvVar('NODE_ENV', originalEnv);
     if (stop) await stop();
     else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
   });
@@ -97,8 +100,6 @@ describe("API Routes", () => {
 
   //get requests with query parameters
   it.each([
-    ['/weather', exampleLatLon, 200],
-    ['/weather/pollution', exampleLatLon, 200],
     ['/ip-location', {ip: exampleIp}, 200],
     ['/ip-location', {ip: '9999.9999.9999.999'}, 400],
     ['/v1/weather', exampleLatLon, 200],

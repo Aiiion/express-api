@@ -3,12 +3,12 @@ import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../services/email.service.mjs';
 import { deleteValue, getJsonValue, setJsonValue } from '../../services/redis.service.mjs';
 import { devError } from '../../utils/logger.mjs';
+import { COOKIE_NAME } from '../../utils/constants.mjs';
 
 const SESSION_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const JWT_EXPIRY = '3h';
 const JWT_EXPIRY_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
 const MAX_FAILED_ATTEMPTS = 5;
-const COOKIE_NAME = 'jwt_token';
 
 /**
  * Initiates login by verifying password and sending verification code via email
@@ -17,8 +17,11 @@ const COOKIE_NAME = 'jwt_token';
  */
 export const initiateLogin = async (req, res) => {
     try {
-        // Verify password
-        if (req.body.password !== process.env.ADMIN_PASSWORD) {
+        // Hash both passwords to fixed-size digests so timingSafeEqual needs no
+        // length pre-check, removing any length-based timing side-channel.
+        const inputHash = crypto.createHash('sha256').update(req.body.password).digest();
+        const adminHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
+        if (!crypto.timingSafeEqual(inputHash, adminHash)) {
             return res.status(401).send({
                 code: 401,
                 message: 'Invalid password'

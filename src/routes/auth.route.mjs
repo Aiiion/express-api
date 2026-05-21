@@ -5,6 +5,9 @@ import { validateResult, hasJwtSecret, hasAdminPassword, authenticate } from '..
 import { verifyCodeValidationSchema, loginValidationSchema } from '../utils/validationSchemas.mjs';
 import cors from 'cors';
 import { createStrictCorsOptionsDelegate } from '../utils/corsHelpers.mjs';
+import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import { sendRedisCommand } from '../services/redis.service.mjs';
 
 const router = Router();
 
@@ -14,10 +17,24 @@ const authCorsOptions = createStrictCorsOptionsDelegate({
     exposedHeaders: ['Set-Cookie'],
 });
 
+const loginLimiterOptions = {
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { code: 429, message: 'Too many login attempts, please try again later' },
+};
+
+if (process.env.NODE_ENV !== 'test') {
+    loginLimiterOptions.store = new RedisStore({ sendCommand: sendRedisCommand });
+}
+
+const loginLimiter = rateLimit(loginLimiterOptions);
+
 // Apply CORS to all auth routes
 router.use("/v1/auth", cors(authCorsOptions));
 
-router.post("/v1/auth/login", hasAdminPassword, checkSchema(loginValidationSchema), validateResult, initiateLogin);
+router.post("/v1/auth/login", loginLimiter, hasAdminPassword, checkSchema(loginValidationSchema), validateResult, initiateLogin);
 router.post("/v1/auth/verify", checkSchema(verifyCodeValidationSchema), validateResult, hasJwtSecret, verifyCode);
 router.get("/v1/auth/verify-token", authenticate, verifyToken);
 router.post("/v1/auth/logout", logout);

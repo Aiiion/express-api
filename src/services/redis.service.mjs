@@ -288,3 +288,25 @@ export const clearRedisTestData = async () => {
   if (!isTestEnv()) return;
   testStore.clear();
 };
+
+export const sendRedisCommand = async (...args) => {
+  const client = await getClient();
+  return client.sendCommand(args);
+};
+
+export const withCache = async (key, ttlSeconds, fn) => {
+  let cached = null;
+  try {
+    cached = await getJsonValue(key);
+  } catch (err) {
+    devError('withCache: Redis read error (treating as cache miss)', err);
+  }
+  if (cached !== null) return cached;
+  const data = await fn();
+  try {
+    await setJsonValue(key, data, ttlSeconds);
+  } catch (err) {
+    devError('withCache: Redis write error (ignoring)', err);
+  }
+  return data;
+};
