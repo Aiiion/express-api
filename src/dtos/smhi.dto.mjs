@@ -97,7 +97,7 @@ const smhiDto = {
       provider: "smhi.se",
     };
   },
-  forecastWeather: (data, metric = true) => {
+  forecastWeather: (data, metric = true, timezone = 'UTC') => {
     if (!data?.timeSeries) return null;
     const now = Math.floor(Date.now() / 1000);
     const formatted = {};
@@ -106,7 +106,7 @@ const smhiDto = {
       const dt = Math.floor(new Date(entry.time).getTime() / 1000);
       if (dt <= now) continue;
 
-      const day = translateEpochDay(dt);
+      const day = translateEpochDay(dt, timezone);
       if (!formatted[day]) formatted[day] = [];
       formatted[day].push(mapTimeSeriesEntry(entry, metric));
     }

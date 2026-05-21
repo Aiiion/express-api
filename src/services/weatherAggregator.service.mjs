@@ -491,7 +491,9 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metric 
   }
 
   if (smhiResult.status === "fulfilled") {
-    const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric);
+    const timezone = weatherApiResult.value?.location?.tz_id
+      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
+    const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric, timezone);
     if (normalizedSmhi) {
       sources.push(normalizedSmhi);
       providers.push(normalizedSmhi.provider || "smhi.se");
