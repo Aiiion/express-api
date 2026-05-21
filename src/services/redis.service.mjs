@@ -288,3 +288,11 @@ export const clearRedisTestData = async () => {
   if (!isTestEnv()) return;
   testStore.clear();
 };
+
+export const withCache = async (key, ttlSeconds, fn) => {
+  const cached = await getJsonValue(key);
+  if (cached !== null) return cached;
+  const data = await fn();
+  await setJsonValue(key, data, ttlSeconds);
+  return data;
+};

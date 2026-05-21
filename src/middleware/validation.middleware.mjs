@@ -1,6 +1,7 @@
 import { validationResult } from "express-validator";
 import jwt from 'jsonwebtoken';
 import { getMetaResourceModel } from '../utils/bindingsHelpers.mjs';
+import { COOKIE_NAME } from '../utils/constants.mjs';
 
 const jwtSecretCheck = (res) => {
     if (!process.env.JWT_SECRET) {
@@ -12,6 +13,16 @@ const jwtSecretCheck = (res) => {
     }
     return false;
 }
+
+const requireEnv = (varName, message) => (req, res, next) => {
+    if (!process.env[varName])
+        return res.status(500).json({ code: 500, message });
+    next();
+};
+
+export const hasOwmKey = requireEnv('OWM_API_KEY', 'API key missing from environment variables');
+export const hasWeatherApiKey = requireEnv('WEATHERAPI_API_KEY', 'API key missing from environment variables');
+export const hasAdminPassword = requireEnv('ADMIN_PASSWORD', 'Authentication not configured');
 
 export const validateResult = (req, res, next) => {
     const errors = validationResult(req);
@@ -48,45 +59,10 @@ export const metaFieldExists = (req, res, next) => {
     next();
 };
 
-export const hasOwmKey = (req, res, next) => {
-    if (!process.env.OWM_API_KEY)
-        return res
-          .status(500)
-          .send({ 
-            code: 500,
-            message: "API key missing from environment variables" 
-        });
-    next();
-}
-
-export const hasWeatherApiKey = (req, res, next) => {
-    if (!process.env.WEATHERAPI_API_KEY)
-        return res
-          .status(500)
-          .send({ 
-            code: 500,
-            message: "API key missing from environment variables" 
-        });
-    next();
-}
-
 export const hasJwtSecret = (req, res, next) => {
     if (jwtSecretCheck(res)) return;
     next();
 }
-
-export const hasAdminPassword = (req, res, next) => {
-    if (!process.env.ADMIN_PASSWORD)
-        return res
-          .status(500)
-          .send({ 
-            code: 500,
-            message: "Authentication not configured" 
-        });
-    next();
-}
-
-const COOKIE_NAME = 'jwt_token';
 
 export const authenticate = (req, res, next) => {
     if (jwtSecretCheck(res)) return;
