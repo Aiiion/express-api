@@ -23,10 +23,14 @@ export const translateEpochTime = (epoch, timezone) => {
       timeZone: timezone,
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
+      hourCycle: 'h23'
     });
     const timeParts = timeStr.match(/(\d{2}):(\d{2})/);
     if (timeParts) return `${timeParts[1]}:${timeParts[2]}`;
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
   }
 
   if (typeof timezone === 'number') {
