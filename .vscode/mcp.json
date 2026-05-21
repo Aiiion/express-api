@@ -1,0 +1,21 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "expressApiDatabaseUrl",
+      "description": "PostgreSQL connection URL for this workspace (for example postgresql://user:password@localhost:5432/name)",
+      "password": true
+    }
+  ],
+  "servers": {
+    "projectPostgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${input:expressApiDatabaseUrl}"
+      ]
+    }
+  }
+}
