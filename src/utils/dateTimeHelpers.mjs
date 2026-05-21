@@ -7,8 +7,8 @@ export const translateEpochDay = (epoch, timezone) => {
   }
 
   if (typeof timezone === 'number') {
-    const adjusted = new Date(date.getTime() + timezone * 3_600_000 + date.getTimezoneOffset() * 60_000);
-    return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(adjusted);
+    const adjusted = new Date(date.getTime() + timezone * 3_600_000);
+    return new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(adjusted);
   }
 
   return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
@@ -30,9 +30,9 @@ export const translateEpochTime = (epoch, timezone) => {
   }
 
   if (typeof timezone === 'number') {
-    const adjusted = new Date(date.getTime() + timezone * 3_600_000 + date.getTimezoneOffset() * 60_000);
-    const h = String(adjusted.getHours()).padStart(2, '0');
-    const m = String(adjusted.getMinutes()).padStart(2, '0');
+    const adjusted = new Date(date.getTime() + timezone * 3_600_000);
+    const h = String(adjusted.getUTCHours()).padStart(2, '0');
+    const m = String(adjusted.getUTCMinutes()).padStart(2, '0');
     return `${h}:${m}`;
   }
 
