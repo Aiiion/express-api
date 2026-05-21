@@ -411,7 +411,8 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric =
       providers.push(normalizedOwm.provider || "openweathermaps.org");
     }
   } else {
-    errors.push({ provider: "openweathermaps.org", message: owmResult.reason.message });
+    const owmMsg = owmResult?.reason?.message ?? String(owmResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "openweathermaps.org", message: owmMsg });
     logError(owmResult.reason, { route: "weatherAggregator.currentWeather" });
   }
 
@@ -422,7 +423,8 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric =
       providers.push(normalizedWeatherApi.provider || "weatherapi.com");
     }
   } else {
-    errors.push({ provider: "weatherapi.com", message: weatherApiResult.reason.message });
+    const waMsg = weatherApiResult?.reason?.message ?? String(weatherApiResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "weatherapi.com", message: waMsg });
     logError(weatherApiResult.reason, { route: "weatherAggregator.currentWeather" });
   }
 
@@ -433,7 +435,8 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric =
       providers.push(normalizedSmhi.provider || "smhi.se");
     }
   } else {
-    errors.push({ provider: "smhi.se", message: smhiResult.reason.message });
+    const smhiMsg = smhiResult?.reason?.message ?? String(smhiResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "smhi.se", message: smhiMsg });
     logError(smhiResult.reason, { route: "weatherAggregator.currentWeather" });
   }
 
