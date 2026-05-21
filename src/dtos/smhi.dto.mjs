@@ -7,6 +7,7 @@ const getHoursMeasured = (time, intervalStart) => {
   return Math.max(1, Math.round((endMs - startMs) / (1000 * 60 * 60)));
 };
 
+// https://opendata.smhi.se/metfcst/snow1gv1/parameters#precipitation-type
 const mapPrecipitationType = (typeCode) => {
   if (typeCode === 0) return "none";
   if (typeCode === 5 || typeCode === 6 || typeCode === 9) return "snow";
