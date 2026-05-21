@@ -429,7 +429,7 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric =
   }
 
   if (smhiResult.status === "fulfilled") {
-    const normalizedSmhi = smhiDto.currentWeather(smhiResult.value);
+    const normalizedSmhi = smhiDto.currentWeather(smhiResult.value, metric);
     if (normalizedSmhi) {
       sources.push(normalizedSmhi);
       providers.push(normalizedSmhi.provider || "smhi.se");
@@ -491,7 +491,7 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metric 
   }
 
   if (smhiResult.status === "fulfilled") {
-    const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value);
+    const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric);
     if (normalizedSmhi) {
       sources.push(normalizedSmhi);
       providers.push(normalizedSmhi.provider || "smhi.se");

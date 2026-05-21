@@ -1,4 +1,5 @@
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
 
 const getHoursMeasured = (time, intervalStart) => {
   const endMs = new Date(time).getTime();
@@ -27,7 +28,7 @@ const mapSymbolToWeather = (symbolCode) => {
   return symbols[symbolCode] || null;
 };
 
-const mapTimeSeriesEntry = (entry) => {
+const mapTimeSeriesEntry = (entry, metric = true) => {
   const { time, intervalParametersStartTime, data } = entry;
   const dt = Math.floor(new Date(time).getTime() / 1000);
   const hoursMeasured = getHoursMeasured(time, intervalParametersStartTime);
@@ -38,7 +39,9 @@ const mapTimeSeriesEntry = (entry) => {
     description: mapSymbolToWeather(data.symbol_code),
     icon: null,
     temperature: {
-      temp: data.air_temperature ?? null,
+      temp: data.air_temperature != null
+        ? (metric ? data.air_temperature : celsiusToFahrenheit(data.air_temperature))
+        : null,
       feels_like: null,
       max: null,
       min: null,
@@ -54,13 +57,19 @@ const mapTimeSeriesEntry = (entry) => {
       ground_level: null,
     },
     wind: {
-      speed: data.wind_speed ?? null,
+      speed: data.wind_speed != null
+        ? (metric ? data.wind_speed : msToMph(data.wind_speed))
+        : null,
       deg: data.wind_from_direction ?? null,
       dir: null,
-      gust: data.wind_speed_of_gust ?? null,
+      gust: data.wind_speed_of_gust != null
+        ? (metric ? data.wind_speed_of_gust : msToMph(data.wind_speed_of_gust))
+        : null,
     },
     precipitation: {
-      amount: data.precipitation_amount_mean ?? 0,
+      amount: data.precipitation_amount_mean != null
+        ? (metric ? data.precipitation_amount_mean : mmToInches(data.precipitation_amount_mean))
+        : 0,
       hours_measured: hoursMeasured,
       type: precipType,
     },
@@ -68,14 +77,14 @@ const mapTimeSeriesEntry = (entry) => {
 };
 
 const smhiDto = {
-  currentWeather: (data) => {
+  currentWeather: (data, metric = true) => {
     if (!data?.timeSeries?.length) return null;
     const coords = data.geometry?.coordinates
       ? { lat: data.geometry.coordinates[1], lon: data.geometry.coordinates[0] }
       : null;
     const entry = data.timeSeries[0];
     return {
-      ...mapTimeSeriesEntry(entry),
+      ...mapTimeSeriesEntry(entry, metric),
       location: {
         country_code: "SE",
         coords,
@@ -88,7 +97,7 @@ const smhiDto = {
       provider: "smhi.se",
     };
   },
-  forecastWeather: (data) => {
+  forecastWeather: (data, metric = true) => {
     if (!data?.timeSeries) return null;
     const now = Math.floor(Date.now() / 1000);
     const formatted = {};
@@ -99,7 +108,7 @@ const smhiDto = {
 
       const day = translateEpochDay(dt);
       if (!formatted[day]) formatted[day] = [];
-      formatted[day].push(mapTimeSeriesEntry(entry));
+      formatted[day].push(mapTimeSeriesEntry(entry, metric));
     }
 
     return { list: formatted, provider: "smhi.se" };
