@@ -8,8 +8,11 @@ export const handleError = async (err, req, res, next) => {
     await logError(err, { route: req.originalUrl });
     if (res.headersSent) return next(err);
 
+    // Do not expose internal error details for server errors
+    const message = statusCode >= 500 ? 'Internal server error' : err.message;
+
     return res.status(statusCode).json({
         code: statusCode,
-        message: err.message,
+        message,
     });
 }

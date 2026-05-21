@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import routes from "./routes/index.route.mjs";
 import cors from 'cors';
 import { connect, closePool } from './services/db.service.mjs';
@@ -16,6 +17,11 @@ dotenv.config();
 
 const app = express();
 
+app.use(helmet({
+    // CORS middleware already restricts cross-origin access; setting CORP to
+    // cross-origin avoids a conflict for clients with COEP enabled.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(createStrictCorsOptionsDelegate()));

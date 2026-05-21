@@ -17,8 +17,12 @@ const MAX_FAILED_ATTEMPTS = 5;
  */
 export const initiateLogin = async (req, res) => {
     try {
-        // Verify password
-        if (req.body.password !== process.env.ADMIN_PASSWORD) {
+        // Verify password using constant-time comparison to prevent timing attacks
+        const inputBuf = Buffer.from(req.body.password);
+        const adminBuf = Buffer.from(process.env.ADMIN_PASSWORD);
+        const lengthsMatch = inputBuf.length === adminBuf.length;
+        const valuesMatch = crypto.timingSafeEqual(inputBuf, lengthsMatch ? adminBuf : inputBuf);
+        if (!lengthsMatch || !valuesMatch) {
             return res.status(401).send({
                 code: 401,
                 message: 'Invalid password'
