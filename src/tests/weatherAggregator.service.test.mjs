@@ -342,6 +342,115 @@ describe("weatherAggregatorService", () => {
       expect(result.errors).toBeUndefined();
     });
 
+    describe("output field rounding", () => {
+      const makeCurrent = (overrides) => ({
+        weather: "Clouds",
+        description: null,
+        icon: null,
+        dt: 1000000,
+        location: { country_code: null, coords: { lat: 59.4, lon: 18.0 }, name: null, timezone: "UTC" },
+        temperature: { temp: 10.0, min: null, max: null, feels_like: null },
+        pressure: 1010,
+        humidity: 80,
+        visibility: 10000,
+        clouds: { all: 50 },
+        elevation: { sea_level: null, ground_level: null },
+        wind: { speed: 4.0, deg: 180, dir: null, gust: null },
+        precipitation: { amount: 0.0, hours_measured: 1, type: "none" },
+        sunrise: null,
+        sunset: null,
+        uv: null,
+        provider: "test",
+        ...overrides,
+      });
+
+      it("rounds temperature fields to the nearest integer", async () => {
+        // (10.5 + 7.2 + 8.3 + 7.8) / 4 = 8.45 → 8
+        owmDtoMocks.currentWeather.mockReturnValue(makeCurrent({ temperature: { temp: 10.5, min: 8.1, max: 12.9, feels_like: 9.7 } }));
+        weatherApiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ temperature: { temp: 7.2, min: null, max: null, feels_like: 6.3 } }));
+        smhiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ temperature: { temp: 8.3, min: null, max: null, feels_like: null } }));
+        metDtoMocks.currentWeather.mockReturnValue(makeCurrent({ temperature: { temp: 7.8, min: null, max: null, feels_like: null } }));
+
+        const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+        expect(Number.isInteger(result.temperature.temp)).toBe(true);
+        expect(Number.isInteger(result.temperature.feels_like)).toBe(true);
+        // min and max from one source only — still integer-rounded
+        expect(Number.isInteger(result.temperature.min)).toBe(true);
+        expect(Number.isInteger(result.temperature.max)).toBe(true);
+      });
+
+      it("rounds pressure to the nearest integer", async () => {
+        // (1010.4 + 1023.7 + 1016.2 + 1018.5) / 4 = 1017.2 → 1017
+        owmDtoMocks.currentWeather.mockReturnValue(makeCurrent({ pressure: 1010.4 }));
+        weatherApiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ pressure: 1023.7 }));
+        smhiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ pressure: 1016.2 }));
+        metDtoMocks.currentWeather.mockReturnValue(makeCurrent({ pressure: 1018.5 }));
+
+        const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+        expect(Number.isInteger(result.pressure)).toBe(true);
+      });
+
+      it("rounds visibility to the nearest integer", async () => {
+        // (10000 + 8000 + 11500) / 3 = 9833.33… → 9833
+        owmDtoMocks.currentWeather.mockReturnValue(makeCurrent({ visibility: 10000 }));
+        weatherApiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ visibility: 8000 }));
+        smhiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ visibility: 11500 }));
+        metDtoMocks.currentWeather.mockReturnValue(makeCurrent({ visibility: null }));
+
+        const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+        expect(Number.isInteger(result.visibility)).toBe(true);
+        expect(result.visibility).toBe(9833);
+      });
+
+      it("rounds clouds.all to the nearest integer", async () => {
+        // (66 + 33 + 50 + 25) / 4 = 43.5 → 44
+        owmDtoMocks.currentWeather.mockReturnValue(makeCurrent({ clouds: { all: 66 } }));
+        weatherApiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ clouds: { all: 33 } }));
+        smhiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ clouds: { all: 50 } }));
+        metDtoMocks.currentWeather.mockReturnValue(makeCurrent({ clouds: { all: 25 } }));
+
+        const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+        expect(Number.isInteger(result.clouds.all)).toBe(true);
+        expect(result.clouds.all).toBe(44);
+      });
+
+      it("rounds wind.speed and wind.gust to at most 2 decimal places", async () => {
+        // speed: (4.1234 + 8.5678 + 2.8765 + 3.1111) / 4 = 4.6697 → 4.67
+        // gust:  (16.6789 + 2.8765) / 2 = 9.7777 → 9.78
+        owmDtoMocks.currentWeather.mockReturnValue(makeCurrent({ wind: { speed: 4.1234, deg: 180, dir: null, gust: null } }));
+        weatherApiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ wind: { speed: 8.5678, deg: 46, dir: "NE", gust: 16.6789 } }));
+        smhiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ wind: { speed: 2.8765, deg: 76, dir: null, gust: 2.8765 } }));
+        metDtoMocks.currentWeather.mockReturnValue(makeCurrent({ wind: { speed: 3.1111, deg: 76, dir: null, gust: null } }));
+
+        const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+        const speedDecimals = (result.wind.speed.toString().split('.')[1] ?? '').length;
+        const gustDecimals = (result.wind.gust.toString().split('.')[1] ?? '').length;
+        expect(speedDecimals).toBeLessThanOrEqual(2);
+        expect(gustDecimals).toBeLessThanOrEqual(2);
+        expect(result.wind.speed).toBe(4.67);
+        expect(result.wind.gust).toBe(9.78);
+      });
+
+      it("rounds precipitation.amount to at most 2 decimal places", async () => {
+        // hourly rates: 2.1111, 1.8888, 0.5555, 0.5555 → avg = 1.277725 → 1.28
+        owmDtoMocks.currentWeather.mockReturnValue(makeCurrent({ precipitation: { amount: 2.1111, hours_measured: 1, type: "rain" } }));
+        weatherApiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ precipitation: { amount: 1.8888, hours_measured: 1, type: "rain" } }));
+        smhiDtoMocks.currentWeather.mockReturnValue(makeCurrent({ precipitation: { amount: 0.5555, hours_measured: 1, type: "rain" } }));
+        metDtoMocks.currentWeather.mockReturnValue(makeCurrent({ precipitation: { amount: 0.5555, hours_measured: 1, type: "rain" } }));
+
+        const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+        const decimals = (result.precipitation.amount.toString().split('.')[1] ?? '').length;
+        expect(decimals).toBeLessThanOrEqual(2);
+        expect(result.precipitation.amount).toBe(1.28);
+      });
+    });
+
     it("normalizes precipitation amounts when both providers report 1-hour periods", async () => {
       owmDtoMocks.currentWeather.mockReturnValue({
         ...owmNormalizedCurrent,
@@ -399,8 +508,8 @@ describe("weatherAggregatorService", () => {
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // WeatherAPI (6.0), SMHI (8.0) and Yr (8.0) are averaged
-      expect(result.temperature.temp).toBeCloseTo(22 / 3);
+      // WeatherAPI (6.0), SMHI (8.0) and Yr (8.0) are averaged → 22/3 ≈ 7.33 → rounds to 7
+      expect(result.temperature.temp).toBe(7);
       expect(result.providers).toEqual(expect.arrayContaining(["weatherapi.com", "smhi.se", "met.no"]));
       expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
@@ -412,8 +521,8 @@ describe("weatherAggregatorService", () => {
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // OWM (10.0), SMHI (8.0) and Yr (8.0) are averaged
-      expect(result.temperature.temp).toBeCloseTo(26 / 3);
+      // OWM (10.0), SMHI (8.0) and Yr (8.0) are averaged → 26/3 ≈ 8.67 → rounds to 9
+      expect(result.temperature.temp).toBe(9);
       expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "smhi.se", "met.no"]));
       expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
@@ -589,11 +698,103 @@ describe("weatherAggregatorService", () => {
       expect(result.error).toBe("All weather providers failed");
       expect(result.errors).toHaveLength(4);
     });
-  });
 
-  // -------------------------------------------------------------------------
-  // allWeather
-  // -------------------------------------------------------------------------
+    describe("output field rounding", () => {
+      const makeForecastHour = (overrides) => ({
+        dt: 1000000,
+        weather: "Clouds",
+        description: "overcast clouds",
+        icon: null,
+        temperature: { temp: 10.0, feels_like: 9.0, max: null, min: null },
+        pressure: 1010,
+        humidity: 80,
+        visibility: 10000,
+        elevation: { sea_level: null, ground_level: null },
+        wind: { speed: 4.0, deg: 180, dir: null, gust: null },
+        clouds: { all: 50 },
+        precipitation: { amount: 0.0, hours_measured: 1, type: "none" },
+        ...overrides,
+      });
+
+      it("rounds forecast temperature fields to the nearest integer", async () => {
+        // temp avg: (10.5 + 7.2 + 8.3 + 7.8) / 4 = 8.45 → 8
+        owmDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ temperature: { temp: 10.5, feels_like: 9.3, max: null, min: null } })] }, provider: "openweathermaps.org" });
+        weatherApiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ temperature: { temp: 7.2, feels_like: 6.3, max: null, min: null } })] }, provider: "weatherapi.com" });
+        smhiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ temperature: { temp: 8.3, feels_like: null, max: null, min: null } })] }, provider: "smhi.se" });
+        metDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ temperature: { temp: 7.8, feels_like: null, max: null, min: null } })] }, provider: "met.no" });
+
+        const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+        const hour = result.list.Monday[0];
+
+        expect(Number.isInteger(hour.temperature.temp)).toBe(true);
+        expect(Number.isInteger(hour.temperature.feels_like)).toBe(true);
+      });
+
+      it("rounds forecast pressure and visibility to the nearest integer", async () => {
+        // pressure: (1010.4 + 1023.7 + 1016.2 + 1018.5) / 4 = 1017.2 → 1017
+        // visibility: (10000 + 8000 + 11500) / 3 = 9833.33 → 9833
+        owmDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ pressure: 1010.4, visibility: 10000 })] }, provider: "openweathermaps.org" });
+        weatherApiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ pressure: 1023.7, visibility: 8000 })] }, provider: "weatherapi.com" });
+        smhiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ pressure: 1016.2, visibility: 11500 })] }, provider: "smhi.se" });
+        metDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ pressure: 1018.5, visibility: null })] }, provider: "met.no" });
+
+        const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+        const hour = result.list.Monday[0];
+
+        expect(Number.isInteger(hour.pressure)).toBe(true);
+        expect(Number.isInteger(hour.visibility)).toBe(true);
+        expect(hour.visibility).toBe(9833);
+      });
+
+      it("rounds forecast clouds.all to the nearest integer", async () => {
+        // (66 + 33 + 50 + 25) / 4 = 43.5 → 44
+        owmDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ clouds: { all: 66 } })] }, provider: "openweathermaps.org" });
+        weatherApiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ clouds: { all: 33 } })] }, provider: "weatherapi.com" });
+        smhiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ clouds: { all: 50 } })] }, provider: "smhi.se" });
+        metDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ clouds: { all: 25 } })] }, provider: "met.no" });
+
+        const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+        const hour = result.list.Monday[0];
+
+        expect(Number.isInteger(hour.clouds.all)).toBe(true);
+        expect(hour.clouds.all).toBe(44);
+      });
+
+      it("rounds forecast wind.speed and wind.gust to at most 2 decimal places", async () => {
+        // speed: (4.1234 + 8.5678 + 2.8765 + 3.1111) / 4 = 4.6697 → 4.67
+        // gust:  (16.6789 + 2.8765) / 2 = 9.7777 → 9.78
+        owmDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ wind: { speed: 4.1234, deg: 180, dir: null, gust: null } })] }, provider: "openweathermaps.org" });
+        weatherApiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ wind: { speed: 8.5678, deg: 46, dir: "NE", gust: 16.6789 } })] }, provider: "weatherapi.com" });
+        smhiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ wind: { speed: 2.8765, deg: 76, dir: null, gust: 2.8765 } })] }, provider: "smhi.se" });
+        metDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ wind: { speed: 3.1111, deg: 76, dir: null, gust: null } })] }, provider: "met.no" });
+
+        const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+        const hour = result.list.Monday[0];
+
+        const speedDecimals = (hour.wind.speed.toString().split('.')[1] ?? '').length;
+        const gustDecimals = (hour.wind.gust.toString().split('.')[1] ?? '').length;
+        expect(speedDecimals).toBeLessThanOrEqual(2);
+        expect(gustDecimals).toBeLessThanOrEqual(2);
+        expect(hour.wind.speed).toBe(4.67);
+        expect(hour.wind.gust).toBe(9.78);
+      });
+
+      it("rounds forecast precipitation.amount to at most 2 decimal places", async () => {
+        // hourly rates: 2.1111, 1.8888, 0.5555, 0.5555 → avg = 1.277725 → 1.28
+        owmDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ precipitation: { amount: 2.1111, hours_measured: 1, type: "rain" } })] }, provider: "openweathermaps.org" });
+        weatherApiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ precipitation: { amount: 1.8888, hours_measured: 1, type: "rain" } })] }, provider: "weatherapi.com" });
+        smhiDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ precipitation: { amount: 0.5555, hours_measured: 1, type: "rain" } })] }, provider: "smhi.se" });
+        metDtoMocks.forecastWeather.mockReturnValue({ list: { Monday: [makeForecastHour({ precipitation: { amount: 0.5555, hours_measured: 1, type: "rain" } })] }, provider: "met.no" });
+
+        const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+        const hour = result.list.Monday[0];
+
+        const decimals = (hour.precipitation.amount.toString().split('.')[1] ?? '').length;
+        expect(decimals).toBeLessThanOrEqual(2);
+        expect(hour.precipitation.amount).toBe(1.28);
+      });
+    });
+  });
   describe("allWeather", () => {
     beforeEach(() => {
       owmDtoMocks.forecastWeather.mockReturnValue(owmNormalizedForecast);

@@ -6,10 +6,13 @@ import {
   weather as weatherApiWeather,
   weatherForecast as weatherApiForecast
 } from "../fixtures/weatherApi.fixture.mjs";
+import { smhiForecast } from "../fixtures/smhi.fixture.mjs";
+import { metForecast } from "../fixtures/met.fixture.mjs";
 import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import { devError } from "../utils/logger.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
+import metDto from "../dtos/met.dto.mjs";
 
 /**
  * Recursively extracts all keys from an object to get its structure
@@ -69,32 +72,6 @@ const compareStructures = (keys1, keys2, name1, name2) => {
   };
 };
 
-// Inline SMHI mock data with far-future timestamps so forecastWeather does not
-// filter them out (the DTO skips entries whose dt <= Date.now() / 1000).
-const smhiMockData = {
-  geometry: { type: "Point", coordinates: [16.158549, 58.577821] },
-  timeSeries: [
-    {
-      time: "2099-01-01T12:00:00Z",
-      intervalParametersStartTime: "2099-01-01T11:00:00Z",
-      data: {
-        air_temperature: 5.0,
-        wind_from_direction: 180,
-        wind_speed: 3.0,
-        wind_speed_of_gust: 5.0,
-        relative_humidity: 70,
-        air_pressure_at_mean_sea_level: 1013.0,
-        visibility_in_air: 10.0,
-        cloud_area_fraction: 4,
-        precipitation_amount_mean: 0.5,
-        precipitation_frozen_part: 0,
-        predominant_precipitation_type_at_surface: 1,
-        symbol_code: 4,
-      },
-    },
-  ],
-};
-
 describe('DTO Structure Consistency', () => {
   describe('currentWeather', () => {
     it('should have the same structure across openWeatherMaps and weatherApi DTOs', () => {
@@ -120,12 +97,28 @@ describe('DTO Structure Consistency', () => {
 
     it('should have the same structure across openWeatherMaps and smhi DTOs', () => {
       const owmResult = openWeatherMapsDto.currentWeather(weather.data);
-      const smhiResult = smhiDto.currentWeather(smhiMockData);
+      const smhiResult = smhiDto.currentWeather(smhiForecast.data);
 
       const owmKeys = getObjectStructure(owmResult);
       const smhiKeys = getObjectStructure(smhiResult);
 
       const comparison = compareStructures(owmKeys, smhiKeys, 'openWeatherMaps', 'smhi');
+
+      if (!comparison.areEqual) {
+        devError(comparison.report);
+      }
+
+      expect(comparison.areEqual).toBe(true);
+    });
+
+    it('should have the same structure across openWeatherMaps and met DTOs', () => {
+      const owmResult = openWeatherMapsDto.currentWeather(weather.data);
+      const metResult = metDto.currentWeather(metForecast.data);
+
+      const owmKeys = getObjectStructure(owmResult);
+      const metKeys = getObjectStructure(metResult);
+
+      const comparison = compareStructures(owmKeys, metKeys, 'openWeatherMaps', 'met');
 
       if (!comparison.areEqual) {
         devError(comparison.report);
@@ -184,7 +177,7 @@ describe('DTO Structure Consistency', () => {
 
     it('should have the same structure across openWeatherMaps and smhi DTOs', () => {
       const owmResult = openWeatherMapsDto.forecastWeather(weatherForecast.data);
-      const smhiResult = smhiDto.forecastWeather(smhiMockData);
+      const smhiResult = smhiDto.forecastWeather(smhiForecast.data);
 
       const owmDays = Object.keys(owmResult.list);
       const smhiDays = Object.keys(smhiResult.list);
@@ -203,6 +196,40 @@ describe('DTO Structure Consistency', () => {
       );
 
       const dayStructureComparison = compareStructures(owmKeys, smhiKeys, 'openWeatherMaps', 'smhi');
+
+      if (!topLevelComparison.areEqual) {
+        devError('Top level:', topLevelComparison.report);
+      }
+
+      if (!dayStructureComparison.areEqual) {
+        devError('Day structure:', dayStructureComparison.report);
+      }
+
+      expect(topLevelComparison.areEqual).toBe(true);
+      expect(dayStructureComparison.areEqual).toBe(true);
+    });
+
+    it('should have the same structure across openWeatherMaps and met DTOs', () => {
+      const owmResult = openWeatherMapsDto.forecastWeather(weatherForecast.data);
+      const metResult = metDto.forecastWeather(metForecast.data);
+
+      const owmDays = Object.keys(owmResult.list);
+      const metDays = Object.keys(metResult.list);
+
+      expect(owmDays.length).toBeGreaterThan(0);
+      expect(metDays.length).toBeGreaterThan(0);
+
+      const owmKeys = getObjectStructure(owmResult.list[owmDays[0]]);
+      const metKeys = getObjectStructure(metResult.list[metDays[0]]);
+
+      const topLevelComparison = compareStructures(
+        new Set(Object.keys(owmResult)),
+        new Set(Object.keys(metResult)),
+        'openWeatherMaps',
+        'met'
+      );
+
+      const dayStructureComparison = compareStructures(owmKeys, metKeys, 'openWeatherMaps', 'met');
 
       if (!topLevelComparison.areEqual) {
         devError('Top level:', topLevelComparison.report);
