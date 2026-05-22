@@ -11,8 +11,17 @@ import { logError } from "./errorLog.service.mjs";
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
 
-// Fields whose averaged value should be rounded to the nearest integer
-const ROUND_INTEGER_FIELDS = new Set(['humidity']);
+// Fields whose averaged value should be rounded to the nearest integer (by key name)
+const ROUND_INTEGER_FIELDS = new Set(['humidity', 'pressure', 'visibility']);
+
+// Nested paths whose averaged value should be rounded to the nearest integer
+const ROUND_INTEGER_PATHS = new Set([
+  'temperature.temp', 'temperature.min', 'temperature.max', 'temperature.feels_like',
+  'clouds.all',
+]);
+
+// Nested paths whose averaged value should be rounded to at most 2 decimal places
+const ROUND_TWO_DECIMAL_PATHS = new Set(['wind.speed', 'wind.gust']);
 
 // Nested paths that should NOT be averaged (coordinates)
 const NO_AVERAGE_PATHS = new Set(['location.coords', 'coords', 'wind.deg', 'wind.dir']);
@@ -72,8 +81,8 @@ const mergePrecipitation = (precipitationObjects) => {
   const hoursMeasured = precipData.map(p => p.hours_measured);
   const targetHours = Math.min(...hoursMeasured);
 
-  // Calculate the amount for the target hours
-  const normalizedAmount = avgHourlyRate * targetHours;
+  // Calculate the amount for the target hours, rounded to 2 decimal places
+  const normalizedAmount = Math.round(avgHourlyRate * targetHours * 100) / 100;
 
   // Determine precipitation type (take first non-"none" type, or most common)
   const types = precipData.map(p => p.type).filter(t => t && t !== 'none');
@@ -285,7 +294,14 @@ const mergeAndAverage = (sources, parentPath = '') => {
     } else if (typeof firstValue === 'number') {
       // Average numeric values
       const avg = averageValues(values);
-      result[key] = ROUND_INTEGER_FIELDS.has(key) ? Math.round(avg) : avg;
+      const fullPath = parentPath ? `${parentPath}.${key}` : key;
+      if (ROUND_INTEGER_FIELDS.has(key) || ROUND_INTEGER_PATHS.has(fullPath)) {
+        result[key] = avg !== null ? Math.round(avg) : null;
+      } else if (ROUND_TWO_DECIMAL_PATHS.has(fullPath)) {
+        result[key] = avg !== null ? Math.round(avg * 100) / 100 : null;
+      } else {
+        result[key] = avg;
+      }
     } else if (typeof firstValue === 'string') {
       // Special handling for icon - prefer WeatherAPI
       if (key === 'icon') {
