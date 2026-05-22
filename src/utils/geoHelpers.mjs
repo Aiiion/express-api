@@ -1,46 +1,62 @@
+import { createRequire } from "module";
 import weatherApiService from "../services/weatherApi.service.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import localWeatherProviders from "./localWeatherProviders.mjs";
 
-const boundsArray = [
+const require = createRequire(import.meta.url);
+
+// Ray casting algorithm: returns true if (lat, lon) is inside the GeoJSON polygon ring.
+const pointInRing = (lat, lon, ring) => {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]; // GeoJSON coords are [lon, lat]
+    const [xj, yj] = ring[j];
+    const intersects =
+      yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+};
+
+// Handles both Polygon and MultiPolygon geometries.
+const pointInGeometry = (lat, lon, geometry) => {
+  if (geometry.type === "Polygon") {
+    return pointInRing(lat, lon, geometry.coordinates[0]);
+  }
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates.some((polygon) => pointInRing(lat, lon, polygon[0]));
+  }
+  return false;
+};
+
+const bordersArray = [
   {
     country: "Sweden",
     provider: localWeatherProviders.SE,
-    latMin: 55.35,
-    latMax: 69.06,
-    lonMin: 11.11,
-    lonMax: 24.15,
+    geometry: require("../data/borders/SE.json"),
   },
   {
     country: "Norway",
     provider: localWeatherProviders.NO,
-    latMin: 57.97,
-    latMax: 71.19,
-    lonMin: 4.50,
-    lonMax: 31.10,
+    geometry: require("../data/borders/NO.json"),
   },
-
 ];
 
 export const getCoordinateBound = (lat, lon) => {
   const latNum = parseFloat(lat);
   const lonNum = parseFloat(lon);
 
-  for (const bound of boundsArray) {
-    if (
-      latNum >= bound.latMin &&
-      latNum <= bound.latMax &&
-      lonNum >= bound.lonMin &&
-      lonNum <= bound.lonMax
-    ) {
-      return bound;
+  for (const entry of bordersArray) {
+    if (pointInGeometry(latNum, lonNum, entry.geometry)) {
+      return entry;
     }
   }
-  return { 
-    country: "Global", 
-    provider: { 
-      service: weatherApiService, 
-      dto: weatherApiDto 
-    }
+
+  return {
+    country: "Global",
+    provider: {
+      service: weatherApiService,
+      dto: weatherApiDto,
+    },
   };
 };
