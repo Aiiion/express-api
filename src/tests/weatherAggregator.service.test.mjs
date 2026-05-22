@@ -31,6 +31,16 @@ const smhiDtoMocks = {
   forecastWeather: jest.fn(),
 };
 
+const yrServiceMocks = {
+  forecastWeather: jest.fn(),
+};
+
+const yrDtoMocks = {
+  currentWeather: jest.fn(),
+  forecastWeather: jest.fn(),
+  weatherWarnings: jest.fn(),
+};
+
 // Register mocks before any dynamic imports
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   default: owmServiceMocks,
@@ -44,6 +54,10 @@ jest.unstable_mockModule("../services/smhi.service.mjs", () => ({
   default: smhiServiceMocks,
 }));
 
+jest.unstable_mockModule("../services/yr.service.mjs", () => ({
+  default: yrServiceMocks,
+}));
+
 jest.unstable_mockModule("../dtos/openWeatherMaps.dto.mjs", () => ({
   default: owmDtoMocks,
 }));
@@ -54,6 +68,10 @@ jest.unstable_mockModule("../dtos/weatherApi.dto.mjs", () => ({
 
 jest.unstable_mockModule("../dtos/smhi.dto.mjs", () => ({
   default: smhiDtoMocks,
+}));
+
+jest.unstable_mockModule("../dtos/yr.dto.mjs", () => ({
+  default: yrDtoMocks,
 }));
 
 jest.unstable_mockModule("../services/errorLog.service.mjs", () => ({
@@ -206,6 +224,56 @@ const smhiNormalizedForecast = {
   provider: "smhi.se",
 };
 
+// Yr values chosen so that four-way averages equal the three-way averages
+// already asserted in existing tests:
+//   temp:     (10 + 6 + 8 + 8)     / 4 = 8.0
+//   humidity: (80 + 70 + 75 + 75)  / 4 = 75.0
+//   pressure: (1010+1030+1020+1020) / 4 = 1020.0
+const yrNormalizedCurrent = {
+  weather: "Partly Cloudy",
+  description: "Partly Cloudy",
+  icon: null,
+  dt: 1000300,
+  location: {
+    country_code: null,
+    coords: { lat: 59.4, lon: 18.0 },
+    name: null,
+    timezone: "UTC",
+  },
+  temperature: { temp: 8.0, min: null, max: null, feels_like: null },
+  pressure: 1020,
+  humidity: 75,
+  visibility: null,
+  clouds: { all: 50 },
+  elevation: { sea_level: null, ground_level: null },
+  wind: { speed: 1.5, deg: 76, dir: null, gust: null },
+  precipitation: { amount: 0.0, hours_measured: 1, type: "none" },
+  sunrise: null,
+  sunset: null,
+  uv: null,
+  provider: "yr.no",
+};
+
+const yrForecastHour = {
+  dt: 1000000,
+  weather: "Partly Cloudy",
+  description: "Partly Cloudy",
+  icon: null,
+  temperature: { temp: 8.0, feels_like: null, max: null, min: null },
+  pressure: 1020,
+  humidity: 75,
+  visibility: null,
+  elevation: { sea_level: null, ground_level: null },
+  wind: { speed: 1.5, deg: 76, dir: null, gust: null },
+  clouds: { all: 50 },
+  precipitation: { amount: 0.0, hours_measured: 1, type: "none" },
+};
+
+const yrNormalizedForecast = {
+  list: { Monday: [yrForecastHour] },
+  provider: "yr.no",
+};
+
 // ---------------------------------------------------------------------------
 
 let weatherAggregatorService;
@@ -224,12 +292,15 @@ describe("weatherAggregatorService", () => {
     weatherApiServiceMocks.currentWeather.mockResolvedValue({});
     weatherApiServiceMocks.forecastWeather.mockResolvedValue({});
     smhiServiceMocks.forecastWeather.mockResolvedValue({});
+    yrServiceMocks.forecastWeather.mockResolvedValue({});
     owmDtoMocks.currentWeather.mockReturnValue(owmNormalizedCurrent);
     owmDtoMocks.forecastWeather.mockReturnValue(null);
     weatherApiDtoMocks.currentWeather.mockReturnValue(weatherApiNormalizedCurrent);
     weatherApiDtoMocks.forecastWeather.mockReturnValue(null);
     smhiDtoMocks.currentWeather.mockReturnValue(smhiNormalizedCurrent);
     smhiDtoMocks.forecastWeather.mockReturnValue(null);
+    yrDtoMocks.currentWeather.mockReturnValue(yrNormalizedCurrent);
+    yrDtoMocks.forecastWeather.mockReturnValue(null);
   });
 
   // -------------------------------------------------------------------------
@@ -262,6 +333,7 @@ describe("weatherAggregatorService", () => {
       expect(result.providers).toContain("openweathermaps.org");
       expect(result.providers).toContain("weatherapi.com");
       expect(result.providers).toContain("smhi.se");
+      expect(result.providers).toContain("yr.no");
     });
 
     it("omits the errors property when all providers succeed", async () => {
@@ -283,10 +355,14 @@ describe("weatherAggregatorService", () => {
         ...smhiNormalizedCurrent,
         precipitation: { amount: 3.0, hours_measured: 1, type: "rain" },
       });
+      yrDtoMocks.currentWeather.mockReturnValue({
+        ...yrNormalizedCurrent,
+        precipitation: { amount: 3.0, hours_measured: 1, type: "rain" },
+      });
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // avgHourlyRate = (2/1 + 4/1 + 3/1) / 3 = 3.0 mm/h; targetHours = 1
+      // avgHourlyRate = (2/1 + 4/1 + 3/1 + 3/1) / 4 = 3.0 mm/h; targetHours = 1
       expect(result.precipitation.amount).toBeCloseTo(3.0);
       expect(result.precipitation.hours_measured).toBe(1);
       expect(result.precipitation.type).toBe("rain");
@@ -305,10 +381,14 @@ describe("weatherAggregatorService", () => {
         ...smhiNormalizedCurrent,
         precipitation: { amount: 1.0, hours_measured: 1, type: "rain" },
       });
+      yrDtoMocks.currentWeather.mockReturnValue({
+        ...yrNormalizedCurrent,
+        precipitation: { amount: 1.0, hours_measured: 1, type: "rain" },
+      });
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // avgHourlyRate = (3/3 + 1/1 + 1/1) / 3 = 1.0 mm/h; targetHours = min(3,1,1) = 1
+      // avgHourlyRate = (3/3 + 1/1 + 1/1 + 1/1) / 4 = 1.0 mm/h; targetHours = min(3,1,1,1) = 1
       expect(result.precipitation.amount).toBeCloseTo(1.0);
       expect(result.precipitation.hours_measured).toBe(1);
       expect(result.precipitation.type).toBe("rain");
@@ -319,10 +399,10 @@ describe("weatherAggregatorService", () => {
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // WeatherAPI (6.0) and SMHI (8.0) are averaged
-      expect(result.temperature.temp).toBeCloseTo(7.0);
-      expect(result.providers).toEqual(expect.arrayContaining(["weatherapi.com", "smhi.se"]));
-      expect(result.providers).toHaveLength(2);
+      // WeatherAPI (6.0), SMHI (8.0) and Yr (8.0) are averaged
+      expect(result.temperature.temp).toBeCloseTo(22 / 3);
+      expect(result.providers).toEqual(expect.arrayContaining(["weatherapi.com", "smhi.se", "yr.no"]));
+      expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].provider).toBe("openweathermaps.org");
     });
@@ -332,10 +412,10 @@ describe("weatherAggregatorService", () => {
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // OWM (10.0) and SMHI (8.0) are averaged
-      expect(result.temperature.temp).toBeCloseTo(9.0);
-      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "smhi.se"]));
-      expect(result.providers).toHaveLength(2);
+      // OWM (10.0), SMHI (8.0) and Yr (8.0) are averaged
+      expect(result.temperature.temp).toBeCloseTo(26 / 3);
+      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "smhi.se", "yr.no"]));
+      expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].provider).toBe("weatherapi.com");
     });
@@ -345,10 +425,10 @@ describe("weatherAggregatorService", () => {
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
-      // OWM (10.0) and WeatherAPI (6.0) are averaged
+      // OWM (10.0), WeatherAPI (6.0) and Yr (8.0) are averaged
       expect(result.temperature.temp).toBeCloseTo(8.0);
-      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "weatherapi.com"]));
-      expect(result.providers).toHaveLength(2);
+      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "yr.no"]));
+      expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].provider).toBe("smhi.se");
     });
@@ -357,11 +437,12 @@ describe("weatherAggregatorService", () => {
       owmServiceMocks.currentWeather.mockRejectedValue(new Error("OWM down"));
       weatherApiServiceMocks.currentWeather.mockRejectedValue(new Error("WeatherAPI down"));
       smhiServiceMocks.forecastWeather.mockRejectedValue(new Error("SMHI down"));
+      yrServiceMocks.forecastWeather.mockRejectedValue(new Error("Yr down"));
 
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
       expect(result.error).toBe("All weather providers failed");
-      expect(result.errors).toHaveLength(3);
+      expect(result.errors).toHaveLength(4);
     });
   });
 
@@ -375,6 +456,7 @@ describe("weatherAggregatorService", () => {
       owmDtoMocks.forecastWeather.mockReturnValue(owmNormalizedForecast);
       weatherApiDtoMocks.forecastWeather.mockReturnValue(weatherApiNormalizedForecast);
       smhiDtoMocks.forecastWeather.mockReturnValue(smhiNormalizedForecast);
+      yrDtoMocks.forecastWeather.mockReturnValue(yrNormalizedForecast);
     });
 
     it("merges forecast data from both providers keyed by day and timestamp", async () => {
@@ -406,6 +488,7 @@ describe("weatherAggregatorService", () => {
       expect(result.providers).toContain("openweathermaps.org");
       expect(result.providers).toContain("weatherapi.com");
       expect(result.providers).toContain("smhi.se");
+      expect(result.providers).toContain("yr.no");
     });
 
     it("handles mismatched precipitation periods (OWM 3h vs WeatherAPI 1h)", async () => {
@@ -465,8 +548,8 @@ describe("weatherAggregatorService", () => {
       const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
 
       expect(result.list).toHaveProperty("Monday");
-      expect(result.providers).toEqual(expect.arrayContaining(["weatherapi.com", "smhi.se"]));
-      expect(result.providers).toHaveLength(2);
+      expect(result.providers).toEqual(expect.arrayContaining(["weatherapi.com", "smhi.se", "yr.no"]));
+      expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].provider).toBe("openweathermaps.org");
     });
@@ -477,8 +560,8 @@ describe("weatherAggregatorService", () => {
       const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
 
       expect(result.list).toHaveProperty("Monday");
-      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "smhi.se"]));
-      expect(result.providers).toHaveLength(2);
+      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "smhi.se", "yr.no"]));
+      expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].provider).toBe("weatherapi.com");
     });
@@ -489,8 +572,8 @@ describe("weatherAggregatorService", () => {
       const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
 
       expect(result.list).toHaveProperty("Monday");
-      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "weatherapi.com"]));
-      expect(result.providers).toHaveLength(2);
+      expect(result.providers).toEqual(expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "yr.no"]));
+      expect(result.providers).toHaveLength(3);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].provider).toBe("smhi.se");
     });
@@ -499,11 +582,12 @@ describe("weatherAggregatorService", () => {
       owmServiceMocks.forecastWeather.mockRejectedValue(new Error("OWM down"));
       weatherApiServiceMocks.forecastWeather.mockRejectedValue(new Error("WeatherAPI down"));
       smhiServiceMocks.forecastWeather.mockRejectedValue(new Error("SMHI down"));
+      yrServiceMocks.forecastWeather.mockRejectedValue(new Error("Yr down"));
 
       const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
 
       expect(result.error).toBe("All weather providers failed");
-      expect(result.errors).toHaveLength(3);
+      expect(result.errors).toHaveLength(4);
     });
   });
 
@@ -515,6 +599,7 @@ describe("weatherAggregatorService", () => {
       owmDtoMocks.forecastWeather.mockReturnValue(owmNormalizedForecast);
       weatherApiDtoMocks.forecastWeather.mockReturnValue(weatherApiNormalizedForecast);
       smhiDtoMocks.forecastWeather.mockReturnValue(smhiNormalizedForecast);
+      yrDtoMocks.forecastWeather.mockReturnValue(yrNormalizedForecast);
     });
 
     it("returns both currentWeather and forecastWeather", async () => {
@@ -532,22 +617,30 @@ describe("weatherAggregatorService", () => {
       expect(smhiServiceMocks.forecastWeather).toHaveBeenCalledTimes(1);
     });
 
-    it("currentWeather averages data from all three providers", async () => {
+    it("calls yrService.forecastWeather exactly once", async () => {
+      yrServiceMocks.forecastWeather.mockClear();
+
+      await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(yrServiceMocks.forecastWeather).toHaveBeenCalledTimes(1);
+    });
+
+    it("currentWeather averages data from all four providers", async () => {
       const result = await weatherAggregatorService.allWeather(59.4, 18.0);
 
       expect(result.currentWeather.temperature.temp).toBeCloseTo(8.0);
       expect(result.currentWeather.humidity).toBeCloseTo(75);
       expect(result.currentWeather.providers).toEqual(
-        expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "smhi.se"])
+        expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "smhi.se", "yr.no"])
       );
     });
 
-    it("forecastWeather merges data from all three providers", async () => {
+    it("forecastWeather merges data from all four providers", async () => {
       const result = await weatherAggregatorService.allWeather(59.4, 18.0);
 
       expect(result.forecastWeather.list).toHaveProperty("Monday");
       expect(result.forecastWeather.providers).toEqual(
-        expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "smhi.se"])
+        expect.arrayContaining(["openweathermaps.org", "weatherapi.com", "smhi.se", "yr.no"])
       );
     });
 
@@ -560,6 +653,17 @@ describe("weatherAggregatorService", () => {
       expect(result.currentWeather.errors[0].provider).toBe("smhi.se");
       expect(result.forecastWeather.errors).toHaveLength(1);
       expect(result.forecastWeather.errors[0].provider).toBe("smhi.se");
+    });
+
+    it("propagates Yr failure to both currentWeather and forecastWeather errors", async () => {
+      yrServiceMocks.forecastWeather.mockRejectedValue(new Error("Yr down"));
+
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(result.currentWeather.errors).toHaveLength(1);
+      expect(result.currentWeather.errors[0].provider).toBe("yr.no");
+      expect(result.forecastWeather.errors).toHaveLength(1);
+      expect(result.forecastWeather.errors[0].provider).toBe("yr.no");
     });
 
     it("currentWeather and forecastWeather errors are independent when different providers fail", async () => {

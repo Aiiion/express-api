@@ -1,12 +1,11 @@
 # Data sources:
 
-Thanks to:
+This api is possible thanks to:
 
-openweathermaps.org
-
-smhi.se
-
-weatherapi.com
+[openweathermaps.org](https://openweathermap.org/)
+[smhi.se](https://www.smhi.se/)
+[weatherapi.com](https://www.weatherapi.com/)
+[yr.no](https://www.yr.no/) / [met.no](https://www.met.no/)
 
 # Usage
 

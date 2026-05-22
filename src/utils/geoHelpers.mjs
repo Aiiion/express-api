@@ -11,6 +11,14 @@ const boundsArray = [
     lonMin: 11.11,
     lonMax: 24.15,
   },
+  {
+    country: "Norway",
+    provider: localWeatherProviders.NO,
+    latMin: 57.97,
+    latMax: 71.19,
+    lonMin: 4.50,
+    lonMax: 31.10,
+  },
 
 ];
 
