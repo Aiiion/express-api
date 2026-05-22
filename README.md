@@ -52,7 +52,7 @@ Gets the location related to your IP address
 
 ### (GET) **/v1/weather**
 
-Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources (openweathermap.org, weatherapi.com, smhi.se). Supports the same `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
+Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources. Supports `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
 
 **Query Parameters:**
 
