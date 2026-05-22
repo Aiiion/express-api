@@ -86,7 +86,7 @@ const mapSeverity = (riskMatrixColor) => {
 
 const SEVERITY_PRIORITY = { RED: 3, ORANGE: 2, YELLOW: 1, NONE: 0 };
 
-const yrDto = {
+const metDto = {
     currentWeather: (data, metric = true) => {
         if (!data?.properties?.timeseries?.length) return null;
         const coords = data.geometry?.coordinates
@@ -104,7 +104,7 @@ const yrDto = {
             sunrise: null,
             sunset: null,
             uv: null,
-            provider: "yr.no",
+            provider: "met.no",
         };
     },
 
@@ -122,7 +122,7 @@ const yrDto = {
             formatted[day].push(mapTimeSeriesEntry(entry, metric));
         }
 
-        return { list: formatted, provider: "yr.no" };
+        return { list: formatted, provider: "met.no" };
     },
 
     weatherWarnings: (data) => {
@@ -149,4 +149,4 @@ const yrDto = {
     },
 };
 
-export default yrDto;
+export default metDto;

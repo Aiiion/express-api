@@ -1,7 +1,7 @@
 import smhiService from "../services/smhi.service.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
-import yrService from "../services/yr.service.mjs";
-import yrDto from "../dtos/yr.dto.mjs";
+import metService from "../services/met.service.mjs";
+import metDto from "../dtos/met.dto.mjs";
 
 const localWeatherProviders = {
     SE: {
@@ -11,8 +11,8 @@ const localWeatherProviders = {
     },
     NO: {
         name: "Yr",
-        service: yrService,
-        dto: yrDto,
+        service: metService,
+        dto: metDto,
     },
 }
 

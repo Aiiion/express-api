@@ -5,7 +5,7 @@ This api is possible thanks to:
 [openweathermaps.org](https://openweathermap.org/)
 [smhi.se](https://www.smhi.se/)
 [weatherapi.com](https://www.weatherapi.com/)
-[yr.no](https://www.yr.no/) / [met.no](https://www.met.no/)
+[met.no](https://www.met.no/)
 
 # Usage
 
@@ -106,7 +106,7 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
       "sunrise": 1748010000,
       "sunset": 1748065000,
       "uv": 4,
-      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se"]
+      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se", "met.no"]
     },
     "forecastWeather": {
       "list": {
@@ -141,7 +141,7 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
           }
         ]
       },
-      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se"]
+      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se", "met.no"]
     },
     "currentPollution": {
       "coord": { "lon": 18.07, "lat": 59.33 },
