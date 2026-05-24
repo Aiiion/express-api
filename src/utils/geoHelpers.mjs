@@ -18,6 +18,28 @@ const pointInRing = (lat, lon, ring) => {
   return inside;
 };
 
+// Precomputes an axis-aligned bounding box for a Polygon or MultiPolygon.
+// GeoJSON coordinates are [lon, lat], so index 0 = lon, index 1 = lat.
+const computeBbox = (geometry) => {
+  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  const rings =
+    geometry.type === "Polygon"
+      ? [geometry.coordinates[0]]
+      : geometry.coordinates.map((polygon) => polygon[0]);
+  for (const ring of rings) {
+    for (const [lon, lat] of ring) {
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+  }
+  return { minLon, maxLon, minLat, maxLat };
+};
+
+const pointInBbox = (lat, lon, bbox) =>
+  lat >= bbox.minLat && lat <= bbox.maxLat && lon >= bbox.minLon && lon <= bbox.maxLon;
+
 // Handles both Polygon and MultiPolygon geometries.
 const pointInGeometry = (lat, lon, geometry) => {
   if (geometry.type === "Polygon") {
@@ -40,14 +62,14 @@ const bordersArray = [
     provider: localWeatherProviders.NO,
     geometry: require("../data/borders/NO.json"),
   },
-];
+].map((entry) => ({ ...entry, bbox: computeBbox(entry.geometry) }));
 
 export const getCoordinateBound = (lat, lon) => {
   const latNum = parseFloat(lat);
   const lonNum = parseFloat(lon);
 
   for (const entry of bordersArray) {
-    if (pointInGeometry(latNum, lonNum, entry.geometry)) {
+    if (pointInBbox(latNum, lonNum, entry.bbox) && pointInGeometry(latNum, lonNum, entry.geometry)) {
       return entry;
     }
   }
