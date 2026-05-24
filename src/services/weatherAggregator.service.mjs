@@ -502,13 +502,17 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  */
 const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true) => {
+const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true, explicitTimezone = null) => {
   const sources = [];
   const errors = [];
   const providers = [];
 
-  // Compute timezone once — used for SMHI/MET DTO calls and for the date→weekday conversion below
-  const timezone = weatherApiResult.value?.location?.tz_id
+  // Compute timezone once — used for SMHI/MET DTO calls and for the date→weekday conversion below.
+  // Prefer an explicitly supplied timezone (derived from current-weather results, which are more
+  // reliable than forecast responses) so that SMHI/MET DTOs are not re-bucketed to UTC when a
+  // forecast call fails.
+  const timezone = explicitTimezone
+    ?? weatherApiResult.value?.location?.tz_id
     ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
 
   if (owmResult.status === "fulfilled") {
@@ -663,7 +667,14 @@ const weatherAggregatorService = {
     ]);
 
     const currentWeather = processCurrentWeather(owmCurrentResult, weatherApiCurrentResult, smhiResult, metResult, metric);
-    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric);
+
+    // Derive timezone from current-weather responses (more reliable than forecast responses).
+    // Passed explicitly so processForecastWeather doesn't fall back to 'UTC' when a forecast
+    // call fails and SMHI/MET data gets re-bucketed into the wrong day.
+    const currentTimezone = weatherApiCurrentResult.value?.location?.tz_id
+      ?? (owmCurrentResult.value?.city?.timezone != null ? owmCurrentResult.value.city.timezone / 3600 : null);
+
+    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric, currentTimezone);
 
     return { currentWeather, forecastWeather };
   },
