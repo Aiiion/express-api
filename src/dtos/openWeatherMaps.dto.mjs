@@ -65,7 +65,7 @@ const openWeatherMapsDto = {
         if (!data || !data.list) return null;
         const formatted = {};
         const now = Math.floor(Date.now() / 1000);
-        const timezone = data.city.timezone ? data.city.timezone / 3600 : undefined; // Convert from seconds to hours
+        const timezone = data.city?.timezone ? data.city.timezone / 3600 : undefined; // Convert from seconds to hours
 
         for (let i = 0; i < data.list.length; i++) {
             const item = data?.list[i];
