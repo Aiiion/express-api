@@ -170,6 +170,7 @@ const weatherApiDto = {
       type: alert.event || null,
       warningsCount: alertData.length || 0,
       raw: alertData,
+      provider: "weatherapi.com",
     };
   },
 };

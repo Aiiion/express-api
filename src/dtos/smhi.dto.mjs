@@ -125,6 +125,7 @@ const smhiDto = {
       type: data.inner?.type || null,
       warningsCount: data.inner?.warningsCount || 0,
       raw: data,
+      provider: "smhi.se",
     };
   },
 };

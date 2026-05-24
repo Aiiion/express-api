@@ -145,6 +145,7 @@ const metDto = {
             type: props?.event ?? null,
             warningsCount: data.features.length,
             raw: data.features,
+            provider: "met.no",
         };
     },
 };
