@@ -497,8 +497,17 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  * @param {PromiseSettledResult} weatherApiResult
  * @param {PromiseSettledResult} smhiResult
  * @param {PromiseSettledResult} metResult
- * @param {boolean} metric
- * @returns {Object}
+ * @param {boolean} metric - Use metric units (default: true)
+ * @param {string|number|null} explicitTimezone - Timezone to use for date bucketing and weekday
+ *   conversion. Overrides the timezone inferred from provider responses. Pass the value from a
+ *   current-weather result when available, as those are more reliable than forecast responses.
+ *   Accepts a tz_id string (e.g. "Europe/Stockholm") or a UTC offset in hours. Defaults to null
+ *   (falls back to the timezone reported by WeatherAPI, then OWM, then UTC).
+ * @param {number|null} days - Maximum number of forecast days to include in the response. Slices
+ *   the merged day list to the first N entries after weekday conversion. Pass null to return all
+ *   available days (default: null).
+ * @returns {Object} Merged forecast response with `list` (keyed by weekday name), `providers`, and
+ *   an optional `errors` array for any providers that failed.
  */
 const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
