@@ -1,12 +1,11 @@
 # Data sources:
 
-Thanks to:
+This api is possible thanks to:
 
-openweathermaps.org
-
-smhi.se
-
-weatherapi.com
+[openweathermaps.org](https://openweathermap.org/)
+[smhi.se](https://www.smhi.se/)
+[weatherapi.com](https://www.weatherapi.com/)
+[met.no](https://www.met.no/)
 
 # Usage
 
@@ -53,7 +52,7 @@ Gets the location related to your IP address
 
 ### (GET) **/v1/weather**
 
-Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources (openweathermap.org, weatherapi.com, smhi.se). Supports the same `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
+Aggregates current weather, forecast, pollution, and local weather warnings from multiple sources. Supports `lat`/`lon` query parameters, plus `days` (1–6, default 5) and `units` (`imperial` or `metric`, defaults to `metric`).
 
 **Query Parameters:**
 
@@ -107,7 +106,7 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
       "sunrise": 1748010000,
       "sunset": 1748065000,
       "uv": 4,
-      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se"]
+      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se", "met.no"]
     },
     "forecastWeather": {
       "list": {
@@ -142,7 +141,7 @@ Aggregates current weather, forecast, pollution, and local weather warnings from
           }
         ]
       },
-      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se"]
+      "providers": ["openweathermaps.org", "weatherapi.com", "smhi.se", "met.no"]
     },
     "currentPollution": {
       "coord": { "lon": 18.07, "lat": 59.33 },

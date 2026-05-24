@@ -1,16 +1,28 @@
 import openWeatherMapsService from "./openWeatherMaps.service.mjs";
 import weatherApiService from "./weatherApi.service.mjs";
 import smhiService from "./smhi.service.mjs";
+import metService from "./met.service.mjs";
 import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
+import metDto from "../dtos/met.dto.mjs";
 import { logError } from "./errorLog.service.mjs";
+import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
 
-// Fields whose averaged value should be rounded to the nearest integer
-const ROUND_INTEGER_FIELDS = new Set(['humidity']);
+// Fields whose averaged value should be rounded to the nearest integer (by key name)
+const ROUND_INTEGER_FIELDS = new Set(['humidity', 'pressure', 'visibility']);
+
+// Nested paths whose averaged value should be rounded to the nearest integer
+const ROUND_INTEGER_PATHS = new Set([
+  'temperature.temp', 'temperature.min', 'temperature.max', 'temperature.feels_like',
+  'clouds.all',
+]);
+
+// Nested paths whose averaged value should be rounded to at most 2 decimal places
+const ROUND_TWO_DECIMAL_PATHS = new Set(['wind.speed', 'wind.gust']);
 
 // Nested paths that should NOT be averaged (coordinates)
 const NO_AVERAGE_PATHS = new Set(['location.coords', 'coords', 'wind.deg', 'wind.dir']);
@@ -70,8 +82,8 @@ const mergePrecipitation = (precipitationObjects) => {
   const hoursMeasured = precipData.map(p => p.hours_measured);
   const targetHours = Math.min(...hoursMeasured);
 
-  // Calculate the amount for the target hours
-  const normalizedAmount = avgHourlyRate * targetHours;
+  // Calculate the amount for the target hours, rounded to 2 decimal places
+  const normalizedAmount = Math.round(avgHourlyRate * targetHours * 100) / 100;
 
   // Determine precipitation type (take first non-"none" type, or most common)
   const types = precipData.map(p => p.type).filter(t => t && t !== 'none');
@@ -283,7 +295,14 @@ const mergeAndAverage = (sources, parentPath = '') => {
     } else if (typeof firstValue === 'number') {
       // Average numeric values
       const avg = averageValues(values);
-      result[key] = ROUND_INTEGER_FIELDS.has(key) ? Math.round(avg) : avg;
+      const fullPath = parentPath ? `${parentPath}.${key}` : key;
+      if (ROUND_INTEGER_FIELDS.has(key) || ROUND_INTEGER_PATHS.has(fullPath)) {
+        result[key] = avg !== null ? Math.round(avg) : null;
+      } else if (ROUND_TWO_DECIMAL_PATHS.has(fullPath)) {
+        result[key] = avg !== null ? Math.round(avg * 100) / 100 : null;
+      } else {
+        result[key] = avg;
+      }
     } else if (typeof firstValue === 'string') {
       // Special handling for icon - prefer WeatherAPI
       if (key === 'icon') {
@@ -370,7 +389,9 @@ const mergeForecastData = (sources) => {
     
     // Average data for each timestamp using intelligent merging
     const mergedHours = [];
+    const now = Math.floor(Date.now() / 1000);
     timestampMap.forEach((hourDataArray, timestamp) => {
+      if (timestamp <= now) return; // skip past timeslots (defence-in-depth: DTOs filter first)
       if (hourDataArray.length === 1) {
         // Only one source has this timestamp, use it directly
         mergedHours.push(hourDataArray[0]);
@@ -400,10 +421,11 @@ const mergeForecastData = (sources) => {
  * @param {PromiseSettledResult} owmResult
  * @param {PromiseSettledResult} weatherApiResult
  * @param {PromiseSettledResult} smhiResult
+ * @param {PromiseSettledResult} metResult
  * @param {boolean} metric
  * @returns {Object}
  */
-const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric = true) => {
+const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true) => {
   const sources = [];
   const errors = [];
   const providers = [];
@@ -444,6 +466,18 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric =
     logError(smhiResult.reason, { route: "weatherAggregator.currentWeather" });
   }
 
+  if (metResult.status === "fulfilled") {
+    const normalizedMet = metDto.currentWeather(metResult.value, metric);
+    if (normalizedMet) {
+      sources.push(normalizedMet);
+      providers.push(normalizedMet.provider || "met.no");
+    }
+  } else {
+    const metMsg = metResult?.reason?.message ?? String(metResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "met.no", message: metMsg });
+    logError(metResult.reason, { route: "weatherAggregator.currentWeather" });
+  }
+
   const averaged = mergeAndAverage(sources);
 
   if (!averaged) {
@@ -462,13 +496,33 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metric =
  * @param {PromiseSettledResult} owmResult
  * @param {PromiseSettledResult} weatherApiResult
  * @param {PromiseSettledResult} smhiResult
- * @param {boolean} metric
- * @returns {Object}
+ * @param {PromiseSettledResult} metResult
+ * @param {boolean} metric - Use metric units (default: true)
+ * @param {string|number|null} explicitTimezone - Timezone to use for date bucketing and weekday
+ *   conversion. Overrides the timezone inferred from provider responses. Pass the value from a
+ *   current-weather result when available, as those are more reliable than forecast responses.
+ *   Accepts a tz_id string (e.g. "Europe/Stockholm") or a UTC offset in hours. Defaults to null
+ *   (falls back to the timezone reported by WeatherAPI, then OWM, then UTC).
+ * @param {number|null} days - Maximum number of forecast days to include in the response. Slices
+ *   the merged day list to the first N entries after weekday conversion. Pass null to return all
+ *   available days (default: null).
+ * @returns {Object} Merged forecast response with `list` (keyed by weekday name), `providers`, and
+ *   an optional `errors` array for any providers that failed.
  */
-const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metric = true) => {
+const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true, explicitTimezone = null, days = null) => {
   const sources = [];
   const errors = [];
   const providers = [];
+
+  // Compute timezone once — used for SMHI/MET DTO calls and for the date→weekday conversion below.
+  // Prefer an explicitly supplied timezone (derived from current-weather results, which are more
+  // reliable than forecast responses) so that SMHI/MET DTOs are not re-bucketed to UTC when a
+  // forecast call fails.
+  const timezone = explicitTimezone
+    ?? weatherApiResult.value?.location?.tz_id
+    ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
 
   if (owmResult.status === "fulfilled") {
     const normalizedOwm = openWeatherMapsDto.forecastWeather(owmResult.value);
@@ -495,8 +549,6 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metric 
   }
 
   if (smhiResult.status === "fulfilled") {
-    const timezone = weatherApiResult.value?.location?.tz_id
-      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
     const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric, timezone);
     if (normalizedSmhi) {
       sources.push(normalizedSmhi);
@@ -508,14 +560,54 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metric 
     logError(smhiResult.reason, { route: "weatherAggregator.forecastWeather" });
   }
 
+  if (metResult.status === "fulfilled") {
+    const normalizedMet = metDto.forecastWeather(metResult.value, metric, timezone);
+    if (normalizedMet) {
+      sources.push(normalizedMet);
+      providers.push(normalizedMet.provider || "met.no");
+    }
+  } else {
+    const metMsg = metResult?.reason?.message ?? String(metResult?.reason) ?? "Unknown error";
+    errors.push({ provider: "met.no", message: metMsg });
+    logError(metResult.reason, { route: "weatherAggregator.forecastWeather" });
+  }
+
   const merged = mergeForecastData(sources);
 
   if (!merged) {
     return { error: "All weather providers failed", errors };
   }
 
+  // All real DTOs now use ISO date strings ("YYYY-MM-DD") as day keys to prevent collisions
+  // when a provider's forecast window spans two occurrences of the same weekday (e.g. two Sundays).
+  // Convert them back to weekday names here so the response format stays unchanged.
+  // If keys are already weekday names (e.g. from mocked DTOs in tests), leave them as-is.
+  const mergedKeys = Object.keys(merged.list);
+  const allDateStrings = mergedKeys.length > 0 && mergedKeys.every(k => DATE_KEY_REGEX.test(k));
+  let finalList;
+  if (allDateStrings) {
+    finalList = {};
+    // Sort ISO date strings chronologically so each weekday's first (earliest)
+    // occurrence wins — prevents far-future low-granularity data from overwriting
+    // the current week's hourly data when providers supply 10+ day forecasts.
+    for (const dateStr of mergedKeys.sort()) {
+      const hours = merged.list[dateStr];
+      if (!hours?.length) continue;
+      const weekday = translateEpochDay(hours[0].dt, timezone);
+      if (!finalList[weekday]) {
+        finalList[weekday] = hours;
+      }
+    }
+  } else {
+    finalList = merged.list;
+  }
+
+  const limitedList = days != null
+    ? Object.fromEntries(Object.entries(finalList).slice(0, days))
+    : finalList;
+
   return {
-    ...merged,
+    list: limitedList,
     providers,
     errors: errors.length > 0 ? errors : undefined,
   };
@@ -531,12 +623,13 @@ const weatherAggregatorService = {
    */
   currentWeather: async (lat, lon, metric = true) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
-    const [owmResult, weatherApiResult, smhiResult] = await Promise.allSettled([
+    const [owmResult, weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
       openWeatherMapsService.currentWeather(owmQuery),
       weatherApiService.currentWeather(lat, lon),
       smhiService.forecastWeather(lat, lon),
+      metService.forecastWeather(lat, lon),
     ]);
-    return processCurrentWeather(owmResult, weatherApiResult, smhiResult, metric);
+    return processCurrentWeather(owmResult, weatherApiResult, smhiResult, metResult, metric);
   },
 
   /**
@@ -544,17 +637,18 @@ const weatherAggregatorService = {
    * @param {number} lat - Latitude
    * @param {number} lon - Longitude
    * @param {boolean} metric - Use metric units (default: true)
-   * @param {number} days - Number of days to forecast (default: 3)
+   * @param {number} days - Number of days to forecast (default: 5)
    * @returns {Promise<Object>} Averaged forecast data from all sources
    */
-  forecastWeather: async (lat, lon, metric = true, days = 3) => {
+  forecastWeather: async (lat, lon, metric = true, days = 5) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
-    const [owmResult, weatherApiResult, smhiResult] = await Promise.allSettled([
+    const [owmResult, weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
       openWeatherMapsService.forecastWeather(owmQuery),
       weatherApiService.forecastWeather(lat, lon, days),
       smhiService.forecastWeather(lat, lon),
+      metService.forecastWeather(lat, lon),
     ]);
-    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metric);
+    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metResult, metric, null, days);
   },
 
   /**
@@ -564,10 +658,10 @@ const weatherAggregatorService = {
    * @param {number} lat - Latitude
    * @param {number} lon - Longitude
    * @param {boolean} metric - Use metric units (default: true)
-   * @param {number} days - Number of forecast days (default: 3)
+   * @param {number} days - Number of forecast days (default: 5)
    * @returns {Promise<{ currentWeather: Object, forecastWeather: Object }>}
    */
-  allWeather: async (lat, lon, metric = true, days = 3) => {
+  allWeather: async (lat, lon, metric = true, days = 5) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
     const [
       owmCurrentResult,
@@ -575,16 +669,25 @@ const weatherAggregatorService = {
       weatherApiCurrentResult,
       weatherApiForecastResult,
       smhiResult,
+      metResult,
     ] = await Promise.allSettled([
       openWeatherMapsService.currentWeather(owmQuery),
       openWeatherMapsService.forecastWeather(owmQuery),
       weatherApiService.currentWeather(lat, lon),
       weatherApiService.forecastWeather(lat, lon, days),
       smhiService.forecastWeather(lat, lon),
+      metService.forecastWeather(lat, lon),
     ]);
 
-    const currentWeather = processCurrentWeather(owmCurrentResult, weatherApiCurrentResult, smhiResult, metric);
-    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metric);
+    const currentWeather = processCurrentWeather(owmCurrentResult, weatherApiCurrentResult, smhiResult, metResult, metric);
+
+    // Derive timezone from current-weather responses (more reliable than forecast responses).
+    // Passed explicitly so processForecastWeather doesn't fall back to 'UTC' when a forecast
+    // call fails and SMHI/MET data gets re-bucketed into the wrong day.
+    const currentTimezone = weatherApiCurrentResult.value?.location?.tz_id
+      ?? (owmCurrentResult.value?.city?.timezone != null ? owmCurrentResult.value.city.timezone / 3600 : null);
+
+    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric, currentTimezone, days);
 
     return { currentWeather, forecastWeather };
   },
