@@ -502,7 +502,7 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  */
 const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true, explicitTimezone = null) => {
+const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true, explicitTimezone = null, days = null) => {
   const sources = [];
   const errors = [];
   const providers = [];
@@ -593,8 +593,12 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
     finalList = merged.list;
   }
 
+  const limitedList = days != null
+    ? Object.fromEntries(Object.entries(finalList).slice(0, days))
+    : finalList;
+
   return {
-    list: finalList,
+    list: limitedList,
     providers,
     errors: errors.length > 0 ? errors : undefined,
   };
@@ -627,7 +631,7 @@ const weatherAggregatorService = {
    * @param {number} days - Number of days to forecast (default: 3)
    * @returns {Promise<Object>} Averaged forecast data from all sources
    */
-  forecastWeather: async (lat, lon, metric = true, days = 3) => {
+  forecastWeather: async (lat, lon, metric = true, days = 5) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
     const [owmResult, weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
       openWeatherMapsService.forecastWeather(owmQuery),
@@ -635,7 +639,7 @@ const weatherAggregatorService = {
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
-    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metResult, metric);
+    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metResult, metric, null, days);
   },
 
   /**
@@ -648,7 +652,7 @@ const weatherAggregatorService = {
    * @param {number} days - Number of forecast days (default: 3)
    * @returns {Promise<{ currentWeather: Object, forecastWeather: Object }>}
    */
-  allWeather: async (lat, lon, metric = true, days = 3) => {
+  allWeather: async (lat, lon, metric = true, days = 5) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
     const [
       owmCurrentResult,
@@ -674,7 +678,7 @@ const weatherAggregatorService = {
     const currentTimezone = weatherApiCurrentResult.value?.location?.tz_id
       ?? (owmCurrentResult.value?.city?.timezone != null ? owmCurrentResult.value.city.timezone / 3600 : null);
 
-    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric, currentTimezone);
+    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric, currentTimezone, days);
 
     return { currentWeather, forecastWeather };
   },
