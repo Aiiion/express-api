@@ -87,10 +87,10 @@ const smhiDto = {
     return {
       ...mapTimeSeriesEntry(entry, metric),
       location: {
-        country_code: "SE",
+        country_code: null,
         coords,
         name: null,
-        timezone: "UTC",
+        timezone: null,
       },
       sunrise: null,
       sunset: null,
