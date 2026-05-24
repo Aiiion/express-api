@@ -1,4 +1,4 @@
-import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
 
 const getHoursMeasured = (time, intervalStart) => {
@@ -107,7 +107,7 @@ const smhiDto = {
       const dt = Math.floor(new Date(entry.time).getTime() / 1000);
       if (dt <= now) continue;
 
-      const day = translateEpochDay(dt, timezone);
+      const day = translateEpochDate(dt, timezone);
       if (!formatted[day]) formatted[day] = [];
       formatted[day].push(mapTimeSeriesEntry(entry, metric));
     }

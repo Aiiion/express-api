@@ -83,6 +83,10 @@ jest.unstable_mockModule("../services/errorLog.service.mjs", () => ({
 // API responses). Using controlled values makes expected aggregations precise.
 // ---------------------------------------------------------------------------
 
+// A timestamp 24 h into the future so the aggregator's past-timeslot filter
+// does not drop forecast entries in mock-based tests.
+const FUTURE_DT = Math.floor(Date.now() / 1000) + 86400;
+
 const owmNormalizedCurrent = {
   weather: "Clouds",
   description: "overcast clouds",
@@ -135,7 +139,7 @@ const weatherApiNormalizedCurrent = {
 
 // Forecast hour shared across both providers at the same timestamp
 const owmForecastHour = {
-  dt: 1000000,
+  dt: FUTURE_DT,
   weather: "Clouds",
   description: "overcast clouds",
   icon: "04n",
@@ -150,7 +154,7 @@ const owmForecastHour = {
 };
 
 const weatherApiForecastHour = {
-  dt: 1000000,
+  dt: FUTURE_DT,
   weather: "Partly Cloudy",
   description: "Partly Cloudy",
   icon: "//cdn.weatherapi.com/weather/64x64/night/116.png",
@@ -205,7 +209,7 @@ const smhiNormalizedCurrent = {
 };
 
 const smhiForecastHour = {
-  dt: 1000000,
+  dt: FUTURE_DT,
   weather: "Clear sky",
   description: "Clear sky",
   icon: null,
@@ -255,7 +259,7 @@ const metNormalizedCurrent = {
 };
 
 const yrForecastHour = {
-  dt: 1000000,
+  dt: FUTURE_DT,
   weather: "Partly Cloudy",
   description: "Partly Cloudy",
   icon: null,
@@ -638,7 +642,7 @@ describe("weatherAggregatorService", () => {
           Tuesday: [
             {
               ...owmForecastHour,
-              dt: 1086400,
+              dt: FUTURE_DT + 86400,
               precipitation: { amount: 1.0, hours_measured: 3, type: "rain" },
             },
           ],
@@ -701,7 +705,7 @@ describe("weatherAggregatorService", () => {
 
     describe("output field rounding", () => {
       const makeForecastHour = (overrides) => ({
-        dt: 1000000,
+        dt: FUTURE_DT,
         weather: "Clouds",
         description: "overcast clouds",
         icon: null,
@@ -793,6 +797,98 @@ describe("weatherAggregatorService", () => {
         expect(decimals).toBeLessThanOrEqual(2);
         expect(hour.precipitation.amount).toBe(1.28);
       });
+    });
+
+    it("preserves all hourly timeslots from providers through the merge", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const hour0 = now + 3600;
+      const hour1 = now + 7200;
+      const hour2 = now + 10800;
+
+      const makeHour = (dt) => ({
+        dt,
+        weather: "Clouds",
+        description: "overcast clouds",
+        icon: null,
+        temperature: { temp: 10.0, feels_like: 9.0, max: null, min: null },
+        pressure: 1010,
+        humidity: 80,
+        visibility: 10000,
+        elevation: { sea_level: null, ground_level: null },
+        wind: { speed: 4.0, deg: 220, dir: null, gust: null },
+        clouds: { all: 100 },
+        precipitation: { amount: 0, hours_measured: 1, type: "none" },
+      });
+
+      owmDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(hour0), makeHour(hour1)] },
+        provider: "openweathermaps.org",
+      });
+      weatherApiDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(hour0), makeHour(hour1), makeHour(hour2)] },
+        provider: "weatherapi.com",
+      });
+      smhiDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(hour0), makeHour(hour1), makeHour(hour2)] },
+        provider: "smhi.se",
+      });
+      metDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(hour0), makeHour(hour1), makeHour(hour2)] },
+        provider: "met.no",
+      });
+
+      const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+
+      expect(result.list.Monday).toHaveLength(3);
+      expect(result.list.Monday[0].dt).toBe(hour0);
+      expect(result.list.Monday[1].dt).toBe(hour1);
+      expect(result.list.Monday[2].dt).toBe(hour2);
+      expect(result.list.Monday[1].dt - result.list.Monday[0].dt).toBe(3600);
+      expect(result.list.Monday[2].dt - result.list.Monday[1].dt).toBe(3600);
+    });
+
+    it("excludes timeslots that have already happened", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const pastDt = now - 3600;
+      const futureDt = now + 3600;
+
+      const makeHour = (dt) => ({
+        dt,
+        weather: "Clouds",
+        description: null,
+        icon: null,
+        temperature: { temp: 10.0, feels_like: null, max: null, min: null },
+        pressure: 1010,
+        humidity: 80,
+        visibility: null,
+        elevation: { sea_level: null, ground_level: null },
+        wind: { speed: 4.0, deg: 220, dir: null, gust: null },
+        clouds: { all: 50 },
+        precipitation: { amount: 0, hours_measured: 1, type: "none" },
+      });
+
+      owmDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(pastDt), makeHour(futureDt)] },
+        provider: "openweathermaps.org",
+      });
+      weatherApiDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(pastDt), makeHour(futureDt)] },
+        provider: "weatherapi.com",
+      });
+      smhiDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(pastDt), makeHour(futureDt)] },
+        provider: "smhi.se",
+      });
+      metDtoMocks.forecastWeather.mockReturnValue({
+        list: { Monday: [makeHour(pastDt), makeHour(futureDt)] },
+        provider: "met.no",
+      });
+
+      const result = await weatherAggregatorService.forecastWeather(59.4, 18.0);
+      const allDts = Object.values(result.list).flat().map((h) => h.dt);
+
+      expect(allDts).not.toContain(pastDt);
+      expect(allDts).toContain(futureDt);
     });
   });
   describe("allWeather", () => {

@@ -1,4 +1,4 @@
-import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 
 const getPrecipitationType = (data) => {
     if (data?.rain !== undefined) {
@@ -64,14 +64,16 @@ const openWeatherMapsDto = {
     forecastWeather: (data) => {
         if (!data || !data.list) return null;
         const formatted = {};
+        const now = Math.floor(Date.now() / 1000);
         const timezone = data.city.timezone ? data.city.timezone / 3600 : undefined; // Convert from seconds to hours
 
         for (let i = 0; i < data.list.length; i++) {
-            const day = translateEpochDay(data.list[i].dt, timezone);
+            const item = data?.list[i];
+            if (item?.dt <= now) continue;
+            const day = translateEpochDate(item.dt, timezone);
             if (!formatted[day]) {
                 formatted[day] = [];
             }
-            const item = data?.list[i];
             const precipitationType = getPrecipitationType(item);
             const weatherEntry = Array.isArray(item?.weather) ? item.weather[0] : item?.weather;
             const timeObj = {

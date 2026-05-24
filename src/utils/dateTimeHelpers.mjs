@@ -1,3 +1,22 @@
+// Returns the local calendar date (YYYY-MM-DD) for a given epoch in the specified timezone.
+// Using an ISO date string as the grouping key prevents weekday-name collisions when
+// providers supply forecasts that span two occurrences of the same weekday (e.g. next Sunday).
+export const translateEpochDate = (epoch, timezone) => {
+  const date = new Date(epoch * 1000);
+
+  if (typeof timezone === 'string') {
+    // en-CA locale produces "YYYY-MM-DD" which sorts lexicographically
+    return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+  }
+
+  if (typeof timezone === 'number') {
+    const adjusted = new Date(date.getTime() + timezone * 3_600_000);
+    return adjusted.toISOString().slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
 //translated the epoch value to the weekday of the date
 export const translateEpochDay = (epoch, timezone) => {
   const date = new Date(epoch * 1000);

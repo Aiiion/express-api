@@ -7,6 +7,7 @@ import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
 import metDto from "../dtos/met.dto.mjs";
 import { logError } from "./errorLog.service.mjs";
+import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
@@ -388,7 +389,9 @@ const mergeForecastData = (sources) => {
     
     // Average data for each timestamp using intelligent merging
     const mergedHours = [];
+    const now = Math.floor(Date.now() / 1000);
     timestampMap.forEach((hourDataArray, timestamp) => {
+      if (timestamp <= now) return; // skip past timeslots (defence-in-depth: DTOs filter first)
       if (hourDataArray.length === 1) {
         // Only one source has this timestamp, use it directly
         mergedHours.push(hourDataArray[0]);
@@ -497,10 +500,16 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  * @param {boolean} metric
  * @returns {Object}
  */
+const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true) => {
   const sources = [];
   const errors = [];
   const providers = [];
+
+  // Compute timezone once — used for SMHI/MET DTO calls and for the date→weekday conversion below
+  const timezone = weatherApiResult.value?.location?.tz_id
+    ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
 
   if (owmResult.status === "fulfilled") {
     const normalizedOwm = openWeatherMapsDto.forecastWeather(owmResult.value);
@@ -527,8 +536,6 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
   }
 
   if (smhiResult.status === "fulfilled") {
-    const timezone = weatherApiResult.value?.location?.tz_id
-      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
     const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric, timezone);
     if (normalizedSmhi) {
       sources.push(normalizedSmhi);
@@ -541,8 +548,6 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
   }
 
   if (metResult.status === "fulfilled") {
-    const timezone = weatherApiResult.value?.location?.tz_id
-      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
     const normalizedMet = metDto.forecastWeather(metResult.value, metric, timezone);
     if (normalizedMet) {
       sources.push(normalizedMet);
@@ -560,8 +565,32 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
     return { error: "All weather providers failed", errors };
   }
 
+  // All real DTOs now use ISO date strings ("YYYY-MM-DD") as day keys to prevent collisions
+  // when a provider's forecast window spans two occurrences of the same weekday (e.g. two Sundays).
+  // Convert them back to weekday names here so the response format stays unchanged.
+  // If keys are already weekday names (e.g. from mocked DTOs in tests), leave them as-is.
+  const mergedKeys = Object.keys(merged.list);
+  const allDateStrings = mergedKeys.length > 0 && mergedKeys.every(k => DATE_KEY_REGEX.test(k));
+  let finalList;
+  if (allDateStrings) {
+    finalList = {};
+    // Sort ISO date strings chronologically so each weekday's first (earliest)
+    // occurrence wins — prevents far-future low-granularity data from overwriting
+    // the current week's hourly data when providers supply 10+ day forecasts.
+    for (const dateStr of mergedKeys.sort()) {
+      const hours = merged.list[dateStr];
+      if (!hours?.length) continue;
+      const weekday = translateEpochDay(hours[0].dt, timezone);
+      if (!finalList[weekday]) {
+        finalList[weekday] = hours;
+      }
+    }
+  } else {
+    finalList = merged.list;
+  }
+
   return {
-    ...merged,
+    list: finalList,
     providers,
     errors: errors.length > 0 ? errors : undefined,
   };

@@ -1,4 +1,4 @@
-import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { kphToMs } from "../utils/mathHelpers.mjs";
 
 const getPrecipitationType = (hour) => {
@@ -104,7 +104,7 @@ const weatherApiDto = {
               continue;
             }
 
-            const dayName = translateEpochDay(hour.time_epoch, timezone);
+            const dayName = translateEpochDate(hour.time_epoch, timezone);
             
             if (!formatted[dayName]) {
               formatted[dayName] = [];
