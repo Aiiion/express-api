@@ -27,8 +27,8 @@ const mapTimeSeriesEntry = (entry, metric = true) => {
     // Prefer next_1_hours (hourly) for precision, fall back to next_6_hours
     const next1 = data.next_1_hours;
     const next6 = data.next_6_hours;
-    const precipSource = next1 ?? next6;
-    const hoursMeasured = next1 ? 1 : 6;
+    const precipSource = next1 ?? next6 ?? null;
+    const hoursMeasured = next1 != null ? 1 : next6 != null ? 6 : undefined;
 
     const precipAmount = precipSource?.details?.precipitation_amount ?? 0;
     const symbolCode = next1?.summary?.symbol_code ?? next6?.summary?.symbol_code ?? null;
