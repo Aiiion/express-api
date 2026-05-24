@@ -99,7 +99,7 @@ const metDto = {
                 country_code: null,
                 coords,
                 name: null,
-                timezone: "UTC",
+                timezone: null,
             },
             sunrise: null,
             sunset: null,
