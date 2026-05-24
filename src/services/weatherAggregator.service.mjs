@@ -649,7 +649,7 @@ const weatherAggregatorService = {
    * @param {number} lat - Latitude
    * @param {number} lon - Longitude
    * @param {boolean} metric - Use metric units (default: true)
-   * @param {number} days - Number of forecast days (default: 3)
+   * @param {number} days - Number of forecast days (default: 5)
    * @returns {Promise<{ currentWeather: Object, forecastWeather: Object }>}
    */
   allWeather: async (lat, lon, metric = true, days = 5) => {
