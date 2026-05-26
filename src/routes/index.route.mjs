@@ -1,5 +1,5 @@
 import { Router } from "express";
-import weatherRouter from "./weather.route.mjs";
+import weatherRouter from "./v1/weather.route.mjs";
 import infoRouter from "./info.route.mjs"
 import authRouter from "./auth.route.mjs";
 import logsRouter from "./v1/requestLogs.route.mjs";
