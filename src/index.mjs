@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import routes from "./routes/index.route.mjs";
-import cors from 'cors';
 import { connect, closePool } from './services/db.service.mjs';
 import { sequelize } from './models/index.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
@@ -11,7 +10,6 @@ import { logRequest } from './middleware/log.middleware.mjs';
 import initRequestLog from './models/requestLog.model.mjs';
 import initErrorLog from './models/errorLog.model.mjs';
 import { closeRedisConnection, ensureRedisConnection } from './services/redis.service.mjs';
-import { createStrictCorsOptionsDelegate } from './utils/corsHelpers.mjs';
 import { registerCronJobs } from './cron.mjs';
 dotenv.config();
 
@@ -19,13 +17,10 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.use(helmet({
-    // CORS middleware already restricts cross-origin access; setting CORP to
-    // cross-origin avoids a conflict for clients with COEP enabled.
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors(createStrictCorsOptionsDelegate()));
 app.use(logRequest());
 app.use(routes);
 app.use(handleError);
