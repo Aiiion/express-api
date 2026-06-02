@@ -19,8 +19,9 @@ export const createCorsError = () => {
 };
 
 export const createStrictCorsOptionsDelegate = (overrides = {}) => {
+    const allowlist = getCorsAllowlist();
+   
     return (req, callback) => {
-        const allowlist = getCorsAllowlist();
         const requestOrigin = req.header('Origin');
 
         if (!requestOrigin) {

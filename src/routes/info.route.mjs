@@ -5,11 +5,11 @@ import cors from 'cors';
 
 const router = Router();
 
-router.use(cors({ origin: '*' }));
+const openCors = cors({ origin: '*' });
 
-router.get("/", contact);
-router.get("/cv", cv);
-router.get("/test", test);
-router.get("/ip-location", hasWeatherApiKey, ipLocation);
+router.get("/", openCors, contact);
+router.get("/cv", openCors, cv);
+router.get("/test", openCors, test);
+router.get("/ip-location", openCors, hasWeatherApiKey, ipLocation);
 
 export default router;
