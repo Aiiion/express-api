@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import {
   clearRedisTestData,
+  closeRedisConnection,
   getJsonValue,
   setJsonValue,
 } from '../services/redis.service.mjs';
@@ -41,6 +42,10 @@ const createResponse = () => {
 };
 
 describe('auth controller Redis sessions', () => {
+  afterAll(async () => {
+    await closeRedisConnection();
+  });
+
   beforeEach(async () => {
     process.env.NODE_ENV = 'test';
     process.env.ADMIN_PASSWORD = 'test-password';

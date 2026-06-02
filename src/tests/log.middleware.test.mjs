@@ -1,9 +1,13 @@
 import { jest } from '@jest/globals';
 import { EventEmitter } from 'node:events';
-import { clearRedisTestData, getQueuedRequestLogs } from '../services/redis.service.mjs';
+import { clearRedisTestData, closeRedisConnection, getQueuedRequestLogs } from '../services/redis.service.mjs';
 import { logRequest } from '../middleware/log.middleware.mjs';
 
 describe('logRequest middleware', () => {
+  afterAll(async () => {
+    await closeRedisConnection();
+  });
+
   beforeEach(async () => {
     process.env.NODE_ENV = 'test';
     await clearRedisTestData();

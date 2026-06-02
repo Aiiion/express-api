@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import {
   clearRedisTestData,
+  closeRedisConnection,
   enqueueRequestLog,
   getRequestLogProcessingLength,
   getRequestLogQueueLength,
@@ -21,6 +22,10 @@ jest.unstable_mockModule('../models/index.mjs', () => ({
 const { flushRequestLogs, PARTIAL_FLUSH_AGE_THRESHOLD_MS } = await import('../jobs/flush-request-logs.mjs');
 
 describe('flushRequestLogs', () => {
+  afterAll(async () => {
+    await closeRedisConnection();
+  });
+
   beforeEach(async () => {
     process.env.NODE_ENV = 'test';
     bulkCreateMock.mockReset();

@@ -3,10 +3,6 @@ import { devError } from '../utils/logger.mjs';
 
 export const cache = (duration) => {
   return async (req, res, next) => {
-    if(process.env.NODE_ENV === 'test') {
-      return next()
-    }
-
     let key = '__express__' + (req.originalUrl || req.url)
     let cachedBody = null
 
@@ -22,8 +18,16 @@ export const cache = (duration) => {
     } else {
       const sendResponse = res.send.bind(res)
       res.send = (body) => {
-        setJsonValue(key, body, duration)
-          .catch((err) => devError('Failed to write cache entry:', err))
+        if (res.statusCode < 500) {
+          let valueToCache = body
+          if (typeof body === 'string') {
+            try { valueToCache = JSON.parse(body) } catch { /* not JSON, skip caching */ valueToCache = null }
+          }
+          if (valueToCache !== null) {
+            setJsonValue(key, valueToCache, duration)
+              .catch((err) => devError('Failed to write cache entry:', err))
+          }
+        }
         return sendResponse(body)
       }
       next()

@@ -12,6 +12,7 @@ jest.unstable_mockModule("../services/email.service.mjs", () => ({
 import request from "supertest";
 import {
   clearRedisTestData,
+  closeRedisConnection,
   getJsonValue,
   setJsonValue,
 } from "../services/redis.service.mjs";
@@ -55,6 +56,7 @@ describe("Auth Routes", () => {
     if (stop) await stop();
     else if (server && typeof server.close === "function")
       await new Promise((r) => server.close(r));
+    await closeRedisConnection();
   });
 
   describe("POST /v1/auth/login", () => {
