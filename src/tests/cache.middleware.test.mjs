@@ -42,7 +42,7 @@ describe('cache middleware', () => {
     const middleware = cache(120);
     const req = { originalUrl: '/v1/weather?lat=1&lon=2', url: '/v1/weather?lat=1&lon=2' };
     const sendResponse = jest.fn();
-    const res = { send: sendResponse };
+    const res = { send: sendResponse, statusCode: 200 };
     const next = jest.fn();
 
     getJsonValueMock.mockResolvedValue(null);
