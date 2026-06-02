@@ -154,6 +154,9 @@ export const releaseRequestLogsFlushLock = async (token) => {
 };
 
 export const clearRedisTestData = async () => {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('clearRedisTestData can only be called in the test environment.');
+  }
   const client = await getClient();
   await client.flushDb();
 };
