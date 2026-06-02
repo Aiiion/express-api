@@ -48,7 +48,10 @@ Returns my CV as a pdf
 
 ### (GET) **/ip-location**
 
-Gets the location related to your IP address
+Gets the location related to an IP address.
+
+**Query Parameters:**
+- `ip` (optional) — IP address to look up. Defaults to the requester's IP if omitted.
 
 ### (GET) **/v1/weather**
 
@@ -307,10 +310,12 @@ Retrieves paginated request logs. Requires JWT authentication via HTTP-only cook
   "data": [
     {
       "id": 31,
+      "stable_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "ip": "::ffff:172.20.0.1",
       "method": "GET",
       "route": "/v1/requestLogs",
       "description": "Invalid token",
+      "user_agent": "Mozilla/5.0 ...",
       "code": 401,
       "type": "WARN",
       "created_at": "2026-04-14T12:37:03.966Z"
@@ -338,15 +343,17 @@ Returns the available log fields that can be queried through the meta endpoint f
     "resource": "RequestLog",
     "values": [
       "id",
+      "stable_id",
       "ip",
       "method",
       "route",
       "description",
+      "user_agent",
       "code",
       "type",
       "created_at"
     ],
-    "count": 8
+    "count": 10
   }
 }
 ```
