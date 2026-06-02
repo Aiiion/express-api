@@ -1,13 +1,13 @@
-import { initiateLogin, verifyCode, verifyToken, logout } from '../controllers/v1/auth.controller.mjs';
+import { initiateLogin, verifyCode, verifyToken, logout } from '../../controllers/v1/auth.controller.mjs';
 import { Router } from "express";
 import { checkSchema } from 'express-validator';
-import { validateResult, hasJwtSecret, hasAdminPassword, authenticate } from '../middleware/validation.middleware.mjs';
-import { verifyCodeValidationSchema, loginValidationSchema } from '../utils/validationSchemas.mjs';
+import { validateResult, hasJwtSecret, hasAdminPassword, authenticate } from '../../middleware/validation.middleware.mjs';
+import { verifyCodeValidationSchema, loginValidationSchema } from '../../utils/validationSchemas.mjs';
 import cors from 'cors';
-import { createStrictCorsOptionsDelegate } from '../utils/corsHelpers.mjs';
+import { createStrictCorsOptionsDelegate } from '../../utils/corsHelpers.mjs';
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import { sendRedisCommand } from '../services/redis.service.mjs';
+import { sendRedisCommand } from '../../services/redis.service.mjs';
 
 const router = Router();
 
