@@ -1,4 +1,4 @@
-import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
 
 // Strip time-of-day variant suffix and format as a readable string
@@ -27,8 +27,8 @@ const mapTimeSeriesEntry = (entry, metric = true) => {
     // Prefer next_1_hours (hourly) for precision, fall back to next_6_hours
     const next1 = data.next_1_hours;
     const next6 = data.next_6_hours;
-    const precipSource = next1 ?? next6;
-    const hoursMeasured = next1 ? 1 : 6;
+    const precipSource = next1 ?? next6 ?? null;
+    const hoursMeasured = next1 != null ? 1 : next6 != null ? 6 : undefined;
 
     const precipAmount = precipSource?.details?.precipitation_amount ?? 0;
     const symbolCode = next1?.summary?.symbol_code ?? next6?.summary?.symbol_code ?? null;
@@ -99,7 +99,7 @@ const metDto = {
                 country_code: null,
                 coords,
                 name: null,
-                timezone: "UTC",
+                timezone: null,
             },
             sunrise: null,
             sunset: null,
@@ -117,7 +117,7 @@ const metDto = {
             const dt = Math.floor(new Date(entry.time).getTime() / 1000);
             if (dt <= now) continue;
 
-            const day = translateEpochDay(dt, timezone);
+            const day = translateEpochDate(dt, timezone);
             if (!formatted[day]) formatted[day] = [];
             formatted[day].push(mapTimeSeriesEntry(entry, metric));
         }
@@ -145,6 +145,7 @@ const metDto = {
             type: props?.event ?? null,
             warningsCount: data.features.length,
             raw: data.features,
+            provider: "met.no",
         };
     },
 };

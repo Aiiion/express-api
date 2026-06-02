@@ -7,6 +7,7 @@ import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
 import metDto from "../dtos/met.dto.mjs";
 import { logError } from "./errorLog.service.mjs";
+import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
@@ -388,7 +389,9 @@ const mergeForecastData = (sources) => {
     
     // Average data for each timestamp using intelligent merging
     const mergedHours = [];
+    const now = Math.floor(Date.now() / 1000);
     timestampMap.forEach((hourDataArray, timestamp) => {
+      if (timestamp <= now) return; // skip past timeslots (defence-in-depth: DTOs filter first)
       if (hourDataArray.length === 1) {
         // Only one source has this timestamp, use it directly
         mergedHours.push(hourDataArray[0]);
@@ -494,13 +497,32 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  * @param {PromiseSettledResult} weatherApiResult
  * @param {PromiseSettledResult} smhiResult
  * @param {PromiseSettledResult} metResult
- * @param {boolean} metric
- * @returns {Object}
+ * @param {boolean} metric - Use metric units (default: true)
+ * @param {string|number|null} explicitTimezone - Timezone to use for date bucketing and weekday
+ *   conversion. Overrides the timezone inferred from provider responses. Pass the value from a
+ *   current-weather result when available, as those are more reliable than forecast responses.
+ *   Accepts a tz_id string (e.g. "Europe/Stockholm") or a UTC offset in hours. Defaults to null
+ *   (falls back to the timezone reported by WeatherAPI, then OWM, then UTC).
+ * @param {number|null} days - Maximum number of forecast days to include in the response. Slices
+ *   the merged day list to the first N entries after weekday conversion. Pass null to return all
+ *   available days (default: null).
+ * @returns {Object} Merged forecast response with `list` (keyed by weekday name), `providers`, and
+ *   an optional `errors` array for any providers that failed.
  */
-const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true) => {
+const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true, explicitTimezone = null, days = null) => {
   const sources = [];
   const errors = [];
   const providers = [];
+
+  // Compute timezone once — used for SMHI/MET DTO calls and for the date→weekday conversion below.
+  // Prefer an explicitly supplied timezone (derived from current-weather results, which are more
+  // reliable than forecast responses) so that SMHI/MET DTOs are not re-bucketed to UTC when a
+  // forecast call fails.
+  const timezone = explicitTimezone
+    ?? weatherApiResult.value?.location?.tz_id
+    ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
 
   if (owmResult.status === "fulfilled") {
     const normalizedOwm = openWeatherMapsDto.forecastWeather(owmResult.value);
@@ -527,8 +549,6 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
   }
 
   if (smhiResult.status === "fulfilled") {
-    const timezone = weatherApiResult.value?.location?.tz_id
-      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
     const normalizedSmhi = smhiDto.forecastWeather(smhiResult.value, metric, timezone);
     if (normalizedSmhi) {
       sources.push(normalizedSmhi);
@@ -541,8 +561,6 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
   }
 
   if (metResult.status === "fulfilled") {
-    const timezone = weatherApiResult.value?.location?.tz_id
-      ?? (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
     const normalizedMet = metDto.forecastWeather(metResult.value, metric, timezone);
     if (normalizedMet) {
       sources.push(normalizedMet);
@@ -560,8 +578,36 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
     return { error: "All weather providers failed", errors };
   }
 
+  // All real DTOs now use ISO date strings ("YYYY-MM-DD") as day keys to prevent collisions
+  // when a provider's forecast window spans two occurrences of the same weekday (e.g. two Sundays).
+  // Convert them back to weekday names here so the response format stays unchanged.
+  // If keys are already weekday names (e.g. from mocked DTOs in tests), leave them as-is.
+  const mergedKeys = Object.keys(merged.list);
+  const allDateStrings = mergedKeys.length > 0 && mergedKeys.every(k => DATE_KEY_REGEX.test(k));
+  let finalList;
+  if (allDateStrings) {
+    finalList = {};
+    // Sort ISO date strings chronologically so each weekday's first (earliest)
+    // occurrence wins — prevents far-future low-granularity data from overwriting
+    // the current week's hourly data when providers supply 10+ day forecasts.
+    for (const dateStr of mergedKeys.sort()) {
+      const hours = merged.list[dateStr];
+      if (!hours?.length) continue;
+      const weekday = translateEpochDay(hours[0].dt, timezone);
+      if (!finalList[weekday]) {
+        finalList[weekday] = hours;
+      }
+    }
+  } else {
+    finalList = merged.list;
+  }
+
+  const limitedList = days != null
+    ? Object.fromEntries(Object.entries(finalList).slice(0, days))
+    : finalList;
+
   return {
-    ...merged,
+    list: limitedList,
     providers,
     errors: errors.length > 0 ? errors : undefined,
   };
@@ -591,10 +637,10 @@ const weatherAggregatorService = {
    * @param {number} lat - Latitude
    * @param {number} lon - Longitude
    * @param {boolean} metric - Use metric units (default: true)
-   * @param {number} days - Number of days to forecast (default: 3)
+   * @param {number} days - Number of days to forecast (default: 5)
    * @returns {Promise<Object>} Averaged forecast data from all sources
    */
-  forecastWeather: async (lat, lon, metric = true, days = 3) => {
+  forecastWeather: async (lat, lon, metric = true, days = 5) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
     const [owmResult, weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
       openWeatherMapsService.forecastWeather(owmQuery),
@@ -602,7 +648,7 @@ const weatherAggregatorService = {
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
-    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metResult, metric);
+    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metResult, metric, null, days);
   },
 
   /**
@@ -612,10 +658,10 @@ const weatherAggregatorService = {
    * @param {number} lat - Latitude
    * @param {number} lon - Longitude
    * @param {boolean} metric - Use metric units (default: true)
-   * @param {number} days - Number of forecast days (default: 3)
+   * @param {number} days - Number of forecast days (default: 5)
    * @returns {Promise<{ currentWeather: Object, forecastWeather: Object }>}
    */
-  allWeather: async (lat, lon, metric = true, days = 3) => {
+  allWeather: async (lat, lon, metric = true, days = 5) => {
     const owmQuery = { lat, lon, units: metric ? "metric" : "imperial" };
     const [
       owmCurrentResult,
@@ -634,7 +680,14 @@ const weatherAggregatorService = {
     ]);
 
     const currentWeather = processCurrentWeather(owmCurrentResult, weatherApiCurrentResult, smhiResult, metResult, metric);
-    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric);
+
+    // Derive timezone from current-weather responses (more reliable than forecast responses).
+    // Passed explicitly so processForecastWeather doesn't fall back to 'UTC' when a forecast
+    // call fails and SMHI/MET data gets re-bucketed into the wrong day.
+    const currentTimezone = weatherApiCurrentResult.value?.location?.tz_id
+      ?? (owmCurrentResult.value?.city?.timezone != null ? owmCurrentResult.value.city.timezone / 3600 : null);
+
+    const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric, currentTimezone, days);
 
     return { currentWeather, forecastWeather };
   },

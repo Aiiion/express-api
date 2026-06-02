@@ -1,7 +1,8 @@
-const sitename = process.env.SITE_NAME ?? 'express-api';
+import { GITHUB } from "./constants.mjs";
+const siteName = process.env.SITE_NAME ?? 'express-api';
 
 const userAgent = {
-    headers: { 'User-Agent': sitename },
+    headers: { 'User-Agent': `${siteName} (${GITHUB})` },
 };
 
 export default userAgent;
