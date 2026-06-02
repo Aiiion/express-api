@@ -22,8 +22,10 @@ export const cache = (duration) => {
     } else {
       const sendResponse = res.send.bind(res)
       res.send = (body) => {
-        setJsonValue(key, body, duration)
-          .catch((err) => devError('Failed to write cache entry:', err))
+        if (res.statusCode < 500) {
+          setJsonValue(key, body, duration)
+            .catch((err) => devError('Failed to write cache entry:', err))
+        }
         return sendResponse(body)
       }
       next()
