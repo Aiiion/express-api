@@ -23,7 +23,7 @@
 
 ## High-level architecture
 
-- `src/index.mjs` is the application entrypoint. It builds the Express app, applies `helmet`, JSON parsing, cookie parsing, strict CORS, request logging, and the global error handler. `start()` then connects Postgres and Redis, initializes Sequelize models, authenticates Sequelize, and registers cron jobs.
+- `src/index.mjs` is the application entrypoint. It builds the Express app, applies `helmet`, JSON parsing, cookie parsing, request logging, and the global error handler. CORS is applied per-route, not globally. `start()` then connects Postgres and Redis, initializes Sequelize models, authenticates Sequelize, and registers cron jobs.
 - Routing is composed in `src/routes/index.route.mjs`. Top-level routes cover:
   - info endpoints (`/`, `/test`, `/cv`, `/ip-location`)
   - auth endpoints (`/v1/auth/*`)
@@ -32,7 +32,7 @@
   - `/v1` discovery/index endpoint
 - The weather endpoint is a multi-provider aggregation pipeline, not a thin proxy:
   - controller: `src/controllers/v1/weather.controller.mjs`
-  - provider clients: `src/services/openWeatherMaps.service.mjs`, `src/services/weatherApi.service.mjs`, `src/services/smhi.service.mjs`
+  - provider clients: `src/services/openWeatherMaps.service.mjs`, `src/services/weatherApi.service.mjs`, `src/services/smhi.service.mjs`, `src/services/met.service.mjs`
   - normalization layer: `src/dtos/*.dto.mjs`
   - merge/orchestration: `src/services/weatherAggregator.service.mjs`
   The aggregator fetches providers in parallel, normalizes them into a shared DTO shape, averages overlapping numeric fields, has custom precipitation-window merging logic, and logs provider failures while still returning partial weather data when possible.
@@ -43,9 +43,11 @@
   - `src/jobs/purge-old-logs.mjs` removes old rows from both `request_logs` and `error_logs`.
   - `src/cron.mjs` schedules request-log flushing every 2 minutes and log purging daily at 05:00 UTC.
 - Authentication is a two-step email flow backed by Redis:
-  - `POST /v1/auth/login` validates the admin password, creates a 6-digit verification code plus session token, stores them in Redis for 10 minutes, and sends the code by email through Resend.
+  - `POST /v1/auth/login` validates the admin password, creates a 6-digit verification code plus session token, stores them in Redis for 10 minutes, and sends the code by email through Resend. This endpoint is rate-limited (10 requests per 15 minutes) using `express-rate-limit` with a Redis store (in-memory store in test mode).
   - `POST /v1/auth/verify` validates the session token + code, deletes the one-time Redis session, and sets a signed JWT in the `jwt_token` HTTP-only cookie for 3 hours.
-  - protected log endpoints use the `authenticate` middleware, which reads the JWT from that cookie.
+  - `GET /v1/auth/verify-token` checks that the current JWT cookie is valid.
+  - `POST /v1/auth/logout` clears the JWT cookie.
+  - Protected log endpoints use the `authenticate` middleware, which reads the JWT from that cookie.
 - Postgres access uses both `pg` and Sequelize:
   - `src/services/db.service.mjs` owns the low-level `pg` connectivity check used during startup.
   - `src/models/index.mjs` creates the Sequelize instance.
@@ -59,7 +61,6 @@
 - CORS is strict and allowlist-based. `src/utils/corsHelpers.mjs` reads a comma-separated `CORS_ALLOWLIST`; requests without an `Origin` are treated as non-CORS, and disallowed origins fail with a 403-style CORS error instead of being silently allowed.
 - Request logging is intentionally asynchronous. New request logs are queued in Redis first, then persisted later by the flush job. `request_logs.stable_id` is used for deduplication, and the flusher uses `bulkCreate(..., { ignoreDuplicates: true })`.
 - Test mode changes infrastructure behavior:
-  - `src/services/redis.service.mjs` swaps Redis for an in-memory `Map` when `NODE_ENV === "test"`.
-  - `src/middleware/cache.middleware.mjs` bypasses response caching in test mode.
-  - `src/index.mjs` does not auto-start the server in test mode, but many tests still call `start(0)` themselves, so Postgres is still required for the full suite.
+  - `src/index.mjs` does not auto-start the server in test mode, but many tests still call `start(0)` themselves, so Postgres and Redis must be reachable for the full suite.
+  - The login rate limiter in `src/routes/v1/auth.route.mjs` uses an in-memory store instead of Redis when `NODE_ENV === "test"`.
 - Error responses usually follow the repository shape `{ code, message }`. Successful resource responses typically wrap payloads in `{ data: ... }`, and list endpoints also return a `pagination` object.
