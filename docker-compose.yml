@@ -1,6 +1,7 @@
 services:
   api:
     build: .
+    image: ghcr.io/aiiion/express-api:latest
     container_name: express-api
     ports:
       - "3000:3000"

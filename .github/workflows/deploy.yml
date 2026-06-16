@@ -1,0 +1,62 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Test express-api"]
+    types: [completed]
+    branches: [master]
+
+jobs:
+  build-and-push:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/aiiion/express-api:latest
+            ghcr.io/aiiion/express-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_TOKEN,ACTOR,DEPLOY_PATH
+          script: |
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+            cd "$DEPLOY_PATH"
+            docker compose pull api
+            docker compose up -d --remove-orphans
+            docker image prune -f
