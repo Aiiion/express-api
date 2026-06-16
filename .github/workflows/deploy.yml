@@ -34,7 +34,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/aiiion/express-api:latest
-            ghcr.io/aiiion/express-api:${{ github.sha }}
+            ghcr.io/aiiion/express-api:${{ github.event.workflow_run.head_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
