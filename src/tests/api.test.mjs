@@ -9,6 +9,8 @@ import {
   weather as weatherApiWeather,
   weatherForecast as weatherApiWeatherForecast,
 } from "../fixtures/weatherApi.fixture.mjs";
+import { smhiForecast } from "../fixtures/smhi.fixture.mjs";
+import { metForecast } from "../fixtures/met.fixture.mjs";
 
 // Stable mock function references so individual tests can override behaviour
 const owmMocks = {
@@ -24,6 +26,16 @@ const weatherApiMocks = {
   weatherWarnings: jest.fn().mockResolvedValue({ alerts: { alert: [] } }),
 };
 
+const smhiMocks = {
+  forecastWeather: jest.fn().mockResolvedValue(smhiForecast.data),
+  weatherWarnings: jest.fn().mockResolvedValue(null),
+};
+
+const metMocks = {
+  forecastWeather: jest.fn().mockResolvedValue(metForecast.data),
+  weatherWarnings: jest.fn().mockResolvedValue(null),
+};
+
 // Mock the OpenWeatherMaps service
 jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
   default: owmMocks,
@@ -32,6 +44,14 @@ jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
 // Mock the weatherApi service
 jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
   default: weatherApiMocks,
+}));
+
+jest.unstable_mockModule("../services/smhi.service.mjs", () => ({
+  default: smhiMocks,
+}));
+
+jest.unstable_mockModule("../services/met.service.mjs", () => ({
+  default: metMocks,
 }));
 
 import request from "supertest";
@@ -73,6 +93,10 @@ describe("API Routes", () => {
     weatherApiMocks.currentWeather.mockResolvedValue(weatherApiWeather.data);
     weatherApiMocks.forecastWeather.mockResolvedValue(weatherApiWeatherForecast.data);
     weatherApiMocks.weatherWarnings.mockResolvedValue({ alerts: { alert: [] } });
+    smhiMocks.forecastWeather.mockResolvedValue(smhiForecast.data);
+    smhiMocks.weatherWarnings.mockResolvedValue(null);
+    metMocks.forecastWeather.mockResolvedValue(metForecast.data);
+    metMocks.weatherWarnings.mockResolvedValue(null);
   });
 
   afterAll(async () => {
@@ -140,14 +164,24 @@ describe("API Routes", () => {
       expect(res.body.data).toHaveProperty('forecastWeather');
     });
 
-    it('should still return 200 when the WeatherAPI provider fails', async () => {
+    it('should still return 200 with valid weather data when WeatherAPI is down', async () => {
       weatherApiMocks.currentWeather.mockRejectedValueOnce(new Error('WeatherAPI unavailable'));
       weatherApiMocks.forecastWeather.mockRejectedValueOnce(new Error('WeatherAPI unavailable'));
       const res = await request(app).get('/v1/weather').query(exampleLatLon);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('data');
-      expect(res.body.data).toHaveProperty('currentWeather');
-      expect(res.body.data).toHaveProperty('forecastWeather');
+      // currentWeather still has real data from the remaining providers
+      expect(res.body.data.currentWeather).toHaveProperty('temperature');
+      expect(res.body.data.currentWeather.temperature).toHaveProperty('temp');
+      // weatherapi.com must be absent from providers since it failed
+      expect(res.body.data.currentWeather.providers).not.toContain('weatherapi.com');
+      // failure is reported in the errors array
+      expect(res.body.data.currentWeather.errors).toHaveLength(1);
+      expect(res.body.data.currentWeather.errors[0].provider).toBe('weatherapi.com');
+      // forecastWeather list is still populated
+      expect(res.body.data.forecastWeather).toHaveProperty('list');
+      expect(res.body.data.forecastWeather.providers).not.toContain('weatherapi.com');
+      expect(res.body.data.forecastWeather.errors).toHaveLength(1);
+      expect(res.body.data.forecastWeather.errors[0].provider).toBe('weatherapi.com');
     });
   });
 });
