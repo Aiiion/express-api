@@ -12,6 +12,9 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm install --omit=dev
 
+# Install PM2 globally
+RUN npm install -g pm2
+
 # Install postgres client for pg_isready used in startup script
 RUN apk add --no-cache postgresql-client
 
