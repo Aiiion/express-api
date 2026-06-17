@@ -20,4 +20,4 @@ done
 
 echo "Postgres is available, running migrations and starting app"
 npm run migrate
-exec npm start
+exec pm2-runtime ecosystem.config.cjs
