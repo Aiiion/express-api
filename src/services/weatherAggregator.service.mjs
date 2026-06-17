@@ -418,11 +418,16 @@ const mergeForecastData = (sources) => {
 
 const collectProvider = (result, dtoFn, name, route) => {
   if (result.status === 'fulfilled') {
-    const normalized = dtoFn(result.value);
-    if (normalized) return { source: normalized, provider: normalized.provider ?? name };
+    try {
+      const normalized = dtoFn(result.value);
+      if (normalized) return { source: normalized, provider: normalized.provider ?? name };
+    } catch (err) {
+      logError(err, { route });
+      return { error: { provider: name, message: err?.message ?? String(err) } };
+    }
   } else {
     logError(result.reason, { route });
-    return { error: { provider: name, message: result.reason?.message ?? String(result.reason) ?? 'Unknown error' } };
+    return { error: { provider: name, message: result.reason?.message ?? String(result.reason) } };
   }
   return {};
 };
