@@ -85,17 +85,13 @@ export const getRequestLogProcessingLength = async () => {
 
 export const moveRequestLogsToProcessing = async (count) => {
   if (!count || count < 1) return 0;
-
   const client = await getClient();
-  let moved = 0;
-
-  while (moved < count) {
-    const entry = await client.sendCommand(['RPOPLPUSH', REQUEST_LOGS_QUEUE_KEY, REQUEST_LOGS_PROCESSING_KEY]);
-    if (!entry) break;
-    moved += 1;
+  const tx = client.multi();
+  for (let i = 0; i < count; i++) {
+    tx.lMove(REQUEST_LOGS_QUEUE_KEY, REQUEST_LOGS_PROCESSING_KEY, 'RIGHT', 'LEFT');
   }
-
-  return moved;
+  const results = await tx.exec();
+  return results.filter(r => r !== null).length;
 };
 
 export const getProcessingRequestLogs = async () => {
