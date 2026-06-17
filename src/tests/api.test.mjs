@@ -56,6 +56,7 @@ jest.unstable_mockModule("../services/met.service.mjs", () => ({
 
 import request from "supertest";
 import { exampleIp, exampleLatLon, exampleLat } from "../utils/constants.mjs";
+import { clearRedisTestData } from "../services/redis.service.mjs";
 
 // Dynamically import app/start/stop after the mock is set up
 let app;
@@ -85,7 +86,8 @@ describe("API Routes", () => {
     }
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await clearRedisTestData();
     owmMocks.currentWeather.mockResolvedValue(weather.data);
     owmMocks.forecastWeather.mockResolvedValue(weatherForecast.data);
     owmMocks.currentPollution.mockResolvedValue(airPollution.data);
