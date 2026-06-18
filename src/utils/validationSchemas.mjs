@@ -23,10 +23,40 @@ export const latLonValidationSchema = {
 	},
 };
 
+export const weatherValidationSchema = {
+	...latLonValidationSchema,
+	days: {
+		in: ['query'],
+		optional: true,
+		default: { options: 5 },
+		isInt: {
+			options: { min: 1 },
+			errorMessage: 'Days must be a positive integer',
+		},
+		toInt: true,
+		customSanitizer: {
+			options: (value) => Math.min(value, 6),
+		},
+	},
+	units: {
+		in: ['query'],
+		optional: true,
+		default: { options: 'metric' },
+		isIn: {
+			options: [['metric', 'imperial']],
+			errorMessage: 'Units must be metric or imperial',
+		},
+		customSanitizer: {
+			options: (value) => value !== 'imperial',
+		},
+	},
+};
+
 export const paginationValidationSchema = {
 	page: {
 		in: ['query'],
 		optional: true,
+		default: { options: 1 },
 		isInt: {
 			options: { min: 1 },
 			errorMessage: 'Page must be a positive integer',
@@ -59,6 +89,12 @@ export const requestLogsIndexValidationSchema = {
 				return values.every((entry) => /^\d+$/.test(String(entry)));
 			},
 			errorMessage: 'Code must be an integer or a list of integers',
+		},
+		customSanitizer: {
+			options: (value) => {
+				const values = Array.isArray(value) ? value : [value];
+				return values.map((v) => parseInt(v, 10));
+			},
 		},
 	},
 };

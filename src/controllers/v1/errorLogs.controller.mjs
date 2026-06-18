@@ -1,16 +1,17 @@
 import { Op } from 'sequelize';
+import { matchedData } from 'express-validator';
 import { sequelize } from '../../models/index.mjs';
 
 const LOGS_PER_PAGE = 100;
 
 export const index = async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const { page = 1, search } = matchedData(req);
   const offset = (page - 1) * LOGS_PER_PAGE;
 
   const where = {};
 
-  if (req.query.search) {
-    const pattern = `%${req.query.search}%`;
+  if (search) {
+    const pattern = `%${search}%`;
     where[Op.or] = [
       { message: { [Op.iLike]: pattern } },
       { route: { [Op.iLike]: pattern } },
