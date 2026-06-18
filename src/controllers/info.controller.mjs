@@ -1,4 +1,8 @@
 import { EMAIL, GITHUB } from "../utils/constants.mjs";
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../../package.json');
 import path from 'path';
 import { fileURLToPath } from 'url';
 import net from 'net';
@@ -9,6 +13,7 @@ import { devError } from "../utils/logger.mjs";
 export const test = (req, res) => res.status(200).send({message: 'API is running'});
 
 export const contact = (req, res) => res.status(200).send({
+    version,
     message: "Hello! I am Alex. Feel free to use this API. If you have any questions or feedback, please reach out to me via email or GitHub.",
     github: GITHUB,
     email: EMAIL
