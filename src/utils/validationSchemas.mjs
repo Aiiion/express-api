@@ -23,6 +23,30 @@ export const latLonValidationSchema = {
 	},
 };
 
+export const weatherValidationSchema = {
+	...latLonValidationSchema,
+	days: {
+		in: ['query'],
+		optional: true,
+		default: { options: 5 },
+		isInt: {
+			options: { min: 1 },
+			errorMessage: 'Days must be a positive integer',
+		},
+		toInt: true,
+		customSanitizer: {
+			options: (value) => Math.min(value, 6),
+		},
+	},
+	units: {
+		in: ['query'],
+		optional: true,
+		customSanitizer: {
+			options: (value) => value !== 'imperial',
+		},
+	},
+};
+
 export const paginationValidationSchema = {
 	page: {
 		in: ['query'],
