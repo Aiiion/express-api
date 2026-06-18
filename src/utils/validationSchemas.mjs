@@ -51,6 +51,7 @@ export const paginationValidationSchema = {
 	page: {
 		in: ['query'],
 		optional: true,
+		default: { options: 1 },
 		isInt: {
 			options: { min: 1 },
 			errorMessage: 'Page must be a positive integer',
@@ -83,6 +84,12 @@ export const requestLogsIndexValidationSchema = {
 				return values.every((entry) => /^\d+$/.test(String(entry)));
 			},
 			errorMessage: 'Code must be an integer or a list of integers',
+		},
+		customSanitizer: {
+			options: (value) => {
+				const values = Array.isArray(value) ? value : [value];
+				return values.map((v) => parseInt(v, 10));
+			},
 		},
 	},
 };

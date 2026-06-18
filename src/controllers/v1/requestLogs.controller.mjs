@@ -4,25 +4,17 @@ import { sequelize } from '../../models/index.mjs';
 const LOGS_PER_PAGE = 100;
 
 export const index = async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const { page, code, search } = req.query;
   const offset = (page - 1) * LOGS_PER_PAGE;
 
   const where = {};
 
-  if (req.query.code !== undefined) {
-    const codes = Array.isArray(req.query.code)
-      ? req.query.code.map(c => parseInt(c, 10)).filter(c => !isNaN(c))
-      : [parseInt(req.query.code, 10)].filter(c => !isNaN(c));
-
-    if (codes.length === 1) {
-      where.code = codes[0];
-    } else if (codes.length > 1) {
-      where.code = { [Op.in]: codes };
-    }
+  if (code !== undefined) {
+    where.code = code.length === 1 ? code[0] : { [Op.in]: code };
   }
 
-  if (req.query.search) {
-    const pattern = `%${req.query.search}%`;
+  if (search) {
+    const pattern = `%${search}%`;
     where[Op.or] = [
       { route: { [Op.iLike]: pattern } },
       { ip: { [Op.iLike]: pattern } },
