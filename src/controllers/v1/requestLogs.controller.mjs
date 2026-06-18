@@ -1,10 +1,11 @@
 import { Op } from 'sequelize';
+import { matchedData } from 'express-validator';
 import { sequelize } from '../../models/index.mjs';
 
 const LOGS_PER_PAGE = 100;
 
 export const index = async (req, res) => {
-  const { page, code, search } = req.query;
+  const { page = 1, code, search } = matchedData(req);
   const offset = (page - 1) * LOGS_PER_PAGE;
 
   const where = {};
