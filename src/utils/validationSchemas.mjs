@@ -41,6 +41,11 @@ export const weatherValidationSchema = {
 	units: {
 		in: ['query'],
 		optional: true,
+		default: { options: 'metric' },
+		isIn: {
+			options: [['metric', 'imperial']],
+			errorMessage: 'Units must be metric or imperial',
+		},
 		customSanitizer: {
 			options: (value) => value !== 'imperial',
 		},
