@@ -5,15 +5,15 @@ import {
   getProcessingRequestLogs,
   getRequestLogProcessingLength,
   getRequestLogQueueLength,
-  moveRequestLogsToProcessing,
+  moveAndFetchRequestLogs,
   peekOldestRequestLog,
   releaseRequestLogsFlushLock,
 } from '../services/redis.service.mjs';
 
-export const REQUEST_LOG_BATCH_SIZE = 40;
+export const REQUEST_LOG_BATCH_SIZE = 500;
 // Logs older than this threshold are flushed even when the queue has fewer
 // entries than batchSize, preventing indefinite accumulation of partial batches.
-export const PARTIAL_FLUSH_AGE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+export const PARTIAL_FLUSH_AGE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 const REQUEST_LOG_LOCK_TTL_SECONDS = 130;
 
 const parseRequestLogEntry = (entry) => {
@@ -49,8 +49,9 @@ export const flushRequestLogs = async (batchSize = REQUEST_LOG_BATCH_SIZE) => {
     }
 
     while (true) {
-      let processingLength = await getRequestLogProcessingLength();
+      const processingLength = await getRequestLogProcessingLength();
 
+      let rawBatch;
       if (processingLength === 0) {
         const queueLength = await getRequestLogQueueLength();
 
@@ -71,15 +72,20 @@ export const flushRequestLogs = async (batchSize = REQUEST_LOG_BATCH_SIZE) => {
           // Oldest log is stale — proceed to flush the partial batch.
         }
 
-        processingLength = await moveRequestLogsToProcessing(Math.min(batchSize, queueLength));
-        if (processingLength === 0) break;
+        // Atomically move items to the processing list and return them in one
+        // round-trip, avoiding a separate getProcessingRequestLogs call.
+        rawBatch = await moveAndFetchRequestLogs(Math.min(batchSize, queueLength));
+        if (rawBatch.length === 0) break;
+      } else {
+        // Crash-recovery path: items left in processing from a previous failed run.
+        rawBatch = await getProcessingRequestLogs();
+        if (rawBatch.length === 0) {
+          await clearProcessingRequestLogs();
+          break;
+        }
       }
 
-      const batch = (await getProcessingRequestLogs()).map(parseRequestLogEntry);
-      if (batch.length === 0) {
-        await clearProcessingRequestLogs();
-        break;
-      }
+      const batch = rawBatch.map(parseRequestLogEntry);
 
       await RequestLog.bulkCreate(batch, { validate: true, ignoreDuplicates: true });
       await clearProcessingRequestLogs();

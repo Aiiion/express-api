@@ -73,6 +73,16 @@ export const enqueueRequestLog = async (payload) => {
   await client.lPush(REQUEST_LOGS_QUEUE_KEY, JSON.stringify(payload));
 };
 
+export const bulkEnqueueRequestLogs = async (payloads) => {
+  if (!payloads?.length) return;
+  const client = await getClient();
+  const tx = client.multi();
+  for (const payload of payloads) {
+    tx.lPush(REQUEST_LOGS_QUEUE_KEY, JSON.stringify(payload));
+  }
+  await tx.exec();
+};
+
 export const getRequestLogQueueLength = async () => {
   const client = await getClient();
   return client.lLen(REQUEST_LOGS_QUEUE_KEY);
@@ -81,6 +91,29 @@ export const getRequestLogQueueLength = async () => {
 export const getRequestLogProcessingLength = async () => {
   const client = await getClient();
   return client.lLen(REQUEST_LOGS_PROCESSING_KEY);
+};
+
+// Atomically moves up to `count` items from the queue (tail = oldest) to the
+// processing list and returns them in a single round-trip.
+const MOVE_AND_FETCH_SCRIPT = `
+  local count = tonumber(ARGV[1])
+  local items = {}
+  for i = 1, count do
+    local val = redis.call('LMOVE', KEYS[1], KEYS[2], 'RIGHT', 'LEFT')
+    if val == false then break end
+    table.insert(items, val)
+  end
+  return items
+`;
+
+export const moveAndFetchRequestLogs = async (count) => {
+  if (!count || count < 1) return [];
+  const client = await getClient();
+  const items = await client.eval(MOVE_AND_FETCH_SCRIPT, {
+    keys: [REQUEST_LOGS_QUEUE_KEY, REQUEST_LOGS_PROCESSING_KEY],
+    arguments: [String(count)],
+  });
+  return items || [];
 };
 
 export const moveRequestLogsToProcessing = async (count) => {
