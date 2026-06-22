@@ -72,3 +72,18 @@ There are no lint or build scripts.
 - Fixtures (`src/fixtures/`) and DTOs (`src/dtos/`) pair one-to-one per weather provider.
 - `src/data/borders/` contains geographic boundary data used by geo helpers for weather warning region checks.
 - `src/services/redis.service.mjs` exposes a `withCache(key, ttl, fn)` helper for programmatic caching; the `cache(duration)` middleware in `src/middleware/cache.middleware.mjs` wraps `res.send` to cache full HTTP responses by URL.
+
+## Adding a country warning provider
+
+Weather warnings are separate from the aggregation pipeline. The controller calls `getCoordinateBound(lat, lon)` from `src/utils/geoHelpers.mjs`, which ray-casts against every border in `bordersArray` and returns the matching `{ country, provider }` entry. The controller then calls `provider.service.weatherWarnings(lat, lon)` → `provider.dto.weatherWarnings(data)`.
+
+To add a new country (e.g. Finland):
+1. Add `src/data/borders/FI.json` — a GeoJSON Polygon or MultiPolygon for the country boundary.
+2. Add an entry to `src/utils/localWeatherProviders.mjs` mapping the country code to `{ name, service, dto }`.
+3. Add `weatherWarnings` to the country's service (HTTP fetch, returns raw provider response).
+4. Add `weatherWarnings` to the country's DTO (normalise to `{ severity, severityDescription, title, description, type, warningsCount, raw, provider }`). SMHI and MET DTOs are the reference implementations.
+5. Add the new border to `bordersArray` in `src/utils/geoHelpers.mjs`.
+
+Coordinates that don't match any border fall through to the WeatherAPI global fallback, which has no `weatherWarnings` implementation — the controller catches the resulting error and returns `null` for warnings.
+
+SMHI and MET serve a dual role: they contribute forecast/current data to the aggregator (`weatherAggregator.service.mjs`) independently of also being warning providers. Adding a new country's warning provider does not automatically include it in the aggregation pipeline.

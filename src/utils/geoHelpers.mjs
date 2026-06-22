@@ -62,6 +62,11 @@ const bordersArray = [
     provider: localWeatherProviders.NO,
     geometry: require("../data/borders/NO.json"),
   },
+  {
+    country: "Finland",
+    provider: localWeatherProviders.FI,
+    geometry: require("../data/borders/FI.json"),
+  },
 ].map((entry) => ({ ...entry, bbox: computeBbox(entry.geometry) }));
 
 export const getCoordinateBound = (lat, lon) => {
