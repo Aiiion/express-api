@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Finland Borders"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            {
+              "type": "Point",
+              "coordinates": [24.9, 61.7]  // Placeholder coordinates for demonstration
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "bbox": [-30, 58, 30, 70] // Expanded bounding box approximation
+}
