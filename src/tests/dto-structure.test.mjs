@@ -8,11 +8,13 @@ import {
 } from "../fixtures/weatherApi.fixture.mjs";
 import { smhiForecast } from "../fixtures/smhi.fixture.mjs";
 import { metForecast } from "../fixtures/met.fixture.mjs";
+import { fmiWarningsFixtureParsed } from "../fixtures/fmi.fixture.mjs";
 import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import { devError } from "../utils/logger.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
 import metDto from "../dtos/met.dto.mjs";
+import fmiDto from "../dtos/fmi.dto.mjs";
 
 /**
  * Recursively extracts all keys from an object to get its structure
@@ -295,6 +297,36 @@ describe('DTO Structure Consistency', () => {
         devError(comparison.report);
       }
       
+      expect(comparison.areEqual).toBe(true);
+    });
+
+    it('should have the same structure across smhi and fmi DTOs', () => {
+      const smhiWarningData = {
+        inner: {
+          level: "YELLOW",
+          en: "Test Warning",
+          type: "Storm",
+          warningsCount: 1
+        }
+      };
+
+      const smhiResult = smhiDto.weatherWarnings(smhiWarningData);
+      const fmiResult = fmiDto.weatherWarnings(fmiWarningsFixtureParsed);
+
+      const filterRawKeys = (keys) =>
+        new Set([...keys].filter(key => !key.startsWith('raw.') && key !== 'raw'));
+
+      const comparison = compareStructures(
+        filterRawKeys(getObjectStructure(smhiResult)),
+        filterRawKeys(getObjectStructure(fmiResult)),
+        'smhi',
+        'fmi'
+      );
+
+      if (!comparison.areEqual) {
+        devError(comparison.report);
+      }
+
       expect(comparison.areEqual).toBe(true);
     });
   });
