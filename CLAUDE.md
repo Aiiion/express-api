@@ -57,7 +57,14 @@ There are no lint or build scripts.
 - `src/jobs/flush-request-logs.mjs` flushes the queue to Postgres in batches with a Redis lock (avoids concurrent flushers); uses `bulkCreate(..., { ignoreDuplicates: true })` with `stable_id` for deduplication
 - `src/middleware/handleError.middleware.mjs` records uncaught errors synchronously to `error_logs`
 - `src/jobs/purge-old-logs.mjs` removes old rows from both `request_logs` and `error_logs`
-- `src/cron.mjs` schedules flushing every 2 minutes and purging daily at 05:00 UTC
+- `src/cron.mjs` schedules flushing every 2 minutes, purging daily at 05:00 UTC, reference station polling at 12:00 UTC, and accuracy evaluation at 06:00 UTC
+
+**Provider accuracy evaluation** tracks forecast accuracy per provider and country (SE/NO/FI/GL) to support future weighted aggregation:
+- On every `allWeather()` call, `src/services/forecastSnapshot.service.mjs` fire-and-forgets a snapshot of each provider's next-day prediction into `provider_forecast_snapshots` (keyed on `provider, lat, lon, valid_for`; coordinates rounded to 2 decimal places to collapse near-duplicate requests)
+- `src/jobs/poll-reference-stations.mjs` calls `allWeather()` daily at 12:00 UTC for 13 fixed station coordinates in `src/data/referenceStations.mjs` (SE/NO/FI spread) to accumulate data independent of user traffic; station coordinates are used so the nearest-station observation lookup returns exactly that station
+- `src/jobs/evaluate-provider-accuracy.mjs` runs daily at 06:00 UTC: fetches real observations for yesterday's snapshots, computes MAE per metric (temp/precip/wind/humidity), and upserts into `provider_accuracy_scores` per `(provider, country_code)`
+- Observation ground truth by country: SE → SMHI metobs API (`src/services/smhiObs.service.mjs`, station list cached 24h in Redis); NO → Frost API with Basic auth (`src/services/frostObs.service.mjs`, `nearest(POINT(...))` query); FI → FMI WFS via existing `fetchWfsBsSimple` (`src/services/fmiObs.service.mjs`); global → Open-Meteo ERA5 archive (`src/services/openMeteoArchive.service.mjs`)
+- `country_code` uses 2-letter ISO codes; `'GL'` is the sentinel for coordinates outside SE/NO/FI
 
 **Database** uses both `pg` and Sequelize. `src/services/db.service.mjs` owns the low-level `pg` connectivity check. `src/models/index.mjs` creates the Sequelize instance. Schema is managed entirely through migrations in `src/db/migrations/` — `sequelize.sync()` is never used.
 
@@ -71,6 +78,7 @@ There are no lint or build scripts.
 - All source files use ESM `.mjs`. Tests that mock modules use `jest.unstable_mockModule(...)` and only import the module under test *after* the mock is set up.
 - Fixtures (`src/fixtures/`) and DTOs (`src/dtos/`) pair one-to-one per weather provider.
 - `src/data/borders/` contains geographic boundary data used by geo helpers for weather warning region checks.
+- `src/data/referenceStations.mjs` lists the 13 fixed station coordinates used by the daily accuracy poll; coordinates are sourced from real station positions (SMHI metobs, Frost, FMI) so observation lookups resolve to exactly those stations.
 - `src/services/redis.service.mjs` exposes a `withCache(key, ttl, fn)` helper for programmatic caching; the `cache(duration)` middleware in `src/middleware/cache.middleware.mjs` wraps `res.send` to cache full HTTP responses by URL.
 
 ## Adding a country warning provider
