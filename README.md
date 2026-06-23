@@ -6,6 +6,7 @@ This api is possible thanks to:
 [smhi.se](https://www.smhi.se/)
 [weatherapi.com](https://www.weatherapi.com/)
 [met.no](https://www.met.no/)
+[fmi.fi](https://www.fmi.fi/)
 
 # Usage
 

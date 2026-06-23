@@ -43,7 +43,7 @@ There are no lint or build scripts.
 - The controller calls `weatherAggregatorService.allWeather()` which fetches all six provider APIs in a single `Promise.allSettled` pass (OWM current + forecast, WeatherAPI current + forecast, SMHI, MET) to avoid duplicate calls
 - Each provider normalizes its response via `src/dtos/*.dto.mjs` into a shared shape; DTOs use ISO date strings (`YYYY-MM-DD`) as forecast day keys internally, which the aggregator converts to weekday names at the response boundary
 - `src/services/weatherAggregator.service.mjs` merges results: averages overlapping numeric fields, has custom precipitation-window merging, and returns partial data when some providers fail
-- Weather warnings are geo-routed: `src/utils/geoHelpers.mjs` uses ray-casting against GeoJSON borders in `src/data/borders/` to determine if coordinates are in Sweden (→ SMHI) or Norway (→ MET/Yr); all other coordinates use WeatherAPI. The provider/DTO pair is defined in `src/utils/localWeatherProviders.mjs`
+- Weather warnings are geo-routed: `src/utils/geoHelpers.mjs` uses ray-casting against GeoJSON borders in `src/data/borders/` to determine if coordinates are in Sweden (→ SMHI), Norway (→ MET/Yr), or Finland (→ FMI); all other coordinates use WeatherAPI. The provider/DTO pair is defined in `src/utils/localWeatherProviders.mjs`
 - Pollution data (`currentPollution`) comes exclusively from OpenWeatherMaps with no aggregation
 
 **Authentication** is a two-step email flow backed by Redis:
@@ -81,7 +81,7 @@ To add a new country (e.g. Finland):
 1. Add `src/data/borders/FI.json` — a GeoJSON Polygon or MultiPolygon for the country boundary.
 2. Add an entry to `src/utils/localWeatherProviders.mjs` mapping the country code to `{ name, service, dto }`.
 3. Add `weatherWarnings` to the country's service (HTTP fetch, returns raw provider response).
-4. Add `weatherWarnings` to the country's DTO (normalise to `{ severity, severityDescription, title, description, type, warningsCount, raw, provider }`). SMHI and MET DTOs are the reference implementations.
+4. Add `weatherWarnings` to the country's DTO (normalize to `{ severity, severityDescription, title, description, type, warningsCount, raw, provider }`). SMHI and MET DTOs are the reference implementations.
 5. Add the new border to `bordersArray` in `src/utils/geoHelpers.mjs`.
 
 Coordinates that don't match any border fall through to the WeatherAPI global fallback, which has no `weatherWarnings` implementation — the controller catches the resulting error and returns `null` for warnings.
