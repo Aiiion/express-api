@@ -1,4 +1,6 @@
 export const OWM_API_URL = "https://api.openweathermap.org/data/2.5";
+export const METEOALARM_FI_URL = "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-finland";
+export const FMI_WFS_URL = "https://opendata.fmi.fi/wfs";
 export const MET_API_URL = "https://api.met.no/weatherapi/locationforecast/2.0";
 export const MET_ALERTS_API_URL = "https://api.met.no/weatherapi/metalerts/2.0";
 export const SMHI_WPT_API_URL = "https://wpt-a.smhi.se/backend-weatherpage";
