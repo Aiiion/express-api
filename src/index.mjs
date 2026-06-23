@@ -9,6 +9,8 @@ import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
 import initRequestLog from './models/requestLog.model.mjs';
 import initErrorLog from './models/errorLog.model.mjs';
+import initProviderForecastSnapshot from './models/providerForecastSnapshot.model.mjs';
+import initProviderAccuracyScore from './models/providerAccuracyScore.model.mjs';
 import { closeRedisConnection, ensureRedisConnection } from './services/redis.service.mjs';
 import { registerCronJobs } from './cron.mjs';
 dotenv.config();
@@ -37,6 +39,8 @@ const start = async (listenPort = port) => {
     // initialize sequelize models (no sync here; migrations manage schema)
     initRequestLog(sequelize);
     initErrorLog(sequelize);
+    initProviderForecastSnapshot(sequelize);
+    initProviderAccuracyScore(sequelize);
     await sequelize.authenticate();
     if (!cronHandle) {
       cronHandle = registerCronJobs();

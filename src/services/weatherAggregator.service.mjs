@@ -8,6 +8,7 @@ import smhiDto from "../dtos/smhi.dto.mjs";
 import metDto from "../dtos/met.dto.mjs";
 import { logError } from "./errorLog.service.mjs";
 import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { captureForecasts } from "./forecastSnapshot.service.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
@@ -614,6 +615,12 @@ const weatherAggregatorService = {
       ?? (owmCurrentResult.value?.city?.timezone != null ? owmCurrentResult.value.city.timezone / 3600 : null);
 
     const forecastWeather = processForecastWeather(owmForecastResult, weatherApiForecastResult, smhiResult, metResult, metric, currentTimezone, days);
+
+    // Fire-and-forget: capture per-provider next-day forecasts for accuracy evaluation.
+    captureForecasts(
+      { owmForecast: owmForecastResult, weatherApiForecast: weatherApiForecastResult, smhi: smhiResult, met: metResult },
+      lat, lon, currentTimezone ?? 'UTC'
+    );
 
     return { currentWeather, forecastWeather };
   },
