@@ -194,8 +194,8 @@ describe('evaluateProviderAccuracy', () => {
       .mockResolvedValueOnce([]);
     smhiObsMock.getDailyStats.mockRejectedValue(new Error('Station timeout'));
 
-    // Should not throw; snapshot still gets marked evaluated
+    // Should not throw; snapshot stays unevaluated so the job can retry it later
     await expect(evaluateProviderAccuracy()).resolves.toBeDefined();
-    expect(snapshotUpdateMock).toHaveBeenCalled();
+    expect(snapshotUpdateMock).not.toHaveBeenCalled();
   });
 });

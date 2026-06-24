@@ -77,6 +77,7 @@ export const evaluateProviderAccuracy = async () => {
   // Storing obs_* here means the 30-day window query below can compute errors
   // from the snapshot row alone, without needing to re-fetch historical observations.
   for (const [key, obs] of obsMap.entries()) {
+    if (obs === null) continue;
     const idsForCoord = snapshots
       .filter(s => `${s.lat}:${s.lon}:${s.country_code}` === key)
       .map(s => s.id);
