@@ -85,7 +85,7 @@ const smhiObsService = {
 
     return {
       avg_temp: avg(tempObs.map(o => o.value)),
-      total_precip: precipObs.reduce((sum, o) => sum + o.value, 0) || null,
+      total_precip: precipObs.length ? precipObs.reduce((sum, o) => sum + o.value, 0) : null,
       avg_wind_speed: avg(windObs.map(o => o.value)),
       avg_humidity: avg(humidityObs.map(o => o.value)),
       avg_pressure: avg(pressureObs.map(o => o.value)),

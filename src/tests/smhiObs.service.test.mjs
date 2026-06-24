@@ -47,6 +47,22 @@ describe('smhiObsService.getDailyStats', () => {
     expect(stats.total_precip).toBeGreaterThan(0);
   });
 
+  it('returns 0 for total_precip on a dry day, not null', async () => {
+    fetchMock.mockImplementation((url) => {
+      if (url.includes('/station/')) {
+        // Return zero precipitation only for parameter 7 (precipitation), normal data for others
+        const body = url.includes('/parameter/7/')
+          ? { value: [{ date: '1750000000000', value: '0.0', quality: 'G' }] }
+          : smhiObsDataFixture;
+        return Promise.resolve(mockJsonResponse(body));
+      }
+      return Promise.resolve(mockJsonResponse(smhiObsStationsFixture));
+    });
+
+    const stats = await smhiObsService.getDailyStats(59.34, 18.05);
+    expect(stats.total_precip).toBe(0);
+  });
+
   it('picks the nearest active station and ignores inactive ones', async () => {
     // Göteborg coords — nearest active station should be 71420 (Göteborg A), not Kiruna (inactive)
     await smhiObsService.getDailyStats(57.72, 11.99);
