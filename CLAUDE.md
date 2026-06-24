@@ -62,11 +62,11 @@ There are no lint or build scripts.
 **Provider accuracy evaluation** tracks forecast accuracy per provider and country (SE/NO/FI/GL) to support future weighted aggregation:
 - On every `allWeather()` call, `src/services/forecastSnapshot.service.mjs` fire-and-forgets a snapshot of each provider's next-day prediction into `provider_forecast_snapshots` (keyed on `provider, lat, lon, valid_for`; coordinates rounded to 2 decimal places to collapse near-duplicate requests)
 - `src/jobs/poll-reference-stations.mjs` calls `allWeather()` daily at 12:00 UTC for 13 fixed station coordinates in `src/data/referenceStations.mjs` (SE/NO/FI spread) to accumulate data independent of user traffic; station coordinates are used so the nearest-station observation lookup returns exactly that station
-- `src/jobs/evaluate-provider-accuracy.mjs` runs daily at 06:00 UTC: fetches real observations for yesterday's snapshots, computes MAE per metric (temp/precip/wind/humidity), and upserts into `provider_accuracy_scores` per `(provider, country_code)`
-- Observation ground truth by country: SE → SMHI metobs API (`src/services/smhiObs.service.mjs`, station list cached 24h in Redis); NO → Frost API with Basic auth (`src/services/frostObs.service.mjs`, `nearest(POINT(...))` query); FI → FMI WFS via existing `fetchWfsBsSimple` (`src/services/fmiObs.service.mjs`); global → Open-Meteo ERA5 archive (`src/services/openMeteoArchive.service.mjs`)
+- `src/jobs/evaluate-provider-accuracy.mjs` runs daily at 06:00 UTC: fetches real observations for yesterday's unevaluated snapshots, persists the observed values (`obs_avg_temp`, `obs_total_precip`, `obs_avg_wind_speed`, `obs_avg_humidity`) directly on each snapshot row, then recomputes MAE over the past 30 days of evaluated snapshots and upserts into `provider_accuracy_scores` per `(provider, country_code)`. Storing obs values on the snapshot makes each row self-contained so older rows in the window don't require re-fetching historical observations.
+- Observation ground truth by country: SE → SMHI metobs API (`src/services/observations/smhiObs.service.mjs`, station list cached 24h in Redis); NO → Frost API with Basic auth (`src/services/observations/frostObs.service.mjs`, `nearest(POINT(...))` query); FI → FMI WFS via existing `fetchWfsBsSimple` (`src/services/observations/fmiObs.service.mjs`); global → Open-Meteo ERA5 archive (`src/services/observations/openMeteoArchive.service.mjs`)
 - `country_code` uses 2-letter ISO codes; `'GL'` is the sentinel for coordinates outside SE/NO/FI
 
-**Database** uses both `pg` and Sequelize. `src/services/db.service.mjs` owns the low-level `pg` connectivity check. `src/models/index.mjs` creates the Sequelize instance. Schema is managed entirely through migrations in `src/db/migrations/` — `sequelize.sync()` is never used.
+**Database** uses both `pg` and Sequelize. `src/services/infrastructure/db.service.mjs` owns the low-level `pg` connectivity check. `src/models/index.mjs` creates the Sequelize instance. Schema is managed entirely through migrations in `src/db/migrations/` — `sequelize.sync()` is never used.
 
 **Response shape conventions:**
 - Errors: `{ code, message }`
@@ -76,10 +76,11 @@ There are no lint or build scripts.
 ## Key conventions
 
 - All source files use ESM `.mjs`. Tests that mock modules use `jest.unstable_mockModule(...)` and only import the module under test *after* the mock is set up.
+- Services are organized into subfolders: `src/services/infrastructure/` (db, email, redis), `src/services/observations/` (smhiObs, frostObs, fmiObs, openMeteoArchive), `src/services/providers/` (smhi, met, fmi, openWeatherMaps, weatherApi). `weatherAggregator.service.mjs` and `forecastSnapshot.service.mjs` live at the `src/services/` root.
 - Fixtures (`src/fixtures/`) and DTOs (`src/dtos/`) pair one-to-one per weather provider.
 - `src/data/borders/` contains geographic boundary data used by geo helpers for weather warning region checks.
 - `src/data/referenceStations.mjs` lists the 13 fixed station coordinates used by the daily accuracy poll; coordinates are sourced from real station positions (SMHI metobs, Frost, FMI) so observation lookups resolve to exactly those stations.
-- `src/services/redis.service.mjs` exposes a `withCache(key, ttl, fn)` helper for programmatic caching; the `cache(duration)` middleware in `src/middleware/cache.middleware.mjs` wraps `res.send` to cache full HTTP responses by URL.
+- `src/services/infrastructure/redis.service.mjs` exposes a `withCache(key, ttl, fn)` helper for programmatic caching; the `cache(duration)` middleware in `src/middleware/cache.middleware.mjs` wraps `res.send` to cache full HTTP responses by URL.
 
 ## Adding a country warning provider
 

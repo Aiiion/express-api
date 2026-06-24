@@ -34,18 +34,22 @@ const { evaluateProviderAccuracy } = await import('../jobs/evaluate-provider-acc
 
 // Helper — creates a fake snapshot row
 const makeSnap = (overrides = {}) => ({
-  id:            1,
-  provider:      'smhi.se',
-  lat:           '59.34',
-  lon:           '18.05',
-  country_code:  'SE',
-  valid_for:     '2026-06-23',
-  avg_temp:      13.0,
-  total_precip:   0.5,
-  avg_wind_speed: 4.0,
-  avg_humidity:  72.0,
-  avg_pressure:  null,
-  evaluated:     false,
+  id:                 1,
+  provider:           'smhi.se',
+  lat:                '59.34',
+  lon:                '18.05',
+  country_code:       'SE',
+  valid_for:          '2026-06-23',
+  avg_temp:           13.0,
+  total_precip:        0.5,
+  avg_wind_speed:      4.0,
+  avg_humidity:       72.0,
+  avg_pressure:       null,
+  evaluated:          false,
+  obs_avg_temp:       null,
+  obs_total_precip:   null,
+  obs_avg_wind_speed: null,
+  obs_avg_humidity:   null,
   ...overrides,
 });
 
@@ -77,7 +81,7 @@ describe('evaluateProviderAccuracy', () => {
     expect(scoreUpsertMock).not.toHaveBeenCalled();
   });
 
-  it('marks all processed snapshots as evaluated', async () => {
+  it('marks all processed snapshots as evaluated and persists observed values', async () => {
     const snap = makeSnap();
     snapshotFindAllMock
       .mockResolvedValueOnce([snap])  // unevaluated query
@@ -87,7 +91,13 @@ describe('evaluateProviderAccuracy', () => {
     await evaluateProviderAccuracy();
 
     expect(snapshotUpdateMock).toHaveBeenCalledWith(
-      { evaluated: true },
+      expect.objectContaining({
+        evaluated:          true,
+        obs_avg_temp:       OBS.avg_temp,
+        obs_total_precip:   OBS.total_precip,
+        obs_avg_wind_speed: OBS.avg_wind_speed,
+        obs_avg_humidity:   OBS.avg_humidity,
+      }),
       expect.objectContaining({ where: expect.objectContaining({ id: expect.anything() }) })
     );
   });
@@ -124,9 +134,15 @@ describe('evaluateProviderAccuracy', () => {
 
   it('computes correct MAE and upserts accuracy scores', async () => {
     const snap = makeSnap({ avg_temp: 13.0, total_precip: 0.5, avg_wind_speed: 4.0, avg_humidity: 72.0 });
+    // The 30-day window row carries obs_* as persisted during evaluation
+    const snapWithObs = makeSnap({
+      avg_temp: 13.0, total_precip: 0.5, avg_wind_speed: 4.0, avg_humidity: 72.0,
+      obs_avg_temp: OBS.avg_temp, obs_total_precip: OBS.total_precip,
+      obs_avg_wind_speed: OBS.avg_wind_speed, obs_avg_humidity: OBS.avg_humidity,
+    });
     snapshotFindAllMock
       .mockResolvedValueOnce([snap])
-      .mockResolvedValueOnce([snap]);
+      .mockResolvedValueOnce([snapWithObs]);
     smhiObsMock.getDailyStats.mockResolvedValue(OBS);
 
     await evaluateProviderAccuracy();
@@ -138,6 +154,37 @@ describe('evaluateProviderAccuracy', () => {
     expect(upsertData.humidity_mae).toBeCloseTo(Math.abs(72.0 - 75.0), 5);
     expect(upsertData.provider).toBe('smhi.se');
     expect(upsertData.country_code).toBe('SE');
+  });
+
+  it('scores older snapshots in the 30-day window using their stored obs values', async () => {
+    const todaySnap = makeSnap({ id: 1 });
+    // An older snapshot already evaluated on a previous run — obs_* already written
+    const olderSnap = makeSnap({
+      id: 2,
+      valid_for: '2026-06-20',
+      evaluated: true,
+      avg_temp: 10.0,
+      obs_avg_temp: 8.0,       // stored from previous run
+      obs_total_precip: 0.0,
+      obs_avg_wind_speed: 2.0,
+      obs_avg_humidity: 80.0,
+    });
+
+    snapshotFindAllMock
+      .mockResolvedValueOnce([todaySnap])           // unevaluated query
+      .mockResolvedValueOnce([olderSnap, makeSnap({ // 30-day window — both rows
+        obs_avg_temp: OBS.avg_temp, obs_total_precip: OBS.total_precip,
+        obs_avg_wind_speed: OBS.avg_wind_speed, obs_avg_humidity: OBS.avg_humidity,
+      })]);
+    smhiObsMock.getDailyStats.mockResolvedValue(OBS);
+
+    await evaluateProviderAccuracy();
+
+    // Both rows contributed to the MAE — older row uses its stored obs values
+    const [upsertData] = scoreUpsertMock.mock.calls[0];
+    expect(upsertData.sample_count).toBe(2);
+    const expectedTempMae = (Math.abs(10.0 - 8.0) + Math.abs(13.0 - OBS.avg_temp)) / 2;
+    expect(upsertData.temp_mae).toBeCloseTo(expectedTempMae, 4);
   });
 
   it('continues when an observation fetch fails for one coordinate', async () => {

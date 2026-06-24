@@ -15,6 +15,10 @@ export default (sequelize) => {
     avg_humidity: { type: DataTypes.REAL, allowNull: true },
     avg_pressure: { type: DataTypes.REAL, allowNull: true },
     evaluated: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    obs_avg_temp: { type: DataTypes.REAL, allowNull: true },
+    obs_total_precip: { type: DataTypes.REAL, allowNull: true },
+    obs_avg_wind_speed: { type: DataTypes.REAL, allowNull: true },
+    obs_avg_humidity: { type: DataTypes.REAL, allowNull: true },
   }, {
     tableName: 'provider_forecast_snapshots',
     timestamps: false,

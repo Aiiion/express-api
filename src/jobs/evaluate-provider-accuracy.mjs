@@ -28,7 +28,7 @@ const mae = (errors) => {
 const fetchObservation = async (countryCode, lat, lon, date) => {
   try {
     switch (countryCode) {
-      case 'SE': return await smhiObsService.getDailyStats(lat, lon);
+      case 'SE': return await smhiObsService.getDailyStats(lat, lon, date);
       case 'NO': return await frostObsService.getDailyStats(lat, lon, date);
       case 'FI': return await fmiObsService.getDailyStats(lat, lon, date);
       default:   return await openMeteoArchiveService.getDailyStats(lat, lon, date);
@@ -73,11 +73,24 @@ export const evaluateProviderAccuracy = async () => {
     }));
   }
 
-  // Mark all as evaluated (even if obs fetch failed — avoids retrying dead coordinates)
-  const evaluatedIds = snapshots.map(s => s.id);
-  await ProviderForecastSnapshot.update({ evaluated: true }, { where: { id: { [Op.in]: evaluatedIds } } });
+  // Persist observed values on each snapshot and mark evaluated.
+  // Storing obs_* here means the 30-day window query below can compute errors
+  // from the snapshot row alone, without needing to re-fetch historical observations.
+  for (const [key, obs] of obsMap.entries()) {
+    const idsForCoord = snapshots
+      .filter(s => `${s.lat}:${s.lon}:${s.country_code}` === key)
+      .map(s => s.id);
+    await ProviderForecastSnapshot.update({
+      evaluated: true,
+      obs_avg_temp:       obs?.avg_temp       ?? null,
+      obs_total_precip:   obs?.total_precip   ?? null,
+      obs_avg_wind_speed: obs?.avg_wind_speed ?? null,
+      obs_avg_humidity:   obs?.avg_humidity   ?? null,
+    }, { where: { id: { [Op.in]: idsForCoord } } });
+  }
 
-  // Recompute MAE for each (provider, country_code) from the past WINDOW_DAYS days
+  // Recompute MAE for each (provider, country_code) from the past WINDOW_DAYS days.
+  // obs_* columns carry the ground-truth values so every row in the window is scoreable.
   const windowStart = new Date(Date.now() - WINDOW_DAYS * 86400000).toISOString().slice(0, 10);
 
   const allEvaluated = await ProviderForecastSnapshot.findAll({
@@ -91,26 +104,16 @@ export const evaluateProviderAccuracy = async () => {
   const errorMap = new Map();
 
   for (const snap of allEvaluated) {
-    const key = `${snap.lat}:${snap.lon}:${snap.country_code}`;
-    const obs = obsMap.get(key);
-
-    // For snapshots outside today's newly observed set we don't have obs in memory,
-    // so we skip them for error computation — their contribution is already baked
-    // into a previous run. The MAE will be recalculated from all evaluated rows
-    // in the window using stored predictions vs the in-memory observations from today.
-    // NOTE: a future improvement would store observed values on the snapshot row itself.
-    if (!obs) continue;
-
     const pk = `${snap.provider}::${snap.country_code}`;
     if (!errorMap.has(pk)) {
       errorMap.set(pk, { provider: snap.provider, country_code: snap.country_code, tempErrors: [], precipErrors: [], windErrors: [], humidityErrors: [] });
     }
     const e = errorMap.get(pk);
 
-    if (snap.avg_temp != null && obs.avg_temp != null)           e.tempErrors.push(Math.abs(snap.avg_temp - obs.avg_temp));
-    if (snap.total_precip != null && obs.total_precip != null)   e.precipErrors.push(Math.abs(snap.total_precip - obs.total_precip));
-    if (snap.avg_wind_speed != null && obs.avg_wind_speed != null) e.windErrors.push(Math.abs(snap.avg_wind_speed - obs.avg_wind_speed));
-    if (snap.avg_humidity != null && obs.avg_humidity != null)   e.humidityErrors.push(Math.abs(snap.avg_humidity - obs.avg_humidity));
+    if (snap.avg_temp != null && snap.obs_avg_temp != null)           e.tempErrors.push(Math.abs(snap.avg_temp - snap.obs_avg_temp));
+    if (snap.total_precip != null && snap.obs_total_precip != null)   e.precipErrors.push(Math.abs(snap.total_precip - snap.obs_total_precip));
+    if (snap.avg_wind_speed != null && snap.obs_avg_wind_speed != null) e.windErrors.push(Math.abs(snap.avg_wind_speed - snap.obs_avg_wind_speed));
+    if (snap.avg_humidity != null && snap.obs_avg_humidity != null)   e.humidityErrors.push(Math.abs(snap.avg_humidity - snap.obs_avg_humidity));
   }
 
   // Upsert accuracy scores
@@ -130,7 +133,7 @@ export const evaluateProviderAccuracy = async () => {
     }, { conflictFields: ['provider', 'country_code'] });
   }
 
-  return { evaluated: evaluatedIds.length, coords: coordMap.size };
+  return { evaluated: snapshots.length, coords: coordMap.size };
 };
 
 // Run standalone when executed directly

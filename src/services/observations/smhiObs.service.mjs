@@ -48,9 +48,14 @@ const nearestStation = (stations, lat, lon) => {
   return best;
 };
 
-const fetchObservations = async (parameterId, stationId) => {
+const fetchObservations = async (parameterId, stationId, date) => {
+  // date = 'YYYY-MM-DD'; use corrected-archive with explicit UTC day bounds
+  // so the window exactly matches the snapshot's valid_for date rather than
+  // a rolling 24 h window that spans two calendar days.
+  const from = Date.parse(`${date}T00:00:00Z`);
+  const to   = Date.parse(`${date}T23:59:59Z`);
   const res = await fetch(
-    `${SMHI_METOBS_API_URL}/parameter/${parameterId}/station/${stationId}/period/latest-day/data.json`,
+    `${SMHI_METOBS_API_URL}/parameter/${parameterId}/station/${stationId}/period/corrected-archive/data.json?from=${from}&to=${to}`,
     { signal: AbortSignal.timeout(5000), ...userAgent }
   );
   if (!res.ok) throw new Error(`SMHI metobs data error: ${res.status}`);
@@ -66,11 +71,14 @@ const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 
 
 /**
  * Returns observed daily stats for the given lat/lon from the nearest SMHI station.
- * Uses latest-day data (covers roughly the past 24 hours).
+ * Fetches the full previous calendar day in UTC via the corrected-archive endpoint.
+ * @param {number} lat
+ * @param {number} lon
+ * @param {string} date - 'YYYY-MM-DD'
  * @returns {{ avg_temp, total_precip, avg_wind_speed, avg_humidity, avg_pressure } | null}
  */
 const smhiObsService = {
-  getDailyStats: async (lat, lon) => {
+  getDailyStats: async (lat, lon, date) => {
     const [tempStations, windStations, precipStations, humidityStations, pressureStations] =
       await Promise.all(Object.values(PARAMS).map(fetchStations));
 
@@ -79,13 +87,13 @@ const smhiObsService = {
 
     const [tempObs, windObs, precipObs, humidityObs, pressureObs] = await Promise.all(
       Object.values(PARAMS).map((paramId, i) =>
-        stationIds[i] ? fetchObservations(paramId, stationIds[i]).catch(() => []) : Promise.resolve([])
+        stationIds[i] ? fetchObservations(paramId, stationIds[i], date).catch(() => []) : Promise.resolve([])
       )
     );
 
     return {
       avg_temp: avg(tempObs.map(o => o.value)),
-      total_precip: precipObs.reduce((sum, o) => sum + o.value, 0) || null,
+      total_precip: precipObs.length ? precipObs.reduce((sum, o) => sum + o.value, 0) : null,
       avg_wind_speed: avg(windObs.map(o => o.value)),
       avg_humidity: avg(humidityObs.map(o => o.value)),
       avg_pressure: avg(pressureObs.map(o => o.value)),

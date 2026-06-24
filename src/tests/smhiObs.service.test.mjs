@@ -32,7 +32,7 @@ describe('smhiObsService.getDailyStats', () => {
 
   it('returns averaged stats from observation data', async () => {
     // Station 98230 is nearest to Stockholm coords; only G/Y quality entries average
-    const stats = await smhiObsService.getDailyStats(59.34, 18.05);
+    const stats = await smhiObsService.getDailyStats(59.34, 18.05, '2026-06-23');
 
     // quality G: 14.2, 15.0 — quality Y: 13.8 — quality Z (99.9) excluded
     const expectedAvg = (14.2 + 15.0 + 13.8) / 3;
@@ -40,20 +40,48 @@ describe('smhiObsService.getDailyStats', () => {
   });
 
   it('sums precipitation rather than averaging it', async () => {
-    const stats = await smhiObsService.getDailyStats(59.34, 18.05);
+    const stats = await smhiObsService.getDailyStats(59.34, 18.05, '2026-06-23');
     // precip fixture has values 14.2 + 15.0 + 13.8 (same fixture reused for all params)
     // total_precip = sum of valid values
     expect(typeof stats.total_precip).toBe('number');
     expect(stats.total_precip).toBeGreaterThan(0);
   });
 
+  it('returns 0 for total_precip on a dry day, not null', async () => {
+    fetchMock.mockImplementation((url) => {
+      if (url.includes('/station/')) {
+        // Return zero precipitation only for parameter 7 (precipitation), normal data for others
+        const body = url.includes('/parameter/7/')
+          ? { value: [{ date: '1750000000000', value: '0.0', quality: 'G' }] }
+          : smhiObsDataFixture;
+        return Promise.resolve(mockJsonResponse(body));
+      }
+      return Promise.resolve(mockJsonResponse(smhiObsStationsFixture));
+    });
+
+    const stats = await smhiObsService.getDailyStats(59.34, 18.05, '2026-06-23');
+    expect(stats.total_precip).toBe(0);
+  });
+
   it('picks the nearest active station and ignores inactive ones', async () => {
     // Göteborg coords — nearest active station should be 71420 (Göteborg A), not Kiruna (inactive)
-    await smhiObsService.getDailyStats(57.72, 11.99);
+    await smhiObsService.getDailyStats(57.72, 11.99, '2026-06-23');
 
     // Observation fetch URL should contain station 71420
     const obsCalls = fetchMock.mock.calls.filter(([url]) => url.includes('/station/'));
+    expect(obsCalls.length).toBeGreaterThan(0);
     expect(obsCalls.every(([url]) => url.includes('/71420/'))).toBe(true);
+  });
+
+  it('uses corrected-archive with UTC day bounds in the observation URL', async () => {
+    await smhiObsService.getDailyStats(59.34, 18.05, '2026-06-23');
+
+    const obsCalls = fetchMock.mock.calls.filter(([url]) => url.includes('/station/'));
+    const from = Date.parse('2026-06-23T00:00:00Z');
+    const to   = Date.parse('2026-06-23T23:59:59Z');
+    expect(obsCalls.every(([url]) => url.includes('corrected-archive'))).toBe(true);
+    expect(obsCalls.every(([url]) => url.includes(`from=${from}`))).toBe(true);
+    expect(obsCalls.every(([url]) => url.includes(`to=${to}`))).toBe(true);
   });
 
   it('returns null avg_temp when all observation values have bad quality', async () => {
@@ -66,7 +94,7 @@ describe('smhiObsService.getDailyStats', () => {
       return Promise.resolve(mockJsonResponse(smhiObsStationsFixture));
     });
 
-    const stats = await smhiObsService.getDailyStats(59.34, 18.05);
+    const stats = await smhiObsService.getDailyStats(59.34, 18.05, '2026-06-23');
     expect(stats.avg_temp).toBeNull();
   });
 
@@ -79,7 +107,7 @@ describe('smhiObsService.getDailyStats', () => {
     });
 
     // Should not throw — fetch failures are caught per parameter
-    const stats = await smhiObsService.getDailyStats(59.34, 18.05);
+    const stats = await smhiObsService.getDailyStats(59.34, 18.05, '2026-06-23');
     expect(stats.total_precip).toBeNull();
   });
 });
