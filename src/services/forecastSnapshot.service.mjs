@@ -50,6 +50,12 @@ const extractProviderSnapshot = (settledResult, dtoFn, providerName, tomorrow) =
     if (!hours?.length) return null;
     const stats = dailyStatsFromHours(hours);
     if (!stats) return null;
+    // Plausible Celsius range on Earth: -90°C to 60°C. Values outside this
+    // indicate wrong units (e.g. Kelvin from a missing units=metric parameter).
+    if (stats.avg_temp != null && (stats.avg_temp < -90 || stats.avg_temp > 60)) {
+      devError(`captureForecasts: ${providerName} returned implausible avg_temp ${stats.avg_temp} (wrong units?) — skipping snapshot`);
+      return null;
+    }
     return { provider: normalized.provider ?? providerName, ...stats };
   } catch {
     return null;

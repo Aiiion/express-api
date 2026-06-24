@@ -59,6 +59,8 @@ export const registerCronJobs = () => {
       }, { timezone: 'UTC' })
     : null;
 
+  console.log('cron: registered — flush(*/2min), purge(05:00 UTC), poll-stations(12:00 UTC), accuracy-eval(06:00 UTC)');
+
   return {
     stop: () => {
       flushTask.stop();
