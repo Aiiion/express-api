@@ -1,6 +1,6 @@
-import { METEOALARM_FI_URL } from '../utils/constants.mjs';
-import { parseXml } from '../utils/xml.mjs';
-import userAgent from '../utils/userAgent.mjs';
+import { METEOALARM_FI_URL } from '../../utils/constants.mjs';
+import { parseXml } from '../../utils/xml.mjs';
+import userAgent from '../../utils/userAgent.mjs';
 
 const fmiService = {
   // lat/lon accepted for interface compatibility; FMI warnings are fetched country-wide.

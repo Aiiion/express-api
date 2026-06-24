@@ -1,6 +1,6 @@
-import { SMHI_METOBS_API_URL } from '../utils/constants.mjs';
-import { withCache } from './redis.service.mjs';
-import userAgent from '../utils/userAgent.mjs';
+import { SMHI_METOBS_API_URL } from '../../utils/constants.mjs';
+import { withCache } from '../infrastructure/redis.service.mjs';
+import userAgent from '../../utils/userAgent.mjs';
 
 // Parameters used for accuracy evaluation
 const PARAMS = {

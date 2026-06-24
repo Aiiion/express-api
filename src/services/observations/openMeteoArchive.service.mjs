@@ -1,5 +1,5 @@
-import { OPEN_METEO_ARCHIVE_URL } from '../utils/constants.mjs';
-import userAgent from '../utils/userAgent.mjs';
+import { OPEN_METEO_ARCHIVE_URL } from '../../utils/constants.mjs';
+import userAgent from '../../utils/userAgent.mjs';
 
 const HOURLY_VARS = [
   'temperature_2m',

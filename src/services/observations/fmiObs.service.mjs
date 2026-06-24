@@ -1,5 +1,5 @@
-import { FMI_WFS_URL } from '../utils/constants.mjs';
-import { fetchWfsBsSimple } from '../utils/wfs.mjs';
+import { FMI_WFS_URL } from '../../utils/constants.mjs';
+import { fetchWfsBsSimple } from '../../utils/wfs.mjs';
 
 const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 

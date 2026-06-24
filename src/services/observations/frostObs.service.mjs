@@ -1,5 +1,5 @@
-import { FROST_API_URL } from '../utils/constants.mjs';
-import userAgent from '../utils/userAgent.mjs';
+import { FROST_API_URL } from '../../utils/constants.mjs';
+import userAgent from '../../utils/userAgent.mjs';
 
 // Frost API uses Basic auth: client_id as username, empty password
 const authHeader = () => {
