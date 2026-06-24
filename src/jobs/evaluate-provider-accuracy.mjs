@@ -28,7 +28,7 @@ const mae = (errors) => {
 const fetchObservation = async (countryCode, lat, lon, date) => {
   try {
     switch (countryCode) {
-      case 'SE': return await smhiObsService.getDailyStats(lat, lon);
+      case 'SE': return await smhiObsService.getDailyStats(lat, lon, date);
       case 'NO': return await frostObsService.getDailyStats(lat, lon, date);
       case 'FI': return await fmiObsService.getDailyStats(lat, lon, date);
       default:   return await openMeteoArchiveService.getDailyStats(lat, lon, date);
