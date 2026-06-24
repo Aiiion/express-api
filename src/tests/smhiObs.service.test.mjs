@@ -69,6 +69,7 @@ describe('smhiObsService.getDailyStats', () => {
 
     // Observation fetch URL should contain station 71420
     const obsCalls = fetchMock.mock.calls.filter(([url]) => url.includes('/station/'));
+    expect(obsCalls.length).toBeGreaterThan(0);
     expect(obsCalls.every(([url]) => url.includes('/71420/'))).toBe(true);
   });
 
