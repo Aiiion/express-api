@@ -2,11 +2,11 @@ import { jest } from '@jest/globals';
 import { smhiObsStationsFixture, smhiObsDataFixture } from '../fixtures/smhiObs.fixture.mjs';
 
 // withCache passes through to the function — bypasses Redis in tests
-jest.unstable_mockModule('../services/redis.service.mjs', () => ({
+jest.unstable_mockModule('../services/infrastructure/redis.service.mjs', () => ({
   withCache: jest.fn((_key, _ttl, fn) => fn()),
 }));
 
-const { default: smhiObsService } = await import('../services/smhiObs.service.mjs');
+const { default: smhiObsService } = await import('../services/observations/smhiObs.service.mjs');
 
 const mockJsonResponse = (body) => ({
   ok: true,

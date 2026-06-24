@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import routes from "./routes/index.route.mjs";
-import { connect, closePool } from './services/db.service.mjs';
+import { connect, closePool } from './services/infrastructure/db.service.mjs';
 import { sequelize } from './models/index.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
@@ -11,7 +11,7 @@ import initRequestLog from './models/requestLog.model.mjs';
 import initErrorLog from './models/errorLog.model.mjs';
 import initProviderForecastSnapshot from './models/providerForecastSnapshot.model.mjs';
 import initProviderAccuracyScore from './models/providerAccuracyScore.model.mjs';
-import { closeRedisConnection, ensureRedisConnection } from './services/redis.service.mjs';
+import { closeRedisConnection, ensureRedisConnection } from './services/infrastructure/redis.service.mjs';
 import { registerCronJobs } from './cron.mjs';
 dotenv.config();
 

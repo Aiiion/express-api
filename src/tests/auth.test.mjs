@@ -5,7 +5,7 @@ import { sequelize } from "../models/index.mjs";
 
 // Mock the email service
 const sendEmailMock = jest.fn().mockResolvedValue({ success: true });
-jest.unstable_mockModule("../services/email.service.mjs", () => ({
+jest.unstable_mockModule("../services/infrastructure/email.service.mjs", () => ({
   sendEmail: sendEmailMock,
 }));
 
@@ -15,7 +15,7 @@ import {
   closeRedisConnection,
   getJsonValue,
   setJsonValue,
-} from "../services/redis.service.mjs";
+} from "../services/infrastructure/redis.service.mjs";
 
 let app;
 let server;

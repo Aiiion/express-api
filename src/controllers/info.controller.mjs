@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import net from 'net';
 import { extractIp } from "../utils/ipHelpers.mjs";
-import weatherApiService from "../services/weatherApi.service.mjs";
+import weatherApiService from "../services/providers/weatherApi.service.mjs";
 import { devError } from "../utils/logger.mjs";
 
 export const test = (req, res) => res.status(200).send({message: 'API is running'});

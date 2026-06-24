@@ -1,4 +1,4 @@
-import openWeatherMapsService from "../../services/openWeatherMaps.service.mjs";
+import openWeatherMapsService from "../../services/providers/openWeatherMaps.service.mjs";
 import weatherAggregatorService from "../../services/weatherAggregator.service.mjs";
 import { getCoordinateBound } from "../../utils/geoHelpers.mjs";
 import { devError } from "../../utils/logger.mjs";

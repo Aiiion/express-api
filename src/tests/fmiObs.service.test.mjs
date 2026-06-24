@@ -7,7 +7,7 @@ jest.unstable_mockModule('../utils/wfs.mjs', () => ({
   fetchWfsBsSimple: fetchWfsBsSimpleMock,
 }));
 
-const { default: fmiObsService } = await import('../services/fmiObs.service.mjs');
+const { default: fmiObsService } = await import('../services/observations/fmiObs.service.mjs');
 
 describe('fmiObsService.getDailyStats', () => {
   beforeEach(() => {

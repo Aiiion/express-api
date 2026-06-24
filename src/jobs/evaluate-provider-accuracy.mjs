@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 import { sequelize } from '../models/index.mjs';
 import initProviderForecastSnapshot from '../models/providerForecastSnapshot.model.mjs';
 import initProviderAccuracyScore from '../models/providerAccuracyScore.model.mjs';
-import smhiObsService from '../services/smhiObs.service.mjs';
-import frostObsService from '../services/frostObs.service.mjs';
-import fmiObsService from '../services/fmiObs.service.mjs';
-import openMeteoArchiveService from '../services/openMeteoArchive.service.mjs';
+import smhiObsService from '../services/observations/smhiObs.service.mjs';
+import frostObsService from '../services/observations/frostObs.service.mjs';
+import fmiObsService from '../services/observations/fmiObs.service.mjs';
+import openMeteoArchiveService from '../services/observations/openMeteoArchive.service.mjs';
 import { devError } from '../utils/logger.mjs';
 
 dotenv.config();

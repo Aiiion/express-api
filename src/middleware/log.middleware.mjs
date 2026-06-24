@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { enqueueRequestLog } from '../services/redis.service.mjs';
+import { enqueueRequestLog } from '../services/infrastructure/redis.service.mjs';
 import { extractIp } from '../utils/ipHelpers.mjs';
 import { devError } from '../utils/logger.mjs';
 

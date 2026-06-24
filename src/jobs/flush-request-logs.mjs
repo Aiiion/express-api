@@ -8,7 +8,7 @@ import {
   moveAndFetchRequestLogs,
   peekOldestRequestLog,
   releaseRequestLogsFlushLock,
-} from '../services/redis.service.mjs';
+} from '../services/infrastructure/redis.service.mjs';
 
 export const REQUEST_LOG_BATCH_SIZE = 500;
 // Logs older than this threshold are flushed even when the queue has fewer

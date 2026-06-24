@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { openMeteoArchiveFixture } from '../fixtures/openMeteoArchive.fixture.mjs';
 
-const { default: openMeteoArchiveService } = await import('../services/openMeteoArchive.service.mjs');
+const { default: openMeteoArchiveService } = await import('../services/observations/openMeteoArchive.service.mjs');
 
 const mockJsonResponse = (body) => ({
   ok: true,

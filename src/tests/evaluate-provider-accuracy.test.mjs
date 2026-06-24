@@ -25,10 +25,10 @@ const frostObsMock       = { getDailyStats: jest.fn() };
 const fmiObsMock         = { getDailyStats: jest.fn() };
 const openMeteoObsMock   = { getDailyStats: jest.fn() };
 
-jest.unstable_mockModule('../services/smhiObs.service.mjs',          () => ({ default: smhiObsMock       }));
-jest.unstable_mockModule('../services/frostObs.service.mjs',         () => ({ default: frostObsMock      }));
-jest.unstable_mockModule('../services/fmiObs.service.mjs',           () => ({ default: fmiObsMock        }));
-jest.unstable_mockModule('../services/openMeteoArchive.service.mjs', () => ({ default: openMeteoObsMock  }));
+jest.unstable_mockModule('../services/observations/smhiObs.service.mjs',          () => ({ default: smhiObsMock       }));
+jest.unstable_mockModule('../services/observations/frostObs.service.mjs',         () => ({ default: frostObsMock      }));
+jest.unstable_mockModule('../services/observations/fmiObs.service.mjs',           () => ({ default: fmiObsMock        }));
+jest.unstable_mockModule('../services/observations/openMeteoArchive.service.mjs', () => ({ default: openMeteoObsMock  }));
 
 const { evaluateProviderAccuracy } = await import('../jobs/evaluate-provider-accuracy.mjs');
 

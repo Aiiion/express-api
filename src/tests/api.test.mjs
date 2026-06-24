@@ -37,26 +37,26 @@ const metMocks = {
 };
 
 // Mock the OpenWeatherMaps service
-jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/openWeatherMaps.service.mjs", () => ({
   default: owmMocks,
 }));
 
 // Mock the weatherApi service
-jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/weatherApi.service.mjs", () => ({
   default: weatherApiMocks,
 }));
 
-jest.unstable_mockModule("../services/smhi.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/smhi.service.mjs", () => ({
   default: smhiMocks,
 }));
 
-jest.unstable_mockModule("../services/met.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/met.service.mjs", () => ({
   default: metMocks,
 }));
 
 import request from "supertest";
 import { exampleIp, exampleLatLon, exampleLat } from "../utils/constants.mjs";
-import { clearRedisTestData } from "../services/redis.service.mjs";
+import { clearRedisTestData } from "../services/infrastructure/redis.service.mjs";
 
 // Dynamically import app/start/stop after the mock is set up
 let app;

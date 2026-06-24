@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { frostObsFixture } from '../fixtures/frostObs.fixture.mjs';
 
-const { default: frostObsService } = await import('../services/frostObs.service.mjs');
+const { default: frostObsService } = await import('../services/observations/frostObs.service.mjs');
 
 const mockJsonResponse = (body) => ({
   ok: true,

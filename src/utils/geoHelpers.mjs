@@ -1,5 +1,5 @@
 import { createRequire } from "module";
-import weatherApiService from "../services/weatherApi.service.mjs";
+import weatherApiService from "../services/providers/weatherApi.service.mjs";
 import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import localWeatherProviders from "./localWeatherProviders.mjs";
 
