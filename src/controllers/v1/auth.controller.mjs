@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { sendEmail } from '../../services/email.service.mjs';
-import { deleteValue, getJsonValue, setJsonValue } from '../../services/redis.service.mjs';
+import { sendEmail } from '../../services/infrastructure/email.service.mjs';
+import { deleteValue, getJsonValue, setJsonValue } from '../../services/infrastructure/redis.service.mjs';
 import { devError } from '../../utils/logger.mjs';
 import { COOKIE_NAME } from '../../utils/constants.mjs';
 

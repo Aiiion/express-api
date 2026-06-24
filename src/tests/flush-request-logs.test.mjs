@@ -5,7 +5,7 @@ import {
   closeRedisConnection,
   getRequestLogProcessingLength,
   getRequestLogQueueLength,
-} from '../services/redis.service.mjs';
+} from '../services/infrastructure/redis.service.mjs';
 
 const bulkCreateMock = jest.fn();
 

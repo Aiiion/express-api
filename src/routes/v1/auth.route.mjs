@@ -7,7 +7,7 @@ import cors from 'cors';
 import { createStrictCorsOptionsDelegate } from '../../utils/corsHelpers.mjs';
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import { sendRedisCommand } from '../../services/redis.service.mjs';
+import { sendRedisCommand } from '../../services/infrastructure/redis.service.mjs';
 
 const router = Router();
 

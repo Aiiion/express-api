@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { EventEmitter } from 'node:events';
-import { clearRedisTestData, closeRedisConnection, getQueuedRequestLogs } from '../services/redis.service.mjs';
+import { clearRedisTestData, closeRedisConnection, getQueuedRequestLogs } from '../services/infrastructure/redis.service.mjs';
 import { logRequest } from '../middleware/log.middleware.mjs';
 
 describe('logRequest middleware', () => {

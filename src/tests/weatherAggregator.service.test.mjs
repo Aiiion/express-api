@@ -42,19 +42,19 @@ const metDtoMocks = {
 };
 
 // Register mocks before any dynamic imports
-jest.unstable_mockModule("../services/openWeatherMaps.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/openWeatherMaps.service.mjs", () => ({
   default: owmServiceMocks,
 }));
 
-jest.unstable_mockModule("../services/weatherApi.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/weatherApi.service.mjs", () => ({
   default: weatherApiServiceMocks,
 }));
 
-jest.unstable_mockModule("../services/smhi.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/smhi.service.mjs", () => ({
   default: smhiServiceMocks,
 }));
 
-jest.unstable_mockModule("../services/met.service.mjs", () => ({
+jest.unstable_mockModule("../services/providers/met.service.mjs", () => ({
   default: metServiceMocks,
 }));
 

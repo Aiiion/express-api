@@ -1,4 +1,4 @@
-import { getJsonValue, setJsonValue } from '../services/redis.service.mjs';
+import { getJsonValue, setJsonValue } from '../services/infrastructure/redis.service.mjs';
 import { devError } from '../utils/logger.mjs';
 
 export const cache = (duration) => {

@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
-import { devLog, devError } from '../utils/logger.mjs';
+import { devLog, devError } from '../../utils/logger.mjs';
 
 dotenv.config();
 

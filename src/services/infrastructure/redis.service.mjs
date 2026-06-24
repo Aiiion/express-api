@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { createClient } from 'redis';
-import { devError } from '../utils/logger.mjs';
+import { devError } from '../../utils/logger.mjs';
 
 dotenv.config();
 

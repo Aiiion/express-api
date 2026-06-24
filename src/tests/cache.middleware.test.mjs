@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 const getJsonValueMock = jest.fn();
 const setJsonValueMock = jest.fn().mockResolvedValue();
 
-jest.unstable_mockModule('../services/redis.service.mjs', () => ({
+jest.unstable_mockModule('../services/infrastructure/redis.service.mjs', () => ({
   getJsonValue: getJsonValueMock,
   setJsonValue: setJsonValueMock,
 }));

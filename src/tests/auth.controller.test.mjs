@@ -4,11 +4,11 @@ import {
   closeRedisConnection,
   getJsonValue,
   setJsonValue,
-} from '../services/redis.service.mjs';
+} from '../services/infrastructure/redis.service.mjs';
 
 const sendEmailMock = jest.fn().mockResolvedValue({ success: true });
 
-jest.unstable_mockModule('../services/email.service.mjs', () => ({
+jest.unstable_mockModule('../services/infrastructure/email.service.mjs', () => ({
   sendEmail: sendEmailMock,
 }));
 

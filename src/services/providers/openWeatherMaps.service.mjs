@@ -1,6 +1,6 @@
-import { OWM_API_URL } from "../utils/constants.mjs";
-import { withCache } from "./redis.service.mjs";
-import userAgent from "../utils/userAgent.mjs";
+import { OWM_API_URL } from "../../utils/constants.mjs";
+import { withCache } from "../infrastructure/redis.service.mjs";
+import userAgent from "../../utils/userAgent.mjs";
 
 const OWM_CACHE_TTL = 600; // 10 minutes
 
