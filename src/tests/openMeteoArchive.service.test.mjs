@@ -32,6 +32,15 @@ describe('openMeteoArchiveService.getDailyStats', () => {
     expect(stats.total_precip).toBeCloseTo(0.5, 5);
   });
 
+  it('returns 0 for total_precip on a dry day, not null', async () => {
+    fetchMock.mockResolvedValue(mockJsonResponse({
+      ...openMeteoArchiveFixture,
+      hourly: { ...openMeteoArchiveFixture.hourly, precipitation: [0.0, 0.0] },
+    }));
+    const stats = await openMeteoArchiveService.getDailyStats(59.33, 18.06, '2026-06-23');
+    expect(stats.total_precip).toBe(0);
+  });
+
   it('excludes null values from wind speed average', async () => {
     const stats = await openMeteoArchiveService.getDailyStats(59.33, 18.06, '2026-06-23');
     // fixture: [4.5, null] — only 4.5 is valid

@@ -41,10 +41,11 @@ const openMeteoArchiveService = {
     if (!h) return null;
 
     const validValues = (arr) => (arr ?? []).filter(v => v != null && !isNaN(v));
+    const precips = validValues(h.precipitation);
 
     return {
       avg_temp: avg(validValues(h.temperature_2m)),
-      total_precip: validValues(h.precipitation).reduce((a, b) => a + b, 0) || null,
+      total_precip: precips.length ? precips.reduce((a, b) => a + b, 0) : null,
       avg_wind_speed: avg(validValues(h.wind_speed_10m)),
       avg_humidity: avg(validValues(h.relative_humidity_2m)),
       avg_pressure: avg(validValues(h.surface_pressure)),
