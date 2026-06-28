@@ -104,6 +104,52 @@ export const errorLogsIndexValidationSchema = {
 	...searchValidationSchema,
 };
 
+export const providerValidationSchema = {
+	provider: {
+		in: ['query'],
+		optional: true,
+		isString: {
+			errorMessage: 'Provider must be a string',
+		},
+		trim: true,
+	},
+};
+
+export const countryCodeValidationSchema = {
+	country_code: {
+		in: ['query'],
+		optional: true,
+		isString: {
+			errorMessage: 'Country code must be a string',
+		},
+		isLength: {
+			options: { min: 2, max: 2 },
+			errorMessage: 'Country code must be exactly 2 characters',
+		},
+		toUpperCase: true,
+	},
+};
+
+export const providerForecastSnapshotsIndexValidationSchema = {
+	...paginationValidationSchema,
+	...providerValidationSchema,
+	...countryCodeValidationSchema,
+	evaluated: {
+		in: ['query'],
+		optional: true,
+		isBoolean: {
+			errorMessage: 'Evaluated must be a boolean',
+		},
+		toBoolean: true,
+	},
+};
+
+export const providerAccuracyScoresIndexValidationSchema = {
+	...paginationValidationSchema,
+	...providerValidationSchema,
+	...countryCodeValidationSchema,
+};
+
 export const verifyCodeValidationSchema = {
 	sessionToken: {
 		in: ['body'],
