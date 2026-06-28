@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import { registerResource } from './routeManifest.mjs';
+
+registerResource({ name: 'ProviderForecastSnapshots', endpoint: '/v1/providerForecastSnapshots', meta: '/v1/providerForecastSnapshots/meta' });
 import { index } from '../../controllers/v1/providerForecastSnapshots.controller.mjs';
 import { cache } from '../../middleware/cache.middleware.mjs';
 import { show as metaShow, index as metaIndex } from '../../controllers/v1/providerForecastSnapshots.meta.controller.mjs';

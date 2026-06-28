@@ -1,4 +1,7 @@
 import { index as v1WeatherIndex } from '../../controllers/v1/weather.controller.mjs';
+import { registerAggregate } from './routeManifest.mjs';
+
+registerAggregate({ name: 'Weather', description: 'Aggregated weather data from multiple external sources', endpoint: '/v1/weather' });
 import { Router } from "express";
 import { cache } from '../../middleware/cache.middleware.mjs';
 import { weatherValidationSchema } from '../../utils/validationSchemas.mjs';
