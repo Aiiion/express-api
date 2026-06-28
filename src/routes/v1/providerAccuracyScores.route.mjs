@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import { registerResource } from './routeManifest.mjs';
+
+registerResource({ name: 'ProviderAccuracyScores', endpoint: '/v1/providerAccuracyScores', meta: '/v1/providerAccuracyScores/meta' });
 import { index } from '../../controllers/v1/providerAccuracyScores.controller.mjs';
 import { cache } from '../../middleware/cache.middleware.mjs';
 import { show as metaShow, index as metaIndex } from '../../controllers/v1/providerAccuracyScores.meta.controller.mjs';

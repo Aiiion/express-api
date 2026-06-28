@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { registerResource } from './routeManifest.mjs';
+
+registerResource({ name: 'RequestLog', endpoint: '/v1/requestLogs', meta: '/v1/requestLogs/meta' });
 import { index } from "../../controllers/v1/requestLogs.controller.mjs";
 import { cache } from '../../middleware/cache.middleware.mjs';
 import { show as metaShow, index as metaIndex } from "../../controllers/v1/requestLogs.meta.controller.mjs";
