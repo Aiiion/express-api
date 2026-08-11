@@ -9,6 +9,11 @@ export const latLonValidationSchema = {
 			errorMessage: 'Lat must be a number between -90 and 90',
 		},
 		toFloat: true,
+		// ~1 km precision — collapses GPS jitter so nearby requests share
+		// provider and response cache entries
+		customSanitizer: {
+			options: (value) => Math.round(value * 100) / 100,
+		},
 	},
 	lon: {
 		in: ['query'],
@@ -20,6 +25,9 @@ export const latLonValidationSchema = {
 			errorMessage: 'Lon must be a number between -180 and 180',
 		},
 		toFloat: true,
+		customSanitizer: {
+			options: (value) => Math.round(value * 100) / 100,
+		},
 	},
 };
 

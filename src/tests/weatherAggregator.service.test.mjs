@@ -346,6 +346,44 @@ describe("weatherAggregatorService", () => {
       expect(result.errors).toBeUndefined();
     });
 
+    it("averages wind direction with a circular mean and re-derives the compass label", async () => {
+      owmDtoMocks.currentWeather.mockReturnValue({ ...owmNormalizedCurrent, wind: { speed: 4.0, deg: 350, dir: null, gust: null } });
+      weatherApiDtoMocks.currentWeather.mockReturnValue({ ...weatherApiNormalizedCurrent, wind: { speed: 8.0, deg: 10, dir: "N", gust: null } });
+      smhiDtoMocks.currentWeather.mockReturnValue({ ...smhiNormalizedCurrent, wind: { speed: 1.5, deg: null, dir: null, gust: null } });
+      metDtoMocks.currentWeather.mockReturnValue({ ...metNormalizedCurrent, wind: { speed: 1.5, deg: null, dir: null, gust: null } });
+
+      const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+      // circular mean of 350° and 10° is 0° — a naive average would give 180°
+      expect(result.wind.deg).toBe(0);
+      expect(result.wind.dir).toBe("N");
+    });
+
+    it("picks the majority weather description instead of the first provider's", async () => {
+      owmDtoMocks.currentWeather.mockReturnValue({ ...owmNormalizedCurrent, weather: "Clear" });
+      weatherApiDtoMocks.currentWeather.mockReturnValue({ ...weatherApiNormalizedCurrent, weather: "Cloudy" });
+      smhiDtoMocks.currentWeather.mockReturnValue({ ...smhiNormalizedCurrent, weather: "Cloudy" });
+      metDtoMocks.currentWeather.mockReturnValue({ ...metNormalizedCurrent, weather: "Cloudy" });
+
+      const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+      expect(result.weather).toBe("Cloudy");
+    });
+
+    it("reports a provider whose DTO returns no usable data as an error", async () => {
+      weatherApiDtoMocks.currentWeather.mockReturnValue(null);
+
+      const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+      expect(result.providers).not.toContain("weatherapi.com");
+      expect(result.providers).toHaveLength(3);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toEqual({
+        provider: "weatherapi.com",
+        message: "Provider returned no usable data",
+      });
+    });
+
     describe("output field rounding", () => {
       const makeCurrent = (overrides) => ({
         weather: "Clouds",
@@ -627,10 +665,12 @@ describe("weatherAggregatorService", () => {
 
       // mergeHourlyData detects mismatched periods and delegates to the most
       // granular source (1h). adjustPrecipitationAcrossHours then averages
-      // the window totals: (3.0 + 1.0) / 2 = 2.0, distributed to the single
-      // granular hour in the window.
+      // the window totals across ALL sources with data in the window —
+      // including SMHI and MET which predict 0 mm (a real "no rain" forecast):
+      // (3.0 + 1.0 + 0.0 + 0.0) / 4 = 1.0, distributed to the single granular
+      // hour in the window.
       expect(hour.precipitation.hours_measured).toBe(1);
-      expect(hour.precipitation.amount).toBeCloseTo(2.0);
+      expect(hour.precipitation.amount).toBeCloseTo(1.0);
       expect(hour.precipitation.type).toBe("rain");
     });
 

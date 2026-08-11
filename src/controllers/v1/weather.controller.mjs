@@ -1,7 +1,7 @@
 import openWeatherMapsService from "../../services/providers/openWeatherMaps.service.mjs";
 import weatherAggregatorService from "../../services/weatherAggregator.service.mjs";
 import { getCoordinateBound } from "../../utils/geoHelpers.mjs";
-import { devError } from "../../utils/logger.mjs";
+import { logError } from "../../services/errorLog.service.mjs";
 
 export const index = async (req, res) => {
   const { lat, lon, days, units: metric } = req.query;
@@ -16,7 +16,9 @@ export const index = async (req, res) => {
       const warningsData = await provider.service.weatherWarnings(lat, lon);
       return provider.dto.weatherWarnings(warningsData);
     } catch (err) {
-      devError('Failed to fetch weather warnings:', err.message);
+      // Persist to error_logs like the aggregator does — warnings failures
+      // should be visible in monitoring, not just the dev console
+      logError(err, { route: 'v1/weather.warnings' });
       return null;
     }
   };

@@ -40,6 +40,70 @@ const averageValues = (values) => {
 };
 
 /**
+ * Picks the most common non-null value; ties resolve to the earliest value.
+ * @param {Array} values - Candidate values from the different sources
+ * @returns {*} The majority value, or null if none are non-null
+ */
+const majorityValue = (values) => {
+  const counts = new Map();
+  let best = null;
+  let bestCount = 0;
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const count = (counts.get(value) ?? 0) + 1;
+    counts.set(value, count);
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+  return best;
+};
+
+// 16-point compass rose, one point per 22.5° sector
+const COMPASS_POINTS = [
+  'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',
+];
+const degToCompass = (deg) => COMPASS_POINTS[Math.round(deg / 22.5) % 16];
+
+/**
+ * Circular mean of wind directions — a naive average of 350° and 10° gives 180°,
+ * the vector mean correctly gives 0°.
+ * @param {Array<number>} degrees
+ * @returns {number} Mean direction in [0, 360)
+ */
+const circularMeanDeg = (degrees) => {
+  const toRad = Math.PI / 180;
+  const sumSin = degrees.reduce((sum, d) => sum + Math.sin(d * toRad), 0);
+  const sumCos = degrees.reduce((sum, d) => sum + Math.cos(d * toRad), 0);
+  const mean = Math.atan2(sumSin, sumCos) / toRad;
+  return (Math.round(mean) + 360) % 360;
+};
+
+/**
+ * Merges wind objects: speed/gust are averaged generically, while direction
+ * uses a circular mean and the compass label is re-derived from it so the
+ * reported direction always matches the merged value.
+ * @param {Array<Object>} windObjects
+ * @param {string} parentPath
+ * @returns {Object}
+ */
+const mergeWind = (windObjects, parentPath) => {
+  const merged = { ...mergeAndAverage(windObjects, parentPath) };
+  const degs = windObjects
+    .map(w => w?.deg)
+    .filter(v => typeof v === 'number' && !Number.isNaN(v));
+  if (degs.length > 0) {
+    merged.deg = circularMeanDeg(degs);
+    if (windObjects.some(w => w?.dir != null)) {
+      merged.dir = degToCompass(merged.deg);
+    }
+  }
+  return merged;
+};
+
+/**
  * Checks if a path should not be averaged
  * @param {string} path - Current path being processed
  * @param {string} parentPath - Parent path context
@@ -151,43 +215,35 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
     return mergedHours;
   }
 
-  // Group hours into windows matching maxHoursMeasured
-  const windowSize = maxHoursMeasured;
+  // Group merged hours into windows aligned to the coarse providers' fixed
+  // reporting grid (e.g. OWM's 3-hour periods anchored at 00/03/06 UTC), so a
+  // coarse period's total is never split across two windows.
+  const windowSeconds = maxHoursMeasured * 3600;
+  const windows = new Map();
+  for (const hour of mergedHours) {
+    const bucket = Math.floor(hour.dt / windowSeconds);
+    if (!windows.has(bucket)) windows.set(bucket, []);
+    windows.get(bucket).push(hour);
+  }
+
   const adjustedHours = [];
 
-  for (let i = 0; i < mergedHours.length; i += windowSize) {
-    const window = mergedHours.slice(i, i + windowSize);
-    
-    // Calculate total precipitation in this window for each source
+  for (const [bucket, window] of windows) {
+    const windowStart = bucket * windowSeconds;
+    const windowEnd = windowStart + windowSeconds;
+
+    // Total precipitation per source in this window. Sources with no data in
+    // the window are excluded (null), but sources reporting zero are real
+    // "no rain" predictions and must count in the average.
     const sourceTotals = sourceDayArrays.map(sourceHours => {
-      const windowStart = window[0]?.dt;
-      const windowEnd = window[window.length - 1]?.dt;
-      
-      // Find hours in this source that fall within the window
-      const hoursInWindow = sourceHours.filter(h => 
-        h.dt >= windowStart && h.dt <= windowEnd
-      );
-      
-      // Sum up precipitation from this source in the window
-      let total = 0;
-      const seenTimestamps = new Set();
-      
-      hoursInWindow.forEach(h => {
-        const hoursMeasured = h.precipitation?.hours_measured ?? 1;
-        // Avoid double-counting if a 3-hour period spans multiple of our window hours
-        if (!seenTimestamps.has(h.dt)) {
-          total += (h.precipitation?.amount ?? 0);
-          seenTimestamps.add(h.dt);
-        }
-      });
-      
-      return total;
+      const hoursInWindow = sourceHours.filter(h => h.dt >= windowStart && h.dt < windowEnd);
+      if (hoursInWindow.length === 0) return null;
+      return hoursInWindow.reduce((sum, h) => sum + (h.precipitation?.amount ?? 0), 0);
     });
 
-    // Average the totals
-    const avgTotal = averageValues(sourceTotals.filter(t => t > 0));
-    
-    if (avgTotal === null || avgTotal === 0) {
+    const avgTotal = averageValues(sourceTotals);
+
+    if (!avgTotal) {
       // No precipitation in this window
       adjustedHours.push(...window.map(h => ({
         ...h,
@@ -197,53 +253,45 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
           type: 'none',
         }
       })));
-    } else {
-      // Calculate the pattern from the most granular source
-      const granularSource = sourceDayArrays.find(src => 
-        src.some(h => h.precipitation?.hours_measured === 1)
-      );
-      
-      if (granularSource) {
-        // Get the pattern of precipitation distribution
-        const windowStart = window[0]?.dt;
-        const windowEnd = window[window.length - 1]?.dt;
-        const granularWindow = granularSource.filter(h => 
-          h.dt >= windowStart && h.dt <= windowEnd
-        );
-        
-        const granularTotal = granularWindow.reduce((sum, h) => 
-          sum + (h.precipitation?.amount ?? 0), 0
-        );
-        
-        // Redistribute averaged total according to granular pattern
-        window.forEach((hour, idx) => {
-          const granularHour = granularWindow[idx];
-          if (granularHour && granularTotal > 0) {
-            const proportion = (granularHour.precipitation?.amount ?? 0) / granularTotal;
-            adjustedHours.push({
-              ...hour,
-              precipitation: {
-                ...hour.precipitation,
-                amount: avgTotal * proportion,
-                hours_measured: 1,
-              }
-            });
-          } else {
-            adjustedHours.push(hour);
-          }
-        });
-      } else {
-        // No granular source, distribute evenly
-        const perHour = avgTotal / window.length;
-        adjustedHours.push(...window.map(h => ({
-          ...h,
+      continue;
+    }
+
+    // Redistribute the averaged total following the hourly pattern of the
+    // most granular source, when one exists and predicts rain in this window
+    const granularSource = sourceDayArrays.find(src =>
+      src.some(h => h.precipitation?.hours_measured === 1)
+    );
+    const granularWindow = granularSource
+      ? granularSource.filter(h => h.dt >= windowStart && h.dt < windowEnd)
+      : [];
+    const granularTotal = granularWindow.reduce((sum, h) =>
+      sum + (h.precipitation?.amount ?? 0), 0
+    );
+
+    if (granularTotal > 0) {
+      for (const hour of window) {
+        const granularHour = granularWindow.find(g => g.dt === hour.dt);
+        const proportion = (granularHour?.precipitation?.amount ?? 0) / granularTotal;
+        adjustedHours.push({
+          ...hour,
           precipitation: {
-            ...h.precipitation,
-            amount: perHour,
+            ...hour.precipitation,
+            amount: Math.round(avgTotal * proportion * 100) / 100,
             hours_measured: 1,
           }
-        })));
+        });
       }
+    } else {
+      // No granular pattern to follow — distribute evenly
+      const perHour = Math.round((avgTotal / window.length) * 100) / 100;
+      adjustedHours.push(...window.map(h => ({
+        ...h,
+        precipitation: {
+          ...h.precipitation,
+          amount: perHour,
+          hours_measured: 1,
+        }
+      })));
     }
   }
 
@@ -313,8 +361,9 @@ const mergeAndAverage = (sources, parentPath = '') => {
         );
         result[key] = weatherApiIcon || values.find(v => v !== null && v !== undefined) || null;
       } else {
-        // Take first non-null string value
-        result[key] = values.find(v => v !== null && v !== undefined) || null;
+        // Majority vote so the text (e.g. weather/description) reflects the
+        // consensus rather than whichever provider happens to be listed first
+        result[key] = majorityValue(values);
       }
     } else if (typeof firstValue === 'object' && firstValue !== null) {
       if (Array.isArray(firstValue)) {
@@ -322,10 +371,14 @@ const mergeAndAverage = (sources, parentPath = '') => {
         result[key] = firstValue;
       } else {
         // Check if this is a precipitation object
-        const isPrecipitation = key === 'precipitation' || 
+        const isPrecipitation = key === 'precipitation' ||
           (firstValue.amount !== undefined && firstValue.hours_measured !== undefined);
-        
-        if (isPrecipitation) {
+
+        if (key === 'wind') {
+          // Wind needs a circular mean for direction
+          const fullPath = parentPath ? `${parentPath}.${key}` : key;
+          result[key] = mergeWind(values.filter(v => v !== null && v !== undefined), fullPath);
+        } else if (isPrecipitation) {
           // Use special precipitation merging logic
           result[key] = mergePrecipitation(values.filter(v => v !== null && v !== undefined));
         } else {
@@ -422,6 +475,9 @@ const collectProvider = (result, dtoFn, name, route) => {
     try {
       const normalized = dtoFn(result.value);
       if (normalized) return { source: normalized, provider: normalized.provider ?? name };
+      // Fetch succeeded but the DTO found nothing usable — report it instead
+      // of letting the provider silently vanish from both providers and errors
+      return { error: { provider: name, message: 'Provider returned no usable data' } };
     } catch (err) {
       logError(err, { route });
       return { error: { provider: name, message: err?.message ?? String(err) } };

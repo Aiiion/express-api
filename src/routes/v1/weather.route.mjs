@@ -13,11 +13,19 @@ const router = Router();
 
 router.use('/v1/weather', cors({ origin: '*' }));
 
+// Key on the sanitized params (coordinates rounded to 2 decimals, defaults
+// applied, fixed param order) rather than the raw URL, so equivalent requests
+// share one cache entry regardless of param order or GPS-precision noise.
+const weatherCacheKey = (req) => {
+    const { lat, lon, days, units } = req.query;
+    return `/v1/weather?lat=${lat}&lon=${lon}&days=${days}&units=${units ? 'metric' : 'imperial'}`;
+};
+
 const weatherMiddleware = [
     checkSchema(weatherValidationSchema),
     validateResult,
     hasOwmKey,
-    cache(60 * 10)
+    cache(60 * 10, weatherCacheKey)
 ];
 
 // V1 routes - uses weatherAggregator service for multi-source data
