@@ -1,5 +1,6 @@
 import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { kphToMs } from "../utils/mathHelpers.mjs";
+import { conditionFromWeatherApiCode } from "../utils/weatherConditions.mjs";
 
 const getPrecipitationType = (hour) => {
   // Check for snow
@@ -41,6 +42,7 @@ const weatherApiDto = {
     return {
       weather: data?.current?.condition.text,
       description: null,
+      condition: conditionFromWeatherApiCode(data?.current?.condition?.code),
       icon: data?.current?.condition.icon,
       dt: data?.current?.last_updated_epoch,
       location: {
@@ -117,6 +119,7 @@ const weatherApiDto = {
               dt: hour.time_epoch,
               weather: hour.condition?.text,
               description: hour.condition?.text,
+              condition: conditionFromWeatherApiCode(hour.condition?.code),
               icon: hour.condition?.icon,
               temperature: {
                 temp: metric ? hour.temp_c : hour.temp_f,

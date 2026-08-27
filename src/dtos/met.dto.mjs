@@ -1,5 +1,6 @@
 import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
+import { conditionFromMetSymbol } from "../utils/weatherConditions.mjs";
 
 // Strip time-of-day variant suffix and format as a readable string
 const mapSymbolCode = (symbolCode) => {
@@ -39,6 +40,7 @@ const mapTimeSeriesEntry = (entry, metric = true) => {
         dt,
         weather: weatherDesc,
         description: weatherDesc,
+        condition: conditionFromMetSymbol(symbolCode),
         icon: null,
         temperature: {
             temp: instant.air_temperature != null

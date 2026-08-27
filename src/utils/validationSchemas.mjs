@@ -9,10 +9,14 @@ export const latLonValidationSchema = {
 			errorMessage: 'Lat must be a number between -90 and 90',
 		},
 		toFloat: true,
-		// ~1 km precision — collapses GPS jitter so nearby requests share
-		// provider and response cache entries
+		// ~110 m precision. Enough to collapse GPS jitter (metres) so repeat
+		// requests share provider and response cache entries, while staying
+		// well inside a single grid cell of even the finest provider model
+		// (MET Nordic ~1 km, SMHI ~2.5 km). Rounding harder would start moving
+		// the point across coastlines and valley walls, where a kilometre is
+		// worth several degrees of temperature.
 		customSanitizer: {
-			options: (value) => Math.round(value * 100) / 100,
+			options: (value) => Math.round(value * 1000) / 1000,
 		},
 	},
 	lon: {
@@ -26,7 +30,7 @@ export const latLonValidationSchema = {
 		},
 		toFloat: true,
 		customSanitizer: {
-			options: (value) => Math.round(value * 100) / 100,
+			options: (value) => Math.round(value * 1000) / 1000,
 		},
 	},
 };

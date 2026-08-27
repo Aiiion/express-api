@@ -13,7 +13,7 @@ const router = Router();
 
 router.use('/v1/weather', cors({ origin: '*' }));
 
-// Key on the sanitized params (coordinates rounded to 2 decimals, defaults
+// Key on the sanitized params (coordinates rounded to 3 decimals, defaults
 // applied, fixed param order) rather than the raw URL, so equivalent requests
 // share one cache entry regardless of param order or GPS-precision noise.
 const weatherCacheKey = (req) => {

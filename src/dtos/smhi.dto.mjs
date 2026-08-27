@@ -1,5 +1,6 @@
 import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
+import { conditionFromSmhiSymbol } from "../utils/weatherConditions.mjs";
 
 const getHoursMeasured = (time, intervalStart) => {
   const endMs = new Date(time).getTime();
@@ -38,6 +39,7 @@ const mapTimeSeriesEntry = (entry, metric = true) => {
     dt,
     weather: mapSymbolToWeather(data.symbol_code),
     description: mapSymbolToWeather(data.symbol_code),
+    condition: conditionFromSmhiSymbol(data.symbol_code),
     icon: null,
     temperature: {
       temp: data.air_temperature != null

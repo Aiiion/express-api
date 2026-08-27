@@ -1,4 +1,5 @@
 import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
+import { conditionFromOwmId } from "../utils/weatherConditions.mjs";
 
 const getPrecipitationType = (data) => {
     if (data?.rain !== undefined) {
@@ -21,6 +22,7 @@ const openWeatherMapsDto = {
         return {
             weather: weatherEntry?.main,
             description: weatherEntry?.description,
+            condition: conditionFromOwmId(weatherEntry?.id),
             icon: weatherEntry?.icon,
             dt: data.dt,
             location: {
@@ -80,6 +82,7 @@ const openWeatherMapsDto = {
                 dt: item?.dt,
                 weather: weatherEntry?.main,
                 description: weatherEntry?.description,
+                condition: conditionFromOwmId(weatherEntry?.id),
                 icon: weatherEntry?.icon,
                 temperature: {
                     temp: item?.main?.temp,
