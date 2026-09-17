@@ -35,11 +35,14 @@ export const latLonValidationSchema = {
 	},
 };
 
+// `days` and `units` are deliberately not `optional`: express-validator skips
+// every item in an optional chain — `default` included — when the field is
+// absent, so the defaults would never apply. Without `optional`, `default`
+// fills the missing value first and the validators run on that.
 export const weatherValidationSchema = {
 	...latLonValidationSchema,
 	days: {
 		in: ['query'],
-		optional: true,
 		default: { options: 5 },
 		isInt: {
 			options: { min: 1 },
@@ -52,7 +55,6 @@ export const weatherValidationSchema = {
 	},
 	units: {
 		in: ['query'],
-		optional: true,
 		default: { options: 'metric' },
 		isIn: {
 			options: [['metric', 'imperial']],

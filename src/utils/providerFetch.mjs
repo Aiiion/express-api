@@ -14,13 +14,27 @@ import userAgent from "./userAgent.mjs";
 export const providerFetch = async (provider, url, { timeout = 2000, retries = 1, parse = 'json' } = {}) => {
     let lastError;
     for (let attempt = 0; attempt <= retries; attempt++) {
+        let response;
         try {
-            const response = await fetch(url, { signal: AbortSignal.timeout(timeout), ...userAgent });
-            if (response.ok) return parse === 'text' ? response.text() : response.json();
+            response = await fetch(url, { signal: AbortSignal.timeout(timeout), ...userAgent });
+        } catch (err) {
+            lastError = err; // network error or timeout — retry
+            continue;
+        }
+        if (!response.ok) {
             lastError = new Error(`${provider} error: ${response.status} ${response.statusText}`);
             if (response.status < 500) break;
+            continue;
+        }
+        try {
+            // Awaited here so a connection that drops or times out while the
+            // body is still streaming is retried like any other transport
+            // failure. A body that arrived but isn't valid JSON won't improve
+            // on a second attempt.
+            return parse === 'text' ? await response.text() : await response.json();
         } catch (err) {
             lastError = err;
+            if (err instanceof SyntaxError) break;
         }
     }
     throw lastError;
