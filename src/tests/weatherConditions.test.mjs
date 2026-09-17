@@ -1,10 +1,12 @@
 import {
   CONDITIONS,
+  GROUP_SEVERITY,
   conditionFor,
   conditionFromOwmId,
   conditionFromWeatherApiCode,
   conditionFromSmhiSymbol,
   conditionFromMetSymbol,
+  weatherApiIconFor,
 } from "../utils/weatherConditions.mjs";
 
 describe("weatherConditions", () => {
@@ -75,6 +77,42 @@ describe("weatherConditions", () => {
       expect(conditionFromWeatherApiCode(9999)).toBe("unknown");
       expect(conditionFromSmhiSymbol(99)).toBe("unknown");
       expect(conditionFromMetSymbol("meteorshower")).toBe("unknown");
+    });
+
+    it("reads WeatherAPI's haze, dust and smoke codes as fog, like OWM's 7xx", () => {
+      // 1012-1048 were added to WeatherAPI's table after the original set
+      for (const code of [1012, 1021, 1033, 1039, 1048]) {
+        expect(conditionFromWeatherApiCode(code)).toBe("fog");
+      }
+      expect(conditionFromOwmId(721)).toBe("fog");  // haze
+    });
+  });
+
+  describe("GROUP_SEVERITY", () => {
+    it("ranks every group the vocabulary uses, precipitation above cloud", () => {
+      const groups = new Set(Object.values(CONDITIONS).map(c => c.group));
+      for (const group of groups) {
+        expect(GROUP_SEVERITY).toContain(group);
+      }
+      expect(GROUP_SEVERITY.indexOf("rain")).toBeGreaterThan(GROUP_SEVERITY.indexOf("cloud"));
+      expect(GROUP_SEVERITY.indexOf("thunder")).toBeGreaterThan(GROUP_SEVERITY.indexOf("rain"));
+    });
+  });
+
+  describe("weatherApiIconFor", () => {
+    it("builds a WeatherAPI-format URL whose icon matches the condition", () => {
+      expect(weatherApiIconFor("clear", true)).toBe("//cdn.weatherapi.com/weather/64x64/day/113.png");
+      expect(weatherApiIconFor("snow", false)).toBe("//cdn.weatherapi.com/weather/64x64/night/332.png");
+    });
+
+    it("has an icon for every condition except 'unknown'", () => {
+      for (const code of Object.keys(CONDITIONS)) {
+        if (code === "unknown") {
+          expect(weatherApiIconFor(code, true)).toBeNull();
+        } else {
+          expect(weatherApiIconFor(code, true)).toMatch(/^\/\/cdn\.weatherapi\.com\/weather\/64x64\/day\/\d+\.png$/);
+        }
+      }
     });
   });
 

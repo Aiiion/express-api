@@ -44,6 +44,15 @@ export const CONDITIONS = {
     unknown: { group: 'unknown', rank: 0 },
 };
 
+/**
+ * Groups ordered from least to most consequential for someone outdoors. The
+ * aggregator's group vote uses this for the ties the providers' precipitation
+ * amounts cannot settle (rain vs snow, cloud vs fog): report the weather it is
+ * worse to be caught out by, rather than whichever provider happens to be
+ * listed first.
+ */
+export const GROUP_SEVERITY = ['unknown', 'cloud', 'fog', 'rain', 'sleet', 'snow', 'freezing', 'hail', 'thunder'];
+
 // group -> { rank: code }, built once so the aggregator can resolve the
 // median rank of a group back to a condition code.
 const BY_GROUP_RANK = Object.entries(CONDITIONS).reduce((acc, [code, { group, rank }]) => {
@@ -100,7 +109,11 @@ const WEATHERAPI_CODES = {
     1003: 'partly_cloudy',
     1006: 'cloudy',
     1009: 'overcast',
+    // 1012-1048 are haze/dust/smoke/smog variants — reduced visibility, the
+    // same bucket OWM's 7xx codes land in
+    1012: 'fog', 1015: 'fog', 1018: 'fog', 1021: 'fog', 1024: 'fog', 1027: 'fog',
     1030: 'fog',            // mist
+    1033: 'fog', 1036: 'fog', 1039: 'fog', 1042: 'fog', 1045: 'fog', 1048: 'fog',
     1063: 'light_rain',     // patchy rain possible
     1066: 'light_snow',
     1069: 'light_sleet',
@@ -198,4 +211,45 @@ export const conditionFromMetSymbol = (symbolCode) => {
     if (code === 'fair' || code === 'partlycloudy') return 'partly_cloudy';
     if (code === 'cloudy') return 'cloudy';
     return 'unknown';
+};
+
+// Shared condition -> WeatherAPI icon number, so the aggregator can emit an
+// icon that matches the *consensus* rather than whichever provider happened to
+// serve a URL. Each number is the `icon` field of the WeatherAPI condition
+// code noted beside it (https://www.weatherapi.com/docs/weather_conditions.json);
+// where several codes collapse into one shared condition the steady,
+// non-"patchy" variant is used.
+const WEATHERAPI_ICONS = {
+    clear: 113,          // 1000
+    partly_cloudy: 116,  // 1003
+    cloudy: 119,         // 1006
+    overcast: 122,       // 1009
+    fog: 248,            // 1135
+    drizzle: 266,        // 1153 light drizzle
+    light_rain: 296,     // 1183
+    rain: 302,           // 1189 moderate rain
+    heavy_rain: 308,     // 1195
+    freezing_rain: 314,  // 1201 moderate or heavy freezing rain
+    light_sleet: 317,    // 1204
+    sleet: 320,          // 1207 moderate or heavy sleet
+    heavy_sleet: 320,    // 1207 — WeatherAPI has no separate heavy sleet
+    light_snow: 326,     // 1213
+    snow: 332,           // 1219 moderate snow
+    heavy_snow: 338,     // 1225
+    hail: 350,           // 1237 ice pellets
+    thunderstorm: 200,   // 1087 thundery outbreaks
+};
+
+/**
+ * Builds the WeatherAPI icon URL for a shared condition code, in the same
+ * protocol-relative form WeatherAPI itself serves so clients need no special
+ * handling.
+ * @param {string} condition - A code from CONDITIONS
+ * @param {boolean} isDay - Day or night variant of the icon
+ * @returns {string|null} Icon URL, or null for `unknown` / unrecognised codes
+ */
+export const weatherApiIconFor = (condition, isDay) => {
+    const icon = WEATHERAPI_ICONS[condition];
+    if (!icon) return null;
+    return `//cdn.weatherapi.com/weather/64x64/${isDay ? 'day' : 'night'}/${icon}.png`;
 };

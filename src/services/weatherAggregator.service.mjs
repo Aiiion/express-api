@@ -7,9 +7,10 @@ import weatherApiDto from "../dtos/weatherApi.dto.mjs";
 import smhiDto from "../dtos/smhi.dto.mjs";
 import metDto from "../dtos/met.dto.mjs";
 import { logError } from "./errorLog.service.mjs";
-import { translateEpochDay } from "../utils/dateTimeHelpers.mjs";
+import { translateEpochDay, translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { captureForecasts } from "./forecastSnapshot.service.mjs";
-import { CONDITIONS, conditionFor } from "../utils/weatherConditions.mjs";
+import { CONDITIONS, GROUP_SEVERITY, conditionFor, weatherApiIconFor } from "../utils/weatherConditions.mjs";
+import { mmToInches } from "../utils/mathHelpers.mjs";
 
 // Fields that should NOT be averaged
 const NO_AVERAGE_FIELDS = new Set(['dt', 'provider', 'deg', 'dir']);
@@ -28,6 +29,9 @@ const ROUND_TWO_DECIMAL_PATHS = new Set(['wind.speed', 'wind.gust']);
 
 // Nested paths that should NOT be averaged (coordinates)
 const NO_AVERAGE_PATHS = new Set(['location.coords', 'coords', 'wind.deg', 'wind.dir']);
+
+// Forecast day keys as the real DTOs emit them ("YYYY-MM-DD")
+const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Averages numeric values from multiple sources
@@ -61,6 +65,76 @@ const majorityValue = (values) => {
   return best;
 };
 
+// Groups whose weather is precipitation. A tie between one of these and a dry
+// group (cloud, fog) is settled by the sources' own precipitation amounts.
+const WET_GROUPS = new Set(['rain', 'sleet', 'snow', 'freezing', 'hail', 'thunder']);
+
+// Below 0.1 mm/h nothing measurable falls (a meteorological "trace") —
+// WeatherAPI's "patchy rain possible" hours routinely carry a few hundredths
+// of a millimetre, which must not turn a tie into a rain forecast.
+const WET_THRESHOLD_MM_PER_HOUR = 0.1;
+
+/**
+ * A source's forecast precipitation rate in its own units, or null when it
+ * gave no amount.
+ * @param {Object} source
+ * @returns {number|null}
+ */
+const precipitationRate = (source) => {
+  const amount = source?.precipitation?.amount;
+  if (typeof amount !== 'number' || Number.isNaN(amount)) return null;
+  return amount / (source.precipitation.hours_measured || 1);
+};
+
+/**
+ * Picks the most-voted condition group. With four providers a 2–2 split is
+ * common, so ties are settled by evidence before policy: a dry-versus-wet tie
+ * goes to whichever side the voters' own precipitation amounts support, so
+ * the condition never contradicts the amount reported beside it. What the
+ * numbers cannot separate (rain vs snow, cloud vs fog) goes to the more
+ * severe group (see GROUP_SEVERITY) — never to whichever provider is listed first.
+ * @param {Array<{ group: string, rate: number|null }>} voters - One per voting source
+ * @param {boolean} metric - Whether `rate` is in mm/h (true) or in/h
+ * @returns {string|null}
+ */
+const majorityGroup = (voters, metric = true) => {
+  const counts = new Map();
+  for (const { group } of voters) counts.set(group, (counts.get(group) ?? 0) + 1);
+  if (counts.size === 0) return null;
+  const top = Math.max(...counts.values());
+  let tied = [...counts].filter(([, count]) => count === top).map(([group]) => group);
+
+  const wet = tied.filter(group => WET_GROUPS.has(group));
+  const dry = tied.filter(group => !WET_GROUPS.has(group));
+  if (wet.length > 0 && dry.length > 0) {
+    const avgRate = averageValues(voters.map(voter => voter.rate));
+    if (avgRate !== null) {
+      const threshold = metric ? WET_THRESHOLD_MM_PER_HOUR : mmToInches(WET_THRESHOLD_MM_PER_HOUR);
+      tied = avgRate >= threshold ? wet : dry;
+    }
+  }
+
+  return tied.reduce((best, group) =>
+    GROUP_SEVERITY.indexOf(group) > GROUP_SEVERITY.indexOf(best) ? group : best
+  );
+};
+
+/**
+ * Reads day/night from whichever provider icon is available: WeatherAPI URLs
+ * carry /day/ or /night/, OWM codes end in d or n. SMHI and MET serve no icon.
+ * @param {Array<Object>} sources
+ * @returns {boolean|null} null when no source gave a hint
+ */
+const isDaytime = (sources) => {
+  for (const source of sources) {
+    const icon = source?.icon;
+    if (typeof icon !== 'string') continue;
+    if (icon.includes('/day/') || /\dd$/.test(icon)) return true;
+    if (icon.includes('/night/') || /\dn$/.test(icon)) return false;
+  }
+  return null;
+};
+
 // Keys decided together with `condition`, so the reported text and icon always
 // describe the sky the providers actually agreed on
 const CONDITION_KEYS = ['condition', 'weather', 'description', 'icon'];
@@ -78,11 +152,12 @@ const CONDITION_KEYS = ['condition', 'weather', 'description', 'icon'];
  * the cloud rank down by one instead of losing outright.
  *
  * @param {Array<Object>} sources - Normalized provider objects
+ * @param {boolean} metric - Unit system of the sources' precipitation amounts
  * @returns {{ condition: string, weather: *, description: *, icon: * }|null}
  *   null when no source carried a recognised condition, leaving the caller's
  *   generic string merging in place
  */
-const mergeConditions = (sources) => {
+const mergeConditions = (sources, metric = true) => {
   const rated = sources
     .map(source => ({ source, meta: CONDITIONS[source?.condition] }))
     .filter(entry => entry.meta);
@@ -93,7 +168,10 @@ const mergeConditions = (sources) => {
   const known = rated.filter(entry => entry.meta.group !== 'unknown');
   const voting = known.length > 0 ? known : rated;
 
-  const group = majorityValue(voting.map(entry => entry.meta.group));
+  const group = majorityGroup(
+    voting.map(entry => ({ group: entry.meta.group, rate: precipitationRate(entry.source) })),
+    metric,
+  );
   const inGroup = voting.filter(entry => entry.meta.group === group);
 
   const ranks = inGroup.map(entry => entry.meta.rank).sort((a, b) => a - b);
@@ -111,14 +189,12 @@ const mergeConditions = (sources) => {
     ?? sources.map(s => s?.[key]).find(v => v !== null && v !== undefined)
     ?? null;
 
-  // WeatherAPI is the only provider serving icon *URLs*, and clients render
-  // that format, so it still wins overall — but prefer its icon from a source
-  // that agrees with the consensus when there is a choice, so the icon and the
-  // text don't contradict each other.
-  const isWeatherApiIcon = (v) => typeof v === 'string' && v.includes('weatherapi.com');
-  const icon = preferred.map(s => s?.icon).find(isWeatherApiIcon)
-    ?? sources.map(s => s?.icon).find(isWeatherApiIcon)
-    ?? pick('icon');
+  // Clients render WeatherAPI's icon URL format, so build one for the
+  // consensus condition rather than reusing WeatherAPI's own icon — which
+  // would show WeatherAPI's opinion whenever it was the dissenter. Day/night
+  // comes from any provider icon; without one there is nothing to build on.
+  const daytime = isDaytime(sources);
+  const icon = (daytime === null ? null : weatherApiIconFor(condition, daytime)) ?? pick('icon');
 
   return { condition, weather: pick('weather'), description: pick('description'), icon };
 };
@@ -159,9 +235,9 @@ const mergeWind = (windObjects, parentPath) => {
     .filter(v => typeof v === 'number' && !Number.isNaN(v));
   if (degs.length > 0) {
     merged.deg = circularMeanDeg(degs);
-    if (windObjects.some(w => w?.dir != null)) {
-      merged.dir = degToCompass(merged.deg);
-    }
+    // Derived even when no provider supplied a label (only WeatherAPI does),
+    // so the field doesn't come and go with that one provider's availability
+    merged.dir = degToCompass(merged.deg);
   }
   return merged;
 };
@@ -227,9 +303,10 @@ const mergePrecipitation = (precipitationObjects) => {
 /**
  * Intelligently merges hourly forecast data with mismatched precipitation periods
  * @param {Array<Object>} hourDataArray - Array of hour data objects from different sources
+ * @param {boolean} metric - Unit system of the sources
  * @returns {Object} Merged hour data with properly averaged precipitation
  */
-const mergeHourlyData = (hourDataArray) => {
+const mergeHourlyData = (hourDataArray, metric = true) => {
   if (hourDataArray.length === 1) return hourDataArray[0];
 
   // Check if we have different hours_measured for precipitation
@@ -243,7 +320,7 @@ const mergeHourlyData = (hourDataArray) => {
   if (hasMismatchedPeriods) {
     // Don't merge precipitation at individual timestamp level
     // Return averaged data but keep precipitation from the most granular source
-    const merged = mergeAndAverage(hourDataArray);
+    const merged = mergeAndAverage(hourDataArray, '', metric);
     
     // Find the source with minimum hours_measured (most granular)
     const mostGranular = hourDataArray.reduce((min, curr) => {
@@ -258,16 +335,19 @@ const mergeHourlyData = (hourDataArray) => {
   }
 
   // Normal merging when periods match
-  return mergeAndAverage(hourDataArray);
+  return mergeAndAverage(hourDataArray, '', metric);
 };
 
 /**
  * Adjusts precipitation across multiple hours when sources have different measurement periods
  * @param {Array<Object>} mergedHours - Array of merged hourly data
  * @param {Array<Array>} sourceDayArrays - Original source arrays for the day
+ * @param {{ day: string, timezone: string|number, now: number }} context - The day
+ *   being merged (its DTO key), the timezone its boundaries are drawn in, and
+ *   the epoch second before which slots are already in the past
  * @returns {Array<Object>} Adjusted hourly data with redistributed precipitation
  */
-const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
+const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays, { day, timezone, now }) => {
   // Find the maximum hours_measured across all sources
   const maxHoursMeasured = Math.max(
     ...sourceDayArrays.flat().map(h => h.precipitation?.hours_measured ?? 1)
@@ -290,11 +370,33 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
     windows.get(bucket).push(hour);
   }
 
+  // Windows sit on the UTC grid but days are drawn in local time, so a day's
+  // first and last window usually reach into the neighbouring day. Count only
+  // the hourly slots of a window that belong to this day and are still ahead
+  // of us — scaling to the full window would credit the straddling hours to
+  // both days (and to "today" hours that are already gone). The real DTOs key
+  // days by ISO date; anything else (weekday names in mocked data) is taken
+  // to own the whole window. A slot that has an entry always counts, so an
+  // entry can never stand for less than itself.
+  const isIsoDay = DATE_KEY_REGEX.test(day);
+  const hoursOfDayIn = (windowStart, windowEnd, entryDts) => {
+    let count = 0;
+    for (let t = windowStart; t < windowEnd; t += 3600) {
+      if (t <= now) continue;
+      if (!isIsoDay || entryDts.has(t) || translateEpochDate(t, timezone) === day) count++;
+    }
+    return count;
+  };
+
   const adjustedHours = [];
 
   for (const [bucket, window] of windows) {
     const windowStart = bucket * windowSeconds;
     const windowEnd = windowStart + windowSeconds;
+    const coveredHours = Math.max(
+      hoursOfDayIn(windowStart, windowEnd, new Set(window.map(h => h.dt))),
+      window.length,
+    );
 
     // Average the precipitation *rate* rather than the raw window total.
     // Totals are only comparable when every source covers the same span, which
@@ -318,13 +420,27 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
     });
 
     const avgRate = averageValues(sourceRates);
-    // The window always represents windowHours of weather, however many merged
-    // timestamps happen to fall in it, so scale by the window rather than by
-    // the entry count — otherwise a far-out day where only coarse providers
-    // remain would silently lose most of its rain. Each emitted entry then
-    // stands for an equal share of the window.
-    const windowTotal = avgRate === null ? null : avgRate * windowHours;
-    const hoursPerEntry = Math.round((windowHours / window.length) * 100) / 100;
+    // Scale the rate by the hours the window holds for this day, not by the
+    // entry count — otherwise a far-out day where only coarse providers remain
+    // would silently lose most of its rain. Each emitted entry then stands for
+    // an equal share of those hours.
+    const windowTotal = avgRate === null ? null : avgRate * coveredHours;
+    const hoursPerEntry = Math.round((coveredHours / window.length) * 100) / 100;
+
+    // The type on a merged entry comes from the per-timestamp merge, which can
+    // read 'none' at a timestamp where only a coarse source brought rain into
+    // the window. Fall back to what the sources that forecast precipitation
+    // here actually called it, and never label a dry entry with a type.
+    const windowType = majorityValue(
+      sourceDayArrays.flat()
+        .filter(h => h.dt >= windowStart && h.dt < windowEnd && h.precipitation?.amount > 0)
+        .map(h => h.precipitation.type)
+        .filter(type => type && type !== 'none')
+    );
+    const typeFor = (amount, ownType) => {
+      if (!(amount > 0)) return 'none';
+      return ownType && ownType !== 'none' ? ownType : (windowType ?? 'none');
+    };
 
     if (!windowTotal) {
       // No precipitation in this window
@@ -356,12 +472,14 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
       for (const hour of window) {
         const granularHour = granularWindow.find(g => g.dt === hour.dt);
         const proportion = (granularHour?.precipitation?.amount ?? 0) / granularTotal;
+        const amount = Math.round(windowTotal * proportion * 100) / 100;
         adjustedHours.push({
           ...hour,
           precipitation: {
             ...hour.precipitation,
-            amount: Math.round(windowTotal * proportion * 100) / 100,
+            amount,
             hours_measured: hoursPerEntry,
+            type: typeFor(amount, hour.precipitation?.type),
           }
         });
       }
@@ -374,6 +492,7 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
           ...h.precipitation,
           amount: perEntry,
           hours_measured: hoursPerEntry,
+          type: typeFor(perEntry, h.precipitation?.type),
         }
       })));
     }
@@ -386,9 +505,11 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays) => {
  * Merges and averages data from multiple sources
  * @param {Array<Object>} sources - Array of data objects to merge
  * @param {string} parentPath - Parent path for nested objects
+ * @param {boolean} metric - Unit system of the sources (only the condition
+ *   tie-break, which reads precipitation amounts, depends on it)
  * @returns {Object} Merged object with averaged numeric values
  */
-const mergeAndAverage = (sources, parentPath = '') => {
+const mergeAndAverage = (sources, parentPath = '', metric = true) => {
   if (sources.length === 0) return null;
   if (sources.length === 1) return sources[0];
 
@@ -403,7 +524,7 @@ const mergeAndAverage = (sources, parentPath = '') => {
   });
 
   // Decided across keys rather than per key, so condition/weather/icon agree
-  const conditions = sources.some(s => s?.condition != null) ? mergeConditions(sources) : null;
+  const conditions = sources.some(s => s?.condition != null) ? mergeConditions(sources, metric) : null;
 
   // Process each key
   allKeys.forEach(key => {
@@ -478,7 +599,8 @@ const mergeAndAverage = (sources, parentPath = '') => {
           const fullPath = parentPath ? `${parentPath}.${key}` : key;
           result[key] = mergeAndAverage(
             values.filter(v => v !== null && v !== undefined),
-            fullPath
+            fullPath,
+            metric
           );
         }
       }
@@ -494,14 +616,17 @@ const mergeAndAverage = (sources, parentPath = '') => {
 /**
  * Merges forecast data from multiple sources, averaging by day and timestamp
  * @param {Array<Object>} sources - Array of forecast objects with 'list' property
+ * @param {string|number} timezone - Timezone the DTOs drew the day boundaries in
+ * @param {boolean} metric - Unit system of the sources
  * @returns {Object} Merged forecast with averaged values per day
  */
-const mergeForecastData = (sources) => {
+const mergeForecastData = (sources, timezone = 'UTC', metric = true) => {
   if (sources.length === 0) return null;
   if (sources.length === 1) return sources[0];
 
   const mergedList = {};
   const allDays = new Set();
+  const now = Math.floor(Date.now() / 1000);
 
   // Collect all days from all sources
   sources.forEach(source => {
@@ -535,7 +660,6 @@ const mergeForecastData = (sources) => {
     
     // Average data for each timestamp using intelligent merging
     const mergedHours = [];
-    const now = Math.floor(Date.now() / 1000);
     timestampMap.forEach((hourDataArray, timestamp) => {
       if (timestamp <= now) return; // skip past timeslots (defence-in-depth: DTOs filter first)
       if (hourDataArray.length === 1) {
@@ -543,7 +667,7 @@ const mergeForecastData = (sources) => {
         mergedHours.push(hourDataArray[0]);
       } else {
         // Multiple sources have this timestamp, use intelligent merging
-        const averaged = mergeHourlyData(hourDataArray);
+        const averaged = mergeHourlyData(hourDataArray, metric);
         mergedHours.push(averaged);
       }
     });
@@ -552,7 +676,7 @@ const mergeForecastData = (sources) => {
     mergedHours.sort((a, b) => a.dt - b.dt);
     
     // Adjust precipitation across hours to account for different measurement periods
-    const adjustedHours = adjustPrecipitationAcrossHours(mergedHours, dayArrays);
+    const adjustedHours = adjustPrecipitationAcrossHours(mergedHours, dayArrays, { day, timezone, now });
     
     mergedList[day] = adjustedHours;
   });
@@ -602,7 +726,7 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
   const providers = collected.filter(r => r.provider).map(r => r.provider);
   const errors = collected.filter(r => r.error).map(r => r.error);
 
-  const averaged = mergeAndAverage(sources);
+  const averaged = mergeAndAverage(sources, '', metric);
   if (!averaged) return { error: "All weather providers failed", errors };
   return { ...averaged, providers, errors: errors.length > 0 ? errors : undefined };
 };
@@ -625,8 +749,6 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  * @returns {Object} Merged forecast response with `list` (keyed by weekday name), `providers`, and
  *   an optional `errors` array for any providers that failed.
  */
-const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true, explicitTimezone = null, days = null) => {
   // Compute timezone once — used for SMHI/MET DTO calls and for the date→weekday conversion below.
   // Prefer an explicitly supplied timezone (derived from current-weather results, which are more
@@ -647,7 +769,7 @@ const processForecastWeather = (owmResult, weatherApiResult, smhiResult, metResu
   const providers = collected.filter(r => r.provider).map(r => r.provider);
   const errors = collected.filter(r => r.error).map(r => r.error);
 
-  const merged = mergeForecastData(sources);
+  const merged = mergeForecastData(sources, timezone, metric);
 
   if (!merged) {
     return { error: "All weather providers failed", errors };
