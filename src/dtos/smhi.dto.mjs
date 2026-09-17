@@ -1,5 +1,6 @@
 import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
 import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
+import { conditionFromSmhiSymbol } from "../utils/weatherConditions.mjs";
 
 const getHoursMeasured = (time, intervalStart) => {
   const endMs = new Date(time).getTime();
@@ -29,15 +30,24 @@ const mapSymbolToWeather = (symbolCode) => {
   return symbols[symbolCode] || null;
 };
 
-const mapTimeSeriesEntry = (entry, metric = true) => {
-  const { time, intervalParametersStartTime, data } = entry;
+// `intervalEntry` supplies the interval parameters (precipitation). SMHI stamps
+// an interval at its *end* — `time` closes the span that began at
+// `intervalParametersStartTime` — while the aggregator, like WeatherAPI and
+// MET, reads an entry's precipitation as the period starting at `dt`. Forecast
+// callers therefore pass the *following* entry, whose interval starts at this
+// entry's `time`; the current-weather caller keeps the entry's own interval,
+// the hour we are in.
+const mapTimeSeriesEntry = (entry, metric = true, intervalEntry = entry) => {
+  const { time, data } = entry;
   const dt = Math.floor(new Date(time).getTime() / 1000);
-  const hoursMeasured = getHoursMeasured(time, intervalParametersStartTime);
-  const precipType = mapPrecipitationType(data.predominant_precipitation_type_at_surface);
+  const hoursMeasured = getHoursMeasured(intervalEntry.time, intervalEntry.intervalParametersStartTime);
+  const precipAmount = intervalEntry.data.precipitation_amount_mean;
+  const precipType = mapPrecipitationType(intervalEntry.data.predominant_precipitation_type_at_surface);
   return {
     dt,
     weather: mapSymbolToWeather(data.symbol_code),
     description: mapSymbolToWeather(data.symbol_code),
+    condition: conditionFromSmhiSymbol(data.symbol_code),
     icon: null,
     temperature: {
       temp: data.air_temperature != null
@@ -68,8 +78,8 @@ const mapTimeSeriesEntry = (entry, metric = true) => {
         : null,
     },
     precipitation: {
-      amount: data.precipitation_amount_mean != null
-        ? (metric ? data.precipitation_amount_mean : mmToInches(data.precipitation_amount_mean))
+      amount: precipAmount != null
+        ? (metric ? precipAmount : mmToInches(precipAmount))
         : 0,
       hours_measured: hoursMeasured,
       type: precipType,
@@ -102,14 +112,19 @@ const smhiDto = {
     if (!data?.timeSeries) return null;
     const now = Math.floor(Date.now() / 1000);
     const formatted = {};
+    const series = data.timeSeries;
 
-    for (const entry of data.timeSeries) {
+    // Each entry takes its precipitation from the interval that *starts* at
+    // its `time`, i.e. the next entry's; the final entry has no successor and
+    // is dropped (see mapTimeSeriesEntry).
+    for (let i = 0; i < series.length - 1; i++) {
+      const entry = series[i];
       const dt = Math.floor(new Date(entry.time).getTime() / 1000);
       if (dt <= now) continue;
 
       const day = translateEpochDate(dt, timezone);
       if (!formatted[day]) formatted[day] = [];
-      formatted[day].push(mapTimeSeriesEntry(entry, metric));
+      formatted[day].push(mapTimeSeriesEntry(entry, metric, series[i + 1]));
     }
 
     return { list: formatted, provider: "smhi.se" };

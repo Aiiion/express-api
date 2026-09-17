@@ -9,6 +9,15 @@ export const latLonValidationSchema = {
 			errorMessage: 'Lat must be a number between -90 and 90',
 		},
 		toFloat: true,
+		// ~110 m precision. Enough to collapse GPS jitter (metres) so repeat
+		// requests share provider and response cache entries, while staying
+		// well inside a single grid cell of even the finest provider model
+		// (MET Nordic ~1 km, SMHI ~2.5 km). Rounding harder would start moving
+		// the point across coastlines and valley walls, where a kilometre is
+		// worth several degrees of temperature.
+		customSanitizer: {
+			options: (value) => Math.round(value * 1000) / 1000,
+		},
 	},
 	lon: {
 		in: ['query'],
@@ -20,14 +29,20 @@ export const latLonValidationSchema = {
 			errorMessage: 'Lon must be a number between -180 and 180',
 		},
 		toFloat: true,
+		customSanitizer: {
+			options: (value) => Math.round(value * 1000) / 1000,
+		},
 	},
 };
 
+// `days` and `units` are deliberately not `optional`: express-validator skips
+// every item in an optional chain — `default` included — when the field is
+// absent, so the defaults would never apply. Without `optional`, `default`
+// fills the missing value first and the validators run on that.
 export const weatherValidationSchema = {
 	...latLonValidationSchema,
 	days: {
 		in: ['query'],
-		optional: true,
 		default: { options: 5 },
 		isInt: {
 			options: { min: 1 },
@@ -40,7 +55,6 @@ export const weatherValidationSchema = {
 	},
 	units: {
 		in: ['query'],
-		optional: true,
 		default: { options: 'metric' },
 		isIn: {
 			options: [['metric', 'imperial']],

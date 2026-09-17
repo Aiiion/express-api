@@ -1,9 +1,11 @@
 import { getJsonValue, setJsonValue } from '../services/infrastructure/redis.service.mjs';
 import { devError } from '../utils/logger.mjs';
 
-export const cache = (duration) => {
+// keyFn (optional) builds the cache key from the request — use it to key on
+// sanitized/normalized params instead of the raw URL. Defaults to the URL.
+export const cache = (duration, keyFn) => {
   return async (req, res, next) => {
-    let key = '__express__' + (req.originalUrl || req.url)
+    let key = '__express__' + (keyFn ? keyFn(req) : (req.originalUrl || req.url))
     let cachedBody = null
 
     try {

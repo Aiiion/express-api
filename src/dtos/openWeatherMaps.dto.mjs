@@ -1,4 +1,5 @@
 import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
+import { conditionFromOwmId } from "../utils/weatherConditions.mjs";
 
 const getPrecipitationType = (data) => {
     if (data?.rain !== undefined) {
@@ -21,6 +22,7 @@ const openWeatherMapsDto = {
         return {
             weather: weatherEntry?.main,
             description: weatherEntry?.description,
+            condition: conditionFromOwmId(weatherEntry?.id),
             icon: weatherEntry?.icon,
             dt: data.dt,
             location: {
@@ -67,19 +69,26 @@ const openWeatherMapsDto = {
         const now = Math.floor(Date.now() / 1000);
         const timezone = data.city?.timezone ? data.city.timezone / 3600 : undefined; // Convert from seconds to hours
 
-        for (let i = 0; i < data.list.length; i++) {
+        // OWM stamps `rain.3h` at the *end* of its accumulation ("volume for the
+        // last 3 hours"), while the aggregator — like WeatherAPI and MET — reads
+        // an entry's precipitation as the period that starts at `dt`. Take each
+        // entry's amount from the entry that follows it so `dt` marks the start
+        // of the period it covers. The final entry has no successor and is dropped.
+        for (let i = 0; i < data.list.length - 1; i++) {
             const item = data?.list[i];
+            const next = data.list[i + 1];
             if (item?.dt <= now) continue;
             const day = translateEpochDate(item.dt, timezone);
             if (!formatted[day]) {
                 formatted[day] = [];
             }
-            const precipitationType = getPrecipitationType(item);
+            const precipitationType = getPrecipitationType(next);
             const weatherEntry = Array.isArray(item?.weather) ? item.weather[0] : item?.weather;
             const timeObj = {
                 dt: item?.dt,
                 weather: weatherEntry?.main,
                 description: weatherEntry?.description,
+                condition: conditionFromOwmId(weatherEntry?.id),
                 icon: weatherEntry?.icon,
                 temperature: {
                     temp: item?.main?.temp,
@@ -102,8 +111,7 @@ const openWeatherMapsDto = {
                 clouds: item?.clouds,
                 visibility: item?.visibility,
                 precipitation: {
-                    // we should probably just take the howest hour then use that for hours measured
-                    amount: precipitationType ? (item[`${precipitationType}`]?.["3h"] ?? 0) : 0,
+                    amount: precipitationType ? (next[precipitationType]?.["3h"] ?? 0) : 0,
                     hours_measured: 3,
                     type: precipitationType ?? "none",
                 },

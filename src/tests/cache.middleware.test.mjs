@@ -60,4 +60,18 @@ describe('cache middleware', () => {
     );
     expect(sendResponse).toHaveBeenCalledWith({ payload: true });
   });
+
+  it('keys on keyFn instead of the URL when one is given', async () => {
+    const middleware = cache(60, (req) => `/v1/weather?lat=${req.normalized.lat}`);
+    const req = { originalUrl: '/v1/weather?lat=1.00049', url: '/v1/weather?lat=1.00049', normalized: { lat: 1 } };
+    const res = { send: jest.fn() };
+    const next = jest.fn();
+
+    getJsonValueMock.mockResolvedValue({ ok: true });
+
+    await middleware(req, res, next);
+
+    expect(getJsonValueMock).toHaveBeenCalledWith('__express__/v1/weather?lat=1');
+    expect(res.send).toHaveBeenCalledWith({ ok: true });
+  });
 });

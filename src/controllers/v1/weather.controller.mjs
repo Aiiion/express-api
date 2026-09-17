@@ -1,10 +1,14 @@
+import { matchedData } from "express-validator";
 import openWeatherMapsService from "../../services/providers/openWeatherMaps.service.mjs";
 import weatherAggregatorService from "../../services/weatherAggregator.service.mjs";
 import { getCoordinateBound } from "../../utils/geoHelpers.mjs";
-import { devError } from "../../utils/logger.mjs";
+import { logError } from "../../services/errorLog.service.mjs";
 
 export const index = async (req, res) => {
-  const { lat, lon, days, units: metric } = req.query;
+  // Sanitized values (rounded coordinates, capped days, units as a boolean)
+  // only exist in matchedData — Express 5's `req.query` getter re-parses the
+  // raw URL on every read, so `units=imperial` would arrive as a truthy string
+  const { lat, lon, days, units: metric } = matchedData(req);
   const bound = getCoordinateBound(lat, lon);
   const provider = bound?.provider;
 
@@ -16,7 +20,9 @@ export const index = async (req, res) => {
       const warningsData = await provider.service.weatherWarnings(lat, lon);
       return provider.dto.weatherWarnings(warningsData);
     } catch (err) {
-      devError('Failed to fetch weather warnings:', err.message);
+      // Persist to error_logs like the aggregator does — warnings failures
+      // should be visible in monitoring, not just the dev console
+      logError(err, { route: 'v1/weather.warnings' });
       return null;
     }
   };
