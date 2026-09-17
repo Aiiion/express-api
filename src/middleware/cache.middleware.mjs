@@ -5,7 +5,7 @@ import { devError } from '../utils/logger.mjs';
 // sanitized/normalized params instead of the raw URL. Defaults to the URL.
 export const cache = (duration, keyFn) => {
   return async (req, res, next) => {
-    const key = '__express__' + (keyFn ? keyFn(req) : req.originalUrl || req.url);
+    const key = `__express__${keyFn ? keyFn(req) : req.originalUrl || req.url}`;
     let cachedBody = null;
 
     try {

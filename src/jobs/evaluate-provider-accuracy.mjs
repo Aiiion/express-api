@@ -1,6 +1,6 @@
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { Op } from 'sequelize';
-import { fileURLToPath } from 'url';
 import { sequelize } from '../models/index.mjs';
 import initProviderAccuracyScore from '../models/providerAccuracyScore.model.mjs';
 import initProviderForecastSnapshot from '../models/providerForecastSnapshot.model.mjs';

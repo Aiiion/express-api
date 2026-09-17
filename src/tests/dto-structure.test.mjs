@@ -34,7 +34,7 @@ const getObjectStructure = (obj, prefix = '') => {
     // For arrays, examine the first element to determine structure
     if (obj.length > 0) {
       const arrayKeys = getObjectStructure(obj[0], prefix);
-      arrayKeys.forEach(key => keys.add(key));
+      for (const key of arrayKeys) keys.add(key);
     }
     return keys;
   }
@@ -47,7 +47,7 @@ const getObjectStructure = (obj, prefix = '') => {
     const value = obj[key];
     if (value !== null && typeof value === 'object') {
       const nestedKeys = getObjectStructure(value, fullKey);
-      nestedKeys.forEach(nestedKey => keys.add(nestedKey));
+      for (const nestedKey of nestedKeys) keys.add(nestedKey);
     }
   });
 

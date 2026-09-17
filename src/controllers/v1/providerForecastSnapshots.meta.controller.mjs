@@ -1,7 +1,7 @@
 import { sequelize } from '../../models/index.mjs';
 import { distinct } from '../../services/meta.service.mjs';
 
-export const index = async (req, res) => {
+export const index = async (_req, res) => {
   const ProviderForecastSnapshot = sequelize.models.ProviderForecastSnapshot;
   const fields = Object.keys(ProviderForecastSnapshot.getAttributes());
 

@@ -1122,7 +1122,8 @@ describe('weatherAggregatorService', () => {
         const list = {};
         for (const entry of entries) {
           const day = translateEpochDate(entry.dt, TZ_OFFSET_HOURS);
-          (list[day] ??= []).push(entry);
+          list[day] ??= [];
+          list[day].push(entry);
         }
         return list;
       };

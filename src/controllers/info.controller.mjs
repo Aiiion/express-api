@@ -1,19 +1,19 @@
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import { EMAIL, GITHUB } from '../utils/constants.mjs';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json');
 
-import net from 'net';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import net from 'node:net';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import weatherApiService from '../services/providers/weatherApi.service.mjs';
 import { extractIp } from '../utils/ipHelpers.mjs';
 import { devError } from '../utils/logger.mjs';
 
-export const test = (req, res) => res.status(200).send({ message: 'API is running' });
+export const test = (_req, res) => res.status(200).send({ message: 'API is running' });
 
-export const contact = (req, res) =>
+export const contact = (_req, res) =>
   res.status(200).send({
     version,
     message:
@@ -22,7 +22,7 @@ export const contact = (req, res) =>
     email: EMAIL,
   });
 
-export const cv = (req, res) => {
+export const cv = (_req, res) => {
   const filename = fileURLToPath(import.meta.url);
   const dirname = path.dirname(filename);
   const filePath = path.resolve(dirname, '../public/files/CV.pdf');

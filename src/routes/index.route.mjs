@@ -19,7 +19,7 @@ router.use(providerForecastSnapshotsRouter);
 router.use(providerAccuracyScoresRouter);
 router.use(v1Router);
 
-router.use((req, res) => {
+router.use((_req, res) => {
   res.status(404).json({ code: 404, message: 'Not Found' });
 });
 

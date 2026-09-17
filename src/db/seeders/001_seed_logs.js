@@ -2,7 +2,7 @@
  * Sequelize/Umzug seeder: seed logs table with sample data
  */
 
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
 
 export async function up({ context: queryInterface }) {

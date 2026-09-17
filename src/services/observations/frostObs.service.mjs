@@ -4,7 +4,7 @@ import userAgent from '../../utils/userAgent.mjs';
 // Frost API uses Basic auth: client_id as username, empty password
 const authHeader = () => {
   const clientId = process.env.MET_FROST_CLIENT_ID ?? '';
-  return 'Basic ' + Buffer.from(`${clientId}:`).toString('base64');
+  return `Basic ${Buffer.from(`${clientId}:`).toString('base64')}`;
 };
 
 const ELEMENTS = [

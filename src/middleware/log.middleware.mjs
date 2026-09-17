@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { enqueueRequestLog } from '../services/infrastructure/redis.service.mjs';
 import { extractIp } from '../utils/ipHelpers.mjs';
 import { devError } from '../utils/logger.mjs';
@@ -15,9 +15,9 @@ export const logRequest = () => {
   return (req, res, next) => {
     // capture response payloads so we can log messages on finish
     let capturedBody;
-    const origJson = res.json && res.json.bind(res);
-    const origSend = res.send && res.send.bind(res);
-    const origEnd = res.end && res.end.bind(res);
+    const origJson = res.json?.bind(res);
+    const origSend = res.send?.bind(res);
+    const origEnd = res.end?.bind(res);
 
     if (origJson) {
       res.json = body => {
@@ -47,7 +47,7 @@ export const logRequest = () => {
             res.locals = res.locals || {};
             res.locals.__logBody = capturedBody;
           }
-        } catch (e) {
+        } catch {
           // ignore capture errors
         }
         return origEnd(chunk, encoding, cb);
@@ -84,7 +84,7 @@ export const logRequest = () => {
               if (body.message) data.description = body.message;
               else data.description = JSON.stringify(body);
             } else if (typeof body === 'string') data.description = body;
-          } catch (e) {
+          } catch {
             data.description = null;
           }
         }

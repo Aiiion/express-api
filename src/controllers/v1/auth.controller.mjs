@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../services/infrastructure/email.service.mjs';
 import { deleteValue, getJsonValue, setJsonValue } from '../../services/infrastructure/redis.service.mjs';
@@ -158,7 +158,7 @@ export const verifyCode = async (req, res) => {
  * Cookie: jwt_token=<token>
  * Note: Validation is handled by authenticate middleware
  */
-export const verifyToken = (req, res) => {
+export const verifyToken = (_req, res) => {
   return res.status(200).send({
     message: 'Token is valid',
   });
@@ -168,7 +168,7 @@ export const verifyToken = (req, res) => {
  * Logs out user by clearing the JWT cookie
  * POST /auth/logout
  */
-export const logout = (req, res) => {
+export const logout = (_req, res) => {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

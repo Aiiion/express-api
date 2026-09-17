@@ -169,7 +169,7 @@ const weatherApiDto = {
     return { list: formatted, provider: 'weatherapi.com' };
   },
   weatherWarnings: data => {
-    if (!data || !data.alerts?.alert?.[0]) return null;
+    if (!data?.alerts?.alert?.[0]) return null;
     const alertData = data.alerts.alert;
     const alert = alertData[0];
 

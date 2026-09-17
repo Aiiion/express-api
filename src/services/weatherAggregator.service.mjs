@@ -523,7 +523,7 @@ const mergeAndAverage = (sources, parentPath = '', metric = true) => {
   // Collect all keys from all sources
   sources.forEach(source => {
     if (source && typeof source === 'object') {
-      Object.keys(source).forEach(key => allKeys.add(key));
+      for (const key of Object.keys(source)) allKeys.add(key);
     }
   });
 
@@ -636,7 +636,7 @@ const mergeForecastData = (sources, timezone = 'UTC', metric = true) => {
   // Collect all days from all sources
   sources.forEach(source => {
     if (source?.list) {
-      Object.keys(source.list).forEach(day => allDays.add(day));
+      for (const day of Object.keys(source.list)) allDays.add(day);
     }
   });
 
@@ -705,7 +705,6 @@ const collectProvider = (result, dtoFn, name, route) => {
     logError(result.reason, { route });
     return { error: { provider: name, message: result.reason?.message ?? String(result.reason) } };
   }
-  return {};
 };
 
 /**

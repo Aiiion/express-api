@@ -44,7 +44,7 @@ describe('frostObsService.getDailyStats', () => {
     await frostObsService.getDailyStats(59.94, 10.72, '2026-06-23');
 
     const [, options] = fetchMock.mock.calls[0];
-    const expected = 'Basic ' + Buffer.from('test-client-id:').toString('base64');
+    const expected = `Basic ${Buffer.from('test-client-id:').toString('base64')}`;
     expect(options.headers.Authorization).toBe(expected);
   });
 

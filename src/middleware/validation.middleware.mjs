@@ -14,7 +14,7 @@ const jwtSecretCheck = res => {
   return false;
 };
 
-const requireEnv = (varName, message) => (req, res, next) => {
+const requireEnv = (varName, message) => (_req, res, next) => {
   if (!process.env[varName]) return res.status(500).json({ code: 500, message });
   next();
 };
@@ -58,7 +58,7 @@ export const metaFieldExists = (req, res, next) => {
   next();
 };
 
-export const hasJwtSecret = (req, res, next) => {
+export const hasJwtSecret = (_req, res, next) => {
   if (jwtSecretCheck(res)) return;
   next();
 };

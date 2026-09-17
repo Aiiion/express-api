@@ -76,7 +76,7 @@ const stop = async () => {
     await closePool();
     await sequelize.close();
     await closeRedisConnection();
-  } catch (e) {
+  } catch {
     // ignore close errors
   }
 };

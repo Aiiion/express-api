@@ -1,5 +1,5 @@
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 import referenceStations from '../data/referenceStations.mjs';
 import { sequelize } from '../models/index.mjs';
 import initProviderForecastSnapshot from '../models/providerForecastSnapshot.model.mjs';

@@ -2,7 +2,6 @@ import { exampleIp } from '../utils/constants.mjs';
 
 // Helper to generate timestamps relative to now
 const now = () => Math.floor(Date.now() / 1000);
-const hoursFromNow = hours => now() + hours * 3600;
 const formatLocaltime = epochSeconds => {
   const date = new Date(epochSeconds * 1000);
   return date.toISOString().replace('T', ' ').substring(0, 16);
