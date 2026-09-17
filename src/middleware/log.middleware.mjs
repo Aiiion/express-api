@@ -5,7 +5,7 @@ import { devError } from '../utils/logger.mjs';
 
 // Express middleware to create a log row after response finishes.
 export const logRequest = () => {
-  const codeToTypeMap = (code) => {
+  const codeToTypeMap = code => {
     if (typeof code !== 'number') return 'INFO';
     if (code >= 500) return 'ERROR';
     if (code >= 400) return 'WARN';
@@ -20,7 +20,7 @@ export const logRequest = () => {
     const origEnd = res.end && res.end.bind(res);
 
     if (origJson) {
-      res.json = function (body) {
+      res.json = body => {
         capturedBody = body;
         res.locals = res.locals || {};
         res.locals.__logBody = body;
@@ -29,7 +29,7 @@ export const logRequest = () => {
     }
 
     if (origSend) {
-      res.send = function (body) {
+      res.send = body => {
         capturedBody = body;
         res.locals = res.locals || {};
         res.locals.__logBody = body;
@@ -38,7 +38,7 @@ export const logRequest = () => {
     }
 
     if (origEnd) {
-      res.end = function (chunk, encoding, cb) {
+      res.end = (chunk, encoding, cb) => {
         try {
           if (chunk) {
             // attempt to capture textual payloads
@@ -68,16 +68,17 @@ export const logRequest = () => {
       };
 
       if (data.type === 'ERROR' || data.type === 'WARN') {
-        let body = (res.locals && res.locals.__logBody !== undefined) ? res.locals.__logBody : capturedBody;
+        let body = res.locals && res.locals.__logBody !== undefined ? res.locals.__logBody : capturedBody;
 
         if (body) {
           try {
-              if (typeof body === 'string') {
-                const parsedBody = JSON.parse(body);
-                if (typeof parsedBody === 'object') body = parsedBody;
-              }
+            if (typeof body === 'string') {
+              const parsedBody = JSON.parse(body);
+              if (typeof parsedBody === 'object') body = parsedBody;
             }
-            catch (e) { devError(e) }
+          } catch (e) {
+            devError(e);
+          }
           try {
             if (typeof body === 'object') {
               if (body.message) data.description = body.message;

@@ -1,5 +1,5 @@
-import { distinct } from '../../services/meta.service.mjs';
 import { sequelize } from '../../models/index.mjs';
+import { distinct } from '../../services/meta.service.mjs';
 
 export const index = async (req, res) => {
   const ProviderForecastSnapshot = sequelize.models.ProviderForecastSnapshot;

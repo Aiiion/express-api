@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { smhiObsStationsFixture, smhiObsDataFixture } from '../fixtures/smhiObs.fixture.mjs';
+import { smhiObsDataFixture, smhiObsStationsFixture } from '../fixtures/smhiObs.fixture.mjs';
 
 // withCache passes through to the function — bypasses Redis in tests
 jest.unstable_mockModule('../services/infrastructure/redis.service.mjs', () => ({
@@ -8,7 +8,7 @@ jest.unstable_mockModule('../services/infrastructure/redis.service.mjs', () => (
 
 const { default: smhiObsService } = await import('../services/observations/smhiObs.service.mjs');
 
-const mockJsonResponse = (body) => ({
+const mockJsonResponse = body => ({
   ok: true,
   json: () => Promise.resolve(body),
 });
@@ -17,7 +17,7 @@ describe('smhiObsService.getDailyStats', () => {
   let fetchMock;
 
   beforeEach(() => {
-    fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+    fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation(url => {
       // Station list requests: /parameter/{id}.json (no /station/ segment)
       if (url.includes('/station/')) {
         return Promise.resolve(mockJsonResponse(smhiObsDataFixture));
@@ -48,7 +48,7 @@ describe('smhiObsService.getDailyStats', () => {
   });
 
   it('returns 0 for total_precip on a dry day, not null', async () => {
-    fetchMock.mockImplementation((url) => {
+    fetchMock.mockImplementation(url => {
       if (url.includes('/station/')) {
         // Return zero precipitation only for parameter 7 (precipitation), normal data for others
         const body = url.includes('/parameter/7/')
@@ -78,18 +78,16 @@ describe('smhiObsService.getDailyStats', () => {
 
     const obsCalls = fetchMock.mock.calls.filter(([url]) => url.includes('/station/'));
     const from = Date.parse('2026-06-23T00:00:00Z');
-    const to   = Date.parse('2026-06-23T23:59:59Z');
+    const to = Date.parse('2026-06-23T23:59:59Z');
     expect(obsCalls.every(([url]) => url.includes('corrected-archive'))).toBe(true);
     expect(obsCalls.every(([url]) => url.includes(`from=${from}`))).toBe(true);
     expect(obsCalls.every(([url]) => url.includes(`to=${to}`))).toBe(true);
   });
 
   it('returns null avg_temp when all observation values have bad quality', async () => {
-    fetchMock.mockImplementation((url) => {
+    fetchMock.mockImplementation(url => {
       if (url.includes('/station/')) {
-        return Promise.resolve(mockJsonResponse({ value: [
-          { date: '1750000000000', value: '99.9', quality: 'Z' },
-        ]}));
+        return Promise.resolve(mockJsonResponse({ value: [{ date: '1750000000000', value: '99.9', quality: 'Z' }] }));
       }
       return Promise.resolve(mockJsonResponse(smhiObsStationsFixture));
     });
@@ -99,7 +97,7 @@ describe('smhiObsService.getDailyStats', () => {
   });
 
   it('returns null total_precip when observation fetch fails', async () => {
-    fetchMock.mockImplementation((url) => {
+    fetchMock.mockImplementation(url => {
       if (url.includes('/station/')) {
         return Promise.resolve({ ok: false, status: 503, statusText: 'Unavailable' });
       }

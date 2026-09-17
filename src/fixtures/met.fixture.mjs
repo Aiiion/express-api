@@ -5,15 +5,15 @@
 export const metForecast = {
   fixture: true,
   data: {
-    type: "Feature",
+    type: 'Feature',
     geometry: {
-      type: "Point",
+      type: 'Point',
       coordinates: [18.0, 59.4, 10],
     },
     properties: {
       timeseries: [
         {
-          time: "2099-06-01T12:00:00Z",
+          time: '2099-06-01T12:00:00Z',
           data: {
             instant: {
               details: {
@@ -27,7 +27,7 @@ export const metForecast = {
             },
             next_1_hours: {
               summary: {
-                symbol_code: "partlycloudy_day",
+                symbol_code: 'partlycloudy_day',
               },
               details: {
                 precipitation_amount: 0.5,
@@ -36,7 +36,7 @@ export const metForecast = {
           },
         },
         {
-          time: "2099-06-01T13:00:00Z",
+          time: '2099-06-01T13:00:00Z',
           data: {
             instant: {
               details: {
@@ -50,7 +50,7 @@ export const metForecast = {
             },
             next_1_hours: {
               summary: {
-                symbol_code: "rain",
+                symbol_code: 'rain',
               },
               details: {
                 precipitation_amount: 1.2,

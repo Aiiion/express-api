@@ -8,14 +8,14 @@ export const distinct = async (model, field) => {
       attributes: [[sequelize.fn('DISTINCT', sequelize.col(field)), field]],
       order: [[field, 'ASC']],
       raw: true,
-      limit: LIMIT
+      limit: LIMIT,
     });
 
     return {
       field,
-      values: rows.map((r) => r[field]),
+      values: rows.map(r => r[field]),
       count: rows.length,
-      limited: rows.length === LIMIT // Indicate if the results were limited
+      limited: rows.length === LIMIT, // Indicate if the results were limited
     };
   } catch (error) {
     devError(`Failed to retrieve distinct values for ${field}:`, error.message);

@@ -1,8 +1,8 @@
-import { matchedData } from "express-validator";
-import openWeatherMapsService from "../../services/providers/openWeatherMaps.service.mjs";
-import weatherAggregatorService from "../../services/weatherAggregator.service.mjs";
-import { getCoordinateBound } from "../../utils/geoHelpers.mjs";
-import { logError } from "../../services/errorLog.service.mjs";
+import { matchedData } from 'express-validator';
+import { logError } from '../../services/errorLog.service.mjs';
+import openWeatherMapsService from '../../services/providers/openWeatherMaps.service.mjs';
+import weatherAggregatorService from '../../services/weatherAggregator.service.mjs';
+import { getCoordinateBound } from '../../utils/geoHelpers.mjs';
 
 export const index = async (req, res) => {
   // Sanitized values (rounded coordinates, capped days, units as a boolean)

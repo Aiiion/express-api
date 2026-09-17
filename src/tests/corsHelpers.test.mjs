@@ -22,10 +22,7 @@ describe('corsHelpers', () => {
   it('reads allowed origins from CORS_ALLOWLIST', () => {
     process.env.CORS_ALLOWLIST = 'http://localhost:3000,https://example.com';
 
-    expect(getCorsAllowlist()).toEqual([
-      'http://localhost:3000',
-      'https://example.com',
-    ]);
+    expect(getCorsAllowlist()).toEqual(['http://localhost:3000', 'https://example.com']);
   });
 
   it('allows an exact matching origin and enables credentials', () => {
@@ -58,7 +55,7 @@ describe('corsHelpers', () => {
       },
     };
 
-    delegate(req, (error) => {
+    delegate(req, error => {
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toBe('Origin not allowed by CORS');
       expect(error.status).toBe(403);

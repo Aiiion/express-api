@@ -14,7 +14,7 @@ export const logError = async (err, context = {}) => {
     if (!ErrorLog) return;
 
     const message = err instanceof Error ? err.message : String(err);
-    const stack_trace = err instanceof Error ? (err.stack || null) : null;
+    const stack_trace = err instanceof Error ? err.stack || null : null;
 
     await ErrorLog.create({
       message,

@@ -35,9 +35,7 @@ describe('pollReferenceStations', () => {
 
   it('counts succeeded and failed stations correctly', async () => {
     // First station fails, rest succeed
-    allWeatherMock
-      .mockRejectedValueOnce(new Error('timeout'))
-      .mockResolvedValue({});
+    allWeatherMock.mockRejectedValueOnce(new Error('timeout')).mockResolvedValue({});
 
     const result = await pollReferenceStations();
 
@@ -47,9 +45,7 @@ describe('pollReferenceStations', () => {
   });
 
   it('continues polling remaining stations after one fails', async () => {
-    allWeatherMock
-      .mockRejectedValueOnce(new Error('timeout'))
-      .mockResolvedValue({});
+    allWeatherMock.mockRejectedValueOnce(new Error('timeout')).mockResolvedValue({});
 
     await pollReferenceStations();
 

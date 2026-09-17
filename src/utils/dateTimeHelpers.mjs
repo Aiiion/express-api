@@ -6,7 +6,12 @@ export const translateEpochDate = (epoch, timezone) => {
 
   if (typeof timezone === 'string') {
     // en-CA locale produces "YYYY-MM-DD" which sorts lexicographically
-    return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date);
   }
 
   if (typeof timezone === 'number') {
@@ -43,7 +48,7 @@ export const translateEpochTime = (epoch, timezone) => {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
-      hourCycle: 'h23'
+      hourCycle: 'h23',
     });
     const timeParts = timeStr.match(/(\d{2}):(\d{2})/);
     if (timeParts) return `${timeParts[1]}:${timeParts[2]}`;

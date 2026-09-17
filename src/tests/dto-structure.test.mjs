@@ -1,20 +1,17 @@
+import fmiDto from '../dtos/fmi.dto.mjs';
+import metDto from '../dtos/met.dto.mjs';
+import openWeatherMapsDto from '../dtos/openWeatherMaps.dto.mjs';
+import smhiDto from '../dtos/smhi.dto.mjs';
+import weatherApiDto from '../dtos/weatherApi.dto.mjs';
+import { fmiWarningsFixtureParsed } from '../fixtures/fmi.fixture.mjs';
+import { metForecast } from '../fixtures/met.fixture.mjs';
+import { weather, weatherForecast } from '../fixtures/openWeatherMaps.fixture.mjs';
+import { smhiForecast } from '../fixtures/smhi.fixture.mjs';
 import {
-  weather,
-  weatherForecast,
-} from "../fixtures/openWeatherMaps.fixture.mjs";
-import { 
+  weatherForecast as weatherApiForecast,
   weather as weatherApiWeather,
-  weatherForecast as weatherApiForecast
-} from "../fixtures/weatherApi.fixture.mjs";
-import { smhiForecast } from "../fixtures/smhi.fixture.mjs";
-import { metForecast } from "../fixtures/met.fixture.mjs";
-import { fmiWarningsFixtureParsed } from "../fixtures/fmi.fixture.mjs";
-import openWeatherMapsDto from "../dtos/openWeatherMaps.dto.mjs";
-import weatherApiDto from "../dtos/weatherApi.dto.mjs";
-import { devError } from "../utils/logger.mjs";
-import smhiDto from "../dtos/smhi.dto.mjs";
-import metDto from "../dtos/met.dto.mjs";
-import fmiDto from "../dtos/fmi.dto.mjs";
+} from '../fixtures/weatherApi.fixture.mjs';
+import { devError } from '../utils/logger.mjs';
 
 /**
  * Recursively extracts all keys from an object to get its structure
@@ -24,15 +21,15 @@ import fmiDto from "../dtos/fmi.dto.mjs";
  */
 const getObjectStructure = (obj, prefix = '') => {
   const keys = new Set();
-  
+
   if (obj === null || obj === undefined) {
     return keys;
   }
-  
+
   if (typeof obj !== 'object') {
     return keys;
   }
-  
+
   if (Array.isArray(obj)) {
     // For arrays, examine the first element to determine structure
     if (obj.length > 0) {
@@ -41,19 +38,19 @@ const getObjectStructure = (obj, prefix = '') => {
     }
     return keys;
   }
-  
+
   // Handle objects
   Object.keys(obj).forEach(key => {
     const fullKey = prefix ? `${prefix}.${key}` : key;
     keys.add(fullKey);
-    
+
     const value = obj[key];
     if (value !== null && typeof value === 'object') {
       const nestedKeys = getObjectStructure(value, fullKey);
       nestedKeys.forEach(nestedKey => keys.add(nestedKey));
     }
   });
-  
+
   return keys;
 };
 
@@ -63,14 +60,15 @@ const getObjectStructure = (obj, prefix = '') => {
 const compareStructures = (keys1, keys2, name1, name2) => {
   const onlyIn1 = [...keys1].filter(key => !keys2.has(key));
   const onlyIn2 = [...keys2].filter(key => !keys1.has(key));
-  
+
   return {
     areEqual: onlyIn1.length === 0 && onlyIn2.length === 0,
     onlyIn1,
     onlyIn2,
-    report: onlyIn1.length === 0 && onlyIn2.length === 0 
-      ? `Structures match perfectly` 
-      : `Keys only in ${name1}: [${onlyIn1.join(', ')}], Keys only in ${name2}: [${onlyIn2.join(', ')}]`
+    report:
+      onlyIn1.length === 0 && onlyIn2.length === 0
+        ? `Structures match perfectly`
+        : `Keys only in ${name1}: [${onlyIn1.join(', ')}], Keys only in ${name2}: [${onlyIn2.join(', ')}]`,
   };
 };
 
@@ -79,21 +77,16 @@ describe('DTO Structure Consistency', () => {
     it('should have the same structure across openWeatherMaps and weatherApi DTOs', () => {
       const owmResult = openWeatherMapsDto.currentWeather(weather.data);
       const weatherApiResult = weatherApiDto.currentWeather(weatherApiWeather.data);
-      
+
       const owmKeys = getObjectStructure(owmResult);
       const weatherApiKeys = getObjectStructure(weatherApiResult);
-      
-      const comparison = compareStructures(
-        owmKeys, 
-        weatherApiKeys, 
-        'openWeatherMaps', 
-        'weatherApi'
-      );
-      
+
+      const comparison = compareStructures(owmKeys, weatherApiKeys, 'openWeatherMaps', 'weatherApi');
+
       if (!comparison.areEqual) {
         devError(comparison.report);
       }
-      
+
       expect(comparison.areEqual).toBe(true);
     });
 
@@ -134,45 +127,35 @@ describe('DTO Structure Consistency', () => {
     it('should have the same structure across openWeatherMaps and weatherApi DTOs', () => {
       const owmResult = openWeatherMapsDto.forecastWeather(weatherForecast.data);
       const weatherApiResult = weatherApiDto.forecastWeather(weatherApiForecast.data);
-      
+
       // For forecast, we need to compare the structure of the items within the list
       // not the day names themselves (those will vary based on when the forecast was fetched)
       const owmDays = Object.keys(owmResult.list);
       const weatherApiDays = Object.keys(weatherApiResult.list);
-      
+
       expect(owmDays.length).toBeGreaterThan(0);
       expect(weatherApiDays.length).toBeGreaterThan(0);
-      
+
       // Compare the structure of the first forecast day from each provider
       const owmKeys = getObjectStructure(owmResult.list[owmDays[0]]);
       const weatherApiKeys = getObjectStructure(weatherApiResult.list[weatherApiDays[0]]);
-      
+
       // Also compare the top-level structure (excluding the specific day names)
       const owmTopLevel = new Set(['list', 'provider']);
       const weatherApiTopLevel = new Set(['list', 'provider']);
-      
-      const topLevelComparison = compareStructures(
-        owmTopLevel,
-        weatherApiTopLevel,
-        'openWeatherMaps',
-        'weatherApi'
-      );
-      
-      const dayStructureComparison = compareStructures(
-        owmKeys, 
-        weatherApiKeys, 
-        'openWeatherMaps', 
-        'weatherApi'
-      );
-      
+
+      const topLevelComparison = compareStructures(owmTopLevel, weatherApiTopLevel, 'openWeatherMaps', 'weatherApi');
+
+      const dayStructureComparison = compareStructures(owmKeys, weatherApiKeys, 'openWeatherMaps', 'weatherApi');
+
       if (!topLevelComparison.areEqual) {
         devError('Top level:', topLevelComparison.report);
       }
-      
+
       if (!dayStructureComparison.areEqual) {
         devError('Day structure:', dayStructureComparison.report);
       }
-      
+
       expect(topLevelComparison.areEqual).toBe(true);
       expect(dayStructureComparison.areEqual).toBe(true);
     });
@@ -194,7 +177,7 @@ describe('DTO Structure Consistency', () => {
         new Set(Object.keys(owmResult)),
         new Set(Object.keys(smhiResult)),
         'openWeatherMaps',
-        'smhi'
+        'smhi',
       );
 
       const dayStructureComparison = compareStructures(owmKeys, smhiKeys, 'openWeatherMaps', 'smhi');
@@ -228,7 +211,7 @@ describe('DTO Structure Consistency', () => {
         new Set(Object.keys(owmResult)),
         new Set(Object.keys(metResult)),
         'openWeatherMaps',
-        'met'
+        'met',
       );
 
       const dayStructureComparison = compareStructures(owmKeys, metKeys, 'openWeatherMaps', 'met');
@@ -251,76 +234,72 @@ describe('DTO Structure Consistency', () => {
       // Mock data for weatherWarnings since fixtures don't exist
       const weatherApiWarningData = {
         alerts: {
-          alert: [{
-            headline: "Test Warning",
-            severity: "Moderate",
-            instruction: "Take precautions",
-            desc: "Test description",
-            event: "Storm"
-          }]
-        }
+          alert: [
+            {
+              headline: 'Test Warning',
+              severity: 'Moderate',
+              instruction: 'Take precautions',
+              desc: 'Test description',
+              event: 'Storm',
+            },
+          ],
+        },
       };
 
       const smhiWarningData = {
         inner: {
-          level: "YELLOW",
-          en: "Test Warning",
-          type: "Storm",
-          warningsCount: 1
-        }
+          level: 'YELLOW',
+          en: 'Test Warning',
+          type: 'Storm',
+          warningsCount: 1,
+        },
       };
 
       const weatherApiResult = weatherApiDto.weatherWarnings(weatherApiWarningData);
       const smhiResult = smhiDto.weatherWarnings(smhiWarningData);
-      
+
       // Get full structure but then filter out the 'raw' field and its nested keys
       // since 'raw' intentionally stores the original API response which differs
       const weatherApiKeys = getObjectStructure(weatherApiResult);
       const smhiKeys = getObjectStructure(smhiResult);
-      
+
       // Filter out 'raw' and any nested keys under 'raw'
-      const filterRawKeys = (keys) => {
+      const filterRawKeys = keys => {
         return new Set([...keys].filter(key => !key.startsWith('raw.') && key !== 'raw'));
       };
-      
+
       const weatherApiKeysFiltered = filterRawKeys(weatherApiKeys);
       const smhiKeysFiltered = filterRawKeys(smhiKeys);
-      
-      const comparison = compareStructures(
-        weatherApiKeysFiltered, 
-        smhiKeysFiltered, 
-        'weatherApi', 
-        'smhi'
-      );
-      
+
+      const comparison = compareStructures(weatherApiKeysFiltered, smhiKeysFiltered, 'weatherApi', 'smhi');
+
       if (!comparison.areEqual) {
         devError(comparison.report);
       }
-      
+
       expect(comparison.areEqual).toBe(true);
     });
 
     it('should have the same structure across smhi and fmi DTOs', () => {
       const smhiWarningData = {
         inner: {
-          level: "YELLOW",
-          en: "Test Warning",
-          type: "Storm",
-          warningsCount: 1
-        }
+          level: 'YELLOW',
+          en: 'Test Warning',
+          type: 'Storm',
+          warningsCount: 1,
+        },
       };
 
       const smhiResult = smhiDto.weatherWarnings(smhiWarningData);
       const fmiResult = fmiDto.weatherWarnings(fmiWarningsFixtureParsed);
 
-      const filterRawKeys = (keys) =>
-        new Set([...keys].filter(key => !key.startsWith('raw.') && key !== 'raw'));
+      const filterRawKeys = keys => new Set([...keys].filter(key => !key.startsWith('raw.') && key !== 'raw'));
 
       const comparison = compareStructures(
         filterRawKeys(getObjectStructure(smhiResult)),
         filterRawKeys(getObjectStructure(fmiResult)),
         'smhi',
-        'fmi'
+        'fmi',
       );
 
       if (!comparison.areEqual) {

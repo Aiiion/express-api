@@ -1,7 +1,7 @@
 import { METEOALARM_FI_URL } from '../../utils/constants.mjs';
+import { providerFetch } from '../../utils/providerFetch.mjs';
 import { parseXml } from '../../utils/xml.mjs';
 import { withCache } from '../infrastructure/redis.service.mjs';
-import { providerFetch } from '../../utils/providerFetch.mjs';
 
 const FMI_WARNINGS_CACHE_TTL = 600; // 10 minutes
 

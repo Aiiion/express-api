@@ -29,7 +29,14 @@ npm run db:seed          # run seeders
 npm run db:seed:undo     # undo seeders
 ```
 
-There are no lint or build scripts.
+**Lint / format** — Biome (`biome.json`) is the single linter, formatter, and import sorter; CI runs `biome ci` as a separate job:
+```bash
+npm run lint             # check formatting, lint rules, and import order (no changes)
+npm run lint:fix         # apply safe fixes + formatting
+npm run format           # formatting only
+```
+
+There is no build script.
 
 ## Architecture
 

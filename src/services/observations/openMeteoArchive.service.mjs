@@ -9,7 +9,7 @@ const HOURLY_VARS = [
   'surface_pressure',
 ].join(',');
 
-const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+const avg = arr => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
 
 /**
  * Returns observed daily stats from Open-Meteo ERA5 reanalysis for any global coordinate.
@@ -40,7 +40,7 @@ const openMeteoArchiveService = {
     const h = json.hourly;
     if (!h) return null;
 
-    const validValues = (arr) => (arr ?? []).filter(v => v != null && !isNaN(v));
+    const validValues = arr => (arr ?? []).filter(v => v != null && !isNaN(v));
     const precips = validValues(h.precipitation);
 
     return {

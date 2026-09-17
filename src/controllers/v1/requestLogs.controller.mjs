@@ -1,5 +1,5 @@
-import { Op } from 'sequelize';
 import { matchedData } from 'express-validator';
+import { Op } from 'sequelize';
 import { sequelize } from '../../models/index.mjs';
 
 const LOGS_PER_PAGE = 100;
@@ -19,7 +19,7 @@ export const index = async (req, res) => {
     where[Op.or] = [
       { route: { [Op.iLike]: pattern } },
       { ip: { [Op.iLike]: pattern } },
-      { description: { [Op.iLike]: pattern } }
+      { description: { [Op.iLike]: pattern } },
     ];
   }
 
@@ -28,7 +28,7 @@ export const index = async (req, res) => {
     where,
     limit: LOGS_PER_PAGE,
     offset,
-    order: [['created_at', 'DESC']]
+    order: [['created_at', 'DESC']],
   });
 
   const totalPages = Math.ceil(count / LOGS_PER_PAGE);
@@ -39,7 +39,7 @@ export const index = async (req, res) => {
       page,
       perPage: LOGS_PER_PAGE,
       totalPages,
-      totalCount: count
-    }
+      totalCount: count,
+    },
   });
 };

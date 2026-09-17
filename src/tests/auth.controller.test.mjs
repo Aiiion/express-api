@@ -23,12 +23,12 @@ const createResponse = () => {
     cookie: jest.fn(),
   };
 
-  response.status.mockImplementation((code) => {
+  response.status.mockImplementation(code => {
     response.statusCode = code;
     return response;
   });
 
-  response.send.mockImplementation((body) => {
+  response.send.mockImplementation(body => {
     response.body = body;
     return response;
   });
@@ -77,17 +77,24 @@ describe('auth controller Redis sessions', () => {
     const sessionToken = 'test-session';
     const res = createResponse();
 
-    await setJsonValue(`auth_session_${sessionToken}`, {
-      code: '123456',
-      createdAt: Date.now(),
-    }, 600);
-
-    await verifyCode({
-      body: {
-        sessionToken,
-        code: '000000',
+    await setJsonValue(
+      `auth_session_${sessionToken}`,
+      {
+        code: '123456',
+        createdAt: Date.now(),
       },
-    }, res);
+      600,
+    );
+
+    await verifyCode(
+      {
+        body: {
+          sessionToken,
+          code: '000000',
+        },
+      },
+      res,
+    );
 
     expect(res.statusCode).toBe(401);
     expect(res.body.message).toBe('Invalid verification code');
@@ -100,17 +107,24 @@ describe('auth controller Redis sessions', () => {
     const sessionToken = 'valid-session';
     const res = createResponse();
 
-    await setJsonValue(`auth_session_${sessionToken}`, {
-      code: '654321',
-      createdAt: Date.now(),
-    }, 600);
-
-    await verifyCode({
-      body: {
-        sessionToken,
+    await setJsonValue(
+      `auth_session_${sessionToken}`,
+      {
         code: '654321',
+        createdAt: Date.now(),
       },
-    }, res);
+      600,
+    );
+
+    await verifyCode(
+      {
+        body: {
+          sessionToken,
+          code: '654321',
+        },
+      },
+      res,
+    );
 
     expect(res.statusCode).toBe(200);
     expect(res.cookie).toHaveBeenCalledTimes(1);

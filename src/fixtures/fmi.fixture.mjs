@@ -6,8 +6,15 @@ export const fmiWarningsFixtureParsed = {
       {
         geocode: [{ valueName: 'EMMA_ID', value: 'FI028' }],
         link: [
-          { '@_title': 'Etelä-Pohjanmaa, Keski-Pohjanmaa', '@_href': 'https://meteoalarm.org?geocode=EMMA_ID:FI028', '@_hreflang': 'en' },
-          { '@_type': 'application/cap+xml', '@_href': 'https://feeds.meteoalarm.org/api/v1/warnings/feeds-finland/93826da5-26d9-41a2-9169-9aaaceeb047c' },
+          {
+            '@_title': 'Etelä-Pohjanmaa, Keski-Pohjanmaa',
+            '@_href': 'https://meteoalarm.org?geocode=EMMA_ID:FI028',
+            '@_hreflang': 'en',
+          },
+          {
+            '@_type': 'application/cap+xml',
+            '@_href': 'https://feeds.meteoalarm.org/api/v1/warnings/feeds-finland/93826da5-26d9-41a2-9169-9aaaceeb047c',
+          },
         ],
         areaDesc: 'Etelä-Pohjanmaa, Keski-Pohjanmaa',
         event: 'Wildfire warning',
@@ -30,8 +37,15 @@ export const fmiWarningsFixtureParsed = {
       {
         geocode: [{ valueName: 'EMMA_ID', value: 'FI028' }],
         link: [
-          { '@_title': 'Varsinais-Suomi, Satakunta, Pirkanmaa, Etelä-Pohjanmaa, Keski-Pohjanmaa', '@_href': 'https://meteoalarm.org?geocode=EMMA_ID:FI028', '@_hreflang': 'en' },
-          { '@_type': 'application/cap+xml', '@_href': 'https://feeds.meteoalarm.org/api/v1/warnings/feeds-finland/f62bba1e-dce4-4a80-8d2f-2b494c53979f' },
+          {
+            '@_title': 'Varsinais-Suomi, Satakunta, Pirkanmaa, Etelä-Pohjanmaa, Keski-Pohjanmaa',
+            '@_href': 'https://meteoalarm.org?geocode=EMMA_ID:FI028',
+            '@_hreflang': 'en',
+          },
+          {
+            '@_type': 'application/cap+xml',
+            '@_href': 'https://feeds.meteoalarm.org/api/v1/warnings/feeds-finland/f62bba1e-dce4-4a80-8d2f-2b494c53979f',
+          },
         ],
         areaDesc: 'Varsinais-Suomi, Satakunta, Pirkanmaa, Etelä-Pohjanmaa, Keski-Pohjanmaa',
         event: 'Wildfire warning',
@@ -48,7 +62,8 @@ export const fmiWarningsFixtureParsed = {
         identifier: '2.49.0.0.246.0.FI.260622172438.QJvLFmh59Tme31NJumD0',
         published: '2026-06-22T17:24:38Z',
         id: 'https://feeds.meteoalarm.org/api/v1/warnings/feeds-finland/f62bba1e-dce4-4a80-8d2f-2b494c53979f?index_info=2&index_area=0&index_geocode=4',
-        title: 'Yellow Forest-fire Warning issued for Finland - Varsinais-Suomi, Satakunta, Pirkanmaa, Etelä-Pohjanmaa, Keski-Pohjanmaa',
+        title:
+          'Yellow Forest-fire Warning issued for Finland - Varsinais-Suomi, Satakunta, Pirkanmaa, Etelä-Pohjanmaa, Keski-Pohjanmaa',
         updated: '2026-06-22T17:24:38Z',
       },
     ],

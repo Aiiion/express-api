@@ -1,26 +1,29 @@
-import express from 'express';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import dotenv from 'dotenv';
+import express from 'express';
 import helmet from 'helmet';
-import routes from "./routes/index.route.mjs";
-import { connect, closePool } from './services/infrastructure/db.service.mjs';
-import { sequelize } from './models/index.mjs';
+import { registerCronJobs } from './cron.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
-import initRequestLog from './models/requestLog.model.mjs';
 import initErrorLog from './models/errorLog.model.mjs';
-import initProviderForecastSnapshot from './models/providerForecastSnapshot.model.mjs';
+import { sequelize } from './models/index.mjs';
 import initProviderAccuracyScore from './models/providerAccuracyScore.model.mjs';
+import initProviderForecastSnapshot from './models/providerForecastSnapshot.model.mjs';
+import initRequestLog from './models/requestLog.model.mjs';
+import routes from './routes/index.route.mjs';
+import { closePool, connect } from './services/infrastructure/db.service.mjs';
 import { closeRedisConnection, ensureRedisConnection } from './services/infrastructure/redis.service.mjs';
-import { registerCronJobs } from './cron.mjs';
+
 dotenv.config();
 
 const app = express();
 
 app.set('trust proxy', 1);
-app.use(helmet({
+app.use(
+  helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(logRequest());
@@ -50,7 +53,7 @@ const start = async (listenPort = port) => {
         console.log(`server running on port ${listenPort}.`);
         resolve(server);
       });
-      server.on('error', (err) => reject(err));
+      server.on('error', err => reject(err));
     });
   } catch (err) {
     console.error('Failed to start app due to DB error', err);
@@ -61,7 +64,7 @@ const start = async (listenPort = port) => {
 const stop = async () => {
   if (server && typeof server.close === 'function') {
     await new Promise((resolve, reject) => {
-      server.close((err) => (err ? reject(err) : resolve()));
+      server.close(err => (err ? reject(err) : resolve()));
     });
     server = undefined;
   }

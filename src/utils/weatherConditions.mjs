@@ -16,32 +16,32 @@
  * providers can make.
  */
 export const CONDITIONS = {
-    clear: { group: 'cloud', rank: 0 },
-    partly_cloudy: { group: 'cloud', rank: 1 },
-    cloudy: { group: 'cloud', rank: 2 },
-    overcast: { group: 'cloud', rank: 3 },
+  clear: { group: 'cloud', rank: 0 },
+  partly_cloudy: { group: 'cloud', rank: 1 },
+  cloudy: { group: 'cloud', rank: 2 },
+  overcast: { group: 'cloud', rank: 3 },
 
-    fog: { group: 'fog', rank: 0 },
+  fog: { group: 'fog', rank: 0 },
 
-    drizzle: { group: 'rain', rank: 0 },
-    light_rain: { group: 'rain', rank: 1 },
-    rain: { group: 'rain', rank: 2 },
-    heavy_rain: { group: 'rain', rank: 3 },
+  drizzle: { group: 'rain', rank: 0 },
+  light_rain: { group: 'rain', rank: 1 },
+  rain: { group: 'rain', rank: 2 },
+  heavy_rain: { group: 'rain', rank: 3 },
 
-    freezing_rain: { group: 'freezing', rank: 0 },
+  freezing_rain: { group: 'freezing', rank: 0 },
 
-    light_sleet: { group: 'sleet', rank: 0 },
-    sleet: { group: 'sleet', rank: 1 },
-    heavy_sleet: { group: 'sleet', rank: 2 },
+  light_sleet: { group: 'sleet', rank: 0 },
+  sleet: { group: 'sleet', rank: 1 },
+  heavy_sleet: { group: 'sleet', rank: 2 },
 
-    light_snow: { group: 'snow', rank: 0 },
-    snow: { group: 'snow', rank: 1 },
-    heavy_snow: { group: 'snow', rank: 2 },
+  light_snow: { group: 'snow', rank: 0 },
+  snow: { group: 'snow', rank: 1 },
+  heavy_snow: { group: 'snow', rank: 2 },
 
-    hail: { group: 'hail', rank: 0 },
-    thunderstorm: { group: 'thunder', rank: 0 },
+  hail: { group: 'hail', rank: 0 },
+  thunderstorm: { group: 'thunder', rank: 0 },
 
-    unknown: { group: 'unknown', rank: 0 },
+  unknown: { group: 'unknown', rank: 0 },
 };
 
 /**
@@ -56,9 +56,9 @@ export const GROUP_SEVERITY = ['unknown', 'cloud', 'fog', 'rain', 'sleet', 'snow
 // group -> { rank: code }, built once so the aggregator can resolve the
 // median rank of a group back to a condition code.
 const BY_GROUP_RANK = Object.entries(CONDITIONS).reduce((acc, [code, { group, rank }]) => {
-    acc[group] ??= {};
-    acc[group][rank] = code;
-    return acc;
+  acc[group] ??= {};
+  acc[group][rank] = code;
+  return acc;
 }, {});
 
 /**
@@ -77,69 +77,96 @@ export const conditionFor = (group, rank) => BY_GROUP_RANK[group]?.[rank] ?? nul
  * @param {number|null|undefined} id
  * @returns {string|null} Condition code, or null when no id was supplied
  */
-export const conditionFromOwmId = (id) => {
-    if (typeof id !== 'number') return null;
-    if (id >= 200 && id < 300) return 'thunderstorm';
-    if (id >= 300 && id < 400) return 'drizzle';
-    if (id === 511) return 'freezing_rain';
-    if (id >= 500 && id < 600) {
-        if (id === 500 || id === 520) return 'light_rain';
-        if (id === 502 || id === 503 || id === 504 || id === 522 || id === 531) return 'heavy_rain';
-        return 'rain';
-    }
-    if (id >= 600 && id < 700) {
-        if (id >= 611 && id <= 616) return 'sleet';
-        if (id === 600 || id === 620) return 'light_snow';
-        if (id === 602 || id === 622) return 'heavy_snow';
-        return 'snow';
-    }
-    // 701-762 are mist/smoke/haze/dust/fog/sand/ash — all "can't see far".
-    // 771 (squall) and 781 (tornado) have no equivalent in the shared set.
-    if (id >= 700 && id < 770) return 'fog';
-    if (id === 800) return 'clear';
-    if (id === 801 || id === 802) return 'partly_cloudy';
-    if (id === 803) return 'cloudy';
-    if (id === 804) return 'overcast';
-    return 'unknown';
+export const conditionFromOwmId = id => {
+  if (typeof id !== 'number') return null;
+  if (id >= 200 && id < 300) return 'thunderstorm';
+  if (id >= 300 && id < 400) return 'drizzle';
+  if (id === 511) return 'freezing_rain';
+  if (id >= 500 && id < 600) {
+    if (id === 500 || id === 520) return 'light_rain';
+    if (id === 502 || id === 503 || id === 504 || id === 522 || id === 531) return 'heavy_rain';
+    return 'rain';
+  }
+  if (id >= 600 && id < 700) {
+    if (id >= 611 && id <= 616) return 'sleet';
+    if (id === 600 || id === 620) return 'light_snow';
+    if (id === 602 || id === 622) return 'heavy_snow';
+    return 'snow';
+  }
+  // 701-762 are mist/smoke/haze/dust/fog/sand/ash — all "can't see far".
+  // 771 (squall) and 781 (tornado) have no equivalent in the shared set.
+  if (id >= 700 && id < 770) return 'fog';
+  if (id === 800) return 'clear';
+  if (id === 801 || id === 802) return 'partly_cloudy';
+  if (id === 803) return 'cloudy';
+  if (id === 804) return 'overcast';
+  return 'unknown';
 };
 
 // https://www.weatherapi.com/docs/weather_conditions.json
 const WEATHERAPI_CODES = {
-    1000: 'clear',
-    1003: 'partly_cloudy',
-    1006: 'cloudy',
-    1009: 'overcast',
-    // 1012-1048 are haze/dust/smoke/smog variants — reduced visibility, the
-    // same bucket OWM's 7xx codes land in
-    1012: 'fog', 1015: 'fog', 1018: 'fog', 1021: 'fog', 1024: 'fog', 1027: 'fog',
-    1030: 'fog',            // mist
-    1033: 'fog', 1036: 'fog', 1039: 'fog', 1042: 'fog', 1045: 'fog', 1048: 'fog',
-    1063: 'light_rain',     // patchy rain possible
-    1066: 'light_snow',
-    1069: 'light_sleet',
-    1072: 'freezing_rain',
-    1087: 'thunderstorm',
-    1114: 'snow',           // blowing snow
-    1117: 'heavy_snow',     // blizzard
-    1135: 'fog',
-    1147: 'fog',            // freezing fog
-    1150: 'drizzle', 1153: 'drizzle',
-    1168: 'freezing_rain', 1171: 'freezing_rain',
-    1180: 'light_rain', 1183: 'light_rain',
-    1186: 'rain', 1189: 'rain',
-    1192: 'heavy_rain', 1195: 'heavy_rain',
-    1198: 'freezing_rain', 1201: 'freezing_rain',
-    1204: 'light_sleet', 1207: 'heavy_sleet',
-    1210: 'light_snow', 1213: 'light_snow',
-    1216: 'snow', 1219: 'snow',
-    1222: 'heavy_snow', 1225: 'heavy_snow',
-    1237: 'hail',           // ice pellets
-    1240: 'light_rain', 1243: 'rain', 1246: 'heavy_rain',
-    1249: 'light_sleet', 1252: 'sleet',
-    1255: 'light_snow', 1258: 'snow',
-    1261: 'hail', 1264: 'hail',
-    1273: 'thunderstorm', 1276: 'thunderstorm',
-    1279: 'thunderstorm', 1282: 'thunderstorm',
+  1000: 'clear',
+  1003: 'partly_cloudy',
+  1006: 'cloudy',
+  1009: 'overcast',
+  // 1012-1048 are haze/dust/smoke/smog variants — reduced visibility, the
+  // same bucket OWM's 7xx codes land in
+  1012: 'fog',
+  1015: 'fog',
+  1018: 'fog',
+  1021: 'fog',
+  1024: 'fog',
+  1027: 'fog',
+  1030: 'fog', // mist
+  1033: 'fog',
+  1036: 'fog',
+  1039: 'fog',
+  1042: 'fog',
+  1045: 'fog',
+  1048: 'fog',
+  1063: 'light_rain', // patchy rain possible
+  1066: 'light_snow',
+  1069: 'light_sleet',
+  1072: 'freezing_rain',
+  1087: 'thunderstorm',
+  1114: 'snow', // blowing snow
+  1117: 'heavy_snow', // blizzard
+  1135: 'fog',
+  1147: 'fog', // freezing fog
+  1150: 'drizzle',
+  1153: 'drizzle',
+  1168: 'freezing_rain',
+  1171: 'freezing_rain',
+  1180: 'light_rain',
+  1183: 'light_rain',
+  1186: 'rain',
+  1189: 'rain',
+  1192: 'heavy_rain',
+  1195: 'heavy_rain',
+  1198: 'freezing_rain',
+  1201: 'freezing_rain',
+  1204: 'light_sleet',
+  1207: 'heavy_sleet',
+  1210: 'light_snow',
+  1213: 'light_snow',
+  1216: 'snow',
+  1219: 'snow',
+  1222: 'heavy_snow',
+  1225: 'heavy_snow',
+  1237: 'hail', // ice pellets
+  1240: 'light_rain',
+  1243: 'rain',
+  1246: 'heavy_rain',
+  1249: 'light_sleet',
+  1252: 'sleet',
+  1255: 'light_snow',
+  1258: 'snow',
+  1261: 'hail',
+  1264: 'hail',
+  1273: 'thunderstorm',
+  1276: 'thunderstorm',
+  1279: 'thunderstorm',
+  1282: 'thunderstorm',
 };
 
 /**
@@ -147,25 +174,42 @@ const WEATHERAPI_CODES = {
  * @param {number|null|undefined} code
  * @returns {string|null} Condition code, or null when no code was supplied
  */
-export const conditionFromWeatherApiCode = (code) => {
-    if (typeof code !== 'number') return null;
-    return WEATHERAPI_CODES[code] ?? 'unknown';
+export const conditionFromWeatherApiCode = code => {
+  if (typeof code !== 'number') return null;
+  return WEATHERAPI_CODES[code] ?? 'unknown';
 };
 
 // https://opendata.smhi.se/metfcst/snow1gv1/parameters — Wsymb2 1-27.
 // The shower codes (8-17) map onto the same intensities as their steady
 // equivalents (18-27); see the note on CONDITIONS above.
 const SMHI_SYMBOLS = {
-    1: 'clear', 2: 'partly_cloudy', 3: 'partly_cloudy', 4: 'partly_cloudy',
-    5: 'cloudy', 6: 'overcast', 7: 'fog',
-    8: 'light_rain', 9: 'rain', 10: 'heavy_rain',
-    11: 'thunderstorm',
-    12: 'light_sleet', 13: 'sleet', 14: 'heavy_sleet',
-    15: 'light_snow', 16: 'snow', 17: 'heavy_snow',
-    18: 'light_rain', 19: 'rain', 20: 'heavy_rain',
-    21: 'thunderstorm',
-    22: 'light_sleet', 23: 'sleet', 24: 'heavy_sleet',
-    25: 'light_snow', 26: 'snow', 27: 'heavy_snow',
+  1: 'clear',
+  2: 'partly_cloudy',
+  3: 'partly_cloudy',
+  4: 'partly_cloudy',
+  5: 'cloudy',
+  6: 'overcast',
+  7: 'fog',
+  8: 'light_rain',
+  9: 'rain',
+  10: 'heavy_rain',
+  11: 'thunderstorm',
+  12: 'light_sleet',
+  13: 'sleet',
+  14: 'heavy_sleet',
+  15: 'light_snow',
+  16: 'snow',
+  17: 'heavy_snow',
+  18: 'light_rain',
+  19: 'rain',
+  20: 'heavy_rain',
+  21: 'thunderstorm',
+  22: 'light_sleet',
+  23: 'sleet',
+  24: 'heavy_sleet',
+  25: 'light_snow',
+  26: 'snow',
+  27: 'heavy_snow',
 };
 
 /**
@@ -173,9 +217,9 @@ const SMHI_SYMBOLS = {
  * @param {number|null|undefined} symbolCode
  * @returns {string|null} Condition code, or null when no symbol was supplied
  */
-export const conditionFromSmhiSymbol = (symbolCode) => {
-    if (typeof symbolCode !== 'number') return null;
-    return SMHI_SYMBOLS[symbolCode] ?? 'unknown';
+export const conditionFromSmhiSymbol = symbolCode => {
+  if (typeof symbolCode !== 'number') return null;
+  return SMHI_SYMBOLS[symbolCode] ?? 'unknown';
 };
 
 /**
@@ -187,30 +231,30 @@ export const conditionFromSmhiSymbol = (symbolCode) => {
  * @param {string|null|undefined} symbolCode
  * @returns {string|null} Condition code, or null when no symbol was supplied
  */
-export const conditionFromMetSymbol = (symbolCode) => {
-    if (!symbolCode) return null;
-    const code = symbolCode.toLowerCase().replace(/_(day|night|polartwilight)$/, '');
+export const conditionFromMetSymbol = symbolCode => {
+  if (!symbolCode) return null;
+  const code = symbolCode.toLowerCase().replace(/_(day|night|polartwilight)$/, '');
 
-    // "…andthunder" variants exist for most precipitation types; thunder wins.
-    if (code.includes('thunder')) return 'thunderstorm';
+  // "…andthunder" variants exist for most precipitation types; thunder wins.
+  if (code.includes('thunder')) return 'thunderstorm';
 
-    const intensity = code.startsWith('heavy') ? 'heavy' : code.startsWith('light') ? 'light' : null;
-    // Sleet before snow before rain — "lightsleetshowers" contains none of the
-    // others, but checking in the wrong order would still be fragile.
-    if (code.includes('sleet')) {
-        return intensity === 'heavy' ? 'heavy_sleet' : intensity === 'light' ? 'light_sleet' : 'sleet';
-    }
-    if (code.includes('snow')) {
-        return intensity === 'heavy' ? 'heavy_snow' : intensity === 'light' ? 'light_snow' : 'snow';
-    }
-    if (code.includes('rain')) {
-        return intensity === 'heavy' ? 'heavy_rain' : intensity === 'light' ? 'light_rain' : 'rain';
-    }
-    if (code === 'fog') return 'fog';
-    if (code === 'clearsky') return 'clear';
-    if (code === 'fair' || code === 'partlycloudy') return 'partly_cloudy';
-    if (code === 'cloudy') return 'cloudy';
-    return 'unknown';
+  const intensity = code.startsWith('heavy') ? 'heavy' : code.startsWith('light') ? 'light' : null;
+  // Sleet before snow before rain — "lightsleetshowers" contains none of the
+  // others, but checking in the wrong order would still be fragile.
+  if (code.includes('sleet')) {
+    return intensity === 'heavy' ? 'heavy_sleet' : intensity === 'light' ? 'light_sleet' : 'sleet';
+  }
+  if (code.includes('snow')) {
+    return intensity === 'heavy' ? 'heavy_snow' : intensity === 'light' ? 'light_snow' : 'snow';
+  }
+  if (code.includes('rain')) {
+    return intensity === 'heavy' ? 'heavy_rain' : intensity === 'light' ? 'light_rain' : 'rain';
+  }
+  if (code === 'fog') return 'fog';
+  if (code === 'clearsky') return 'clear';
+  if (code === 'fair' || code === 'partlycloudy') return 'partly_cloudy';
+  if (code === 'cloudy') return 'cloudy';
+  return 'unknown';
 };
 
 // Shared condition -> WeatherAPI icon number, so the aggregator can emit an
@@ -220,24 +264,24 @@ export const conditionFromMetSymbol = (symbolCode) => {
 // where several codes collapse into one shared condition the steady,
 // non-"patchy" variant is used.
 const WEATHERAPI_ICONS = {
-    clear: 113,          // 1000
-    partly_cloudy: 116,  // 1003
-    cloudy: 119,         // 1006
-    overcast: 122,       // 1009
-    fog: 248,            // 1135
-    drizzle: 266,        // 1153 light drizzle
-    light_rain: 296,     // 1183
-    rain: 302,           // 1189 moderate rain
-    heavy_rain: 308,     // 1195
-    freezing_rain: 314,  // 1201 moderate or heavy freezing rain
-    light_sleet: 317,    // 1204
-    sleet: 320,          // 1207 moderate or heavy sleet
-    heavy_sleet: 320,    // 1207 — WeatherAPI has no separate heavy sleet
-    light_snow: 326,     // 1213
-    snow: 332,           // 1219 moderate snow
-    heavy_snow: 338,     // 1225
-    hail: 350,           // 1237 ice pellets
-    thunderstorm: 200,   // 1087 thundery outbreaks
+  clear: 113, // 1000
+  partly_cloudy: 116, // 1003
+  cloudy: 119, // 1006
+  overcast: 122, // 1009
+  fog: 248, // 1135
+  drizzle: 266, // 1153 light drizzle
+  light_rain: 296, // 1183
+  rain: 302, // 1189 moderate rain
+  heavy_rain: 308, // 1195
+  freezing_rain: 314, // 1201 moderate or heavy freezing rain
+  light_sleet: 317, // 1204
+  sleet: 320, // 1207 moderate or heavy sleet
+  heavy_sleet: 320, // 1207 — WeatherAPI has no separate heavy sleet
+  light_snow: 326, // 1213
+  snow: 332, // 1219 moderate snow
+  heavy_snow: 338, // 1225
+  hail: 350, // 1237 ice pellets
+  thunderstorm: 200, // 1087 thundery outbreaks
 };
 
 /**
@@ -249,7 +293,7 @@ const WEATHERAPI_ICONS = {
  * @returns {string|null} Icon URL, or null for `unknown` / unrecognised codes
  */
 export const weatherApiIconFor = (condition, isDay) => {
-    const icon = WEATHERAPI_ICONS[condition];
-    if (!icon) return null;
-    return `//cdn.weatherapi.com/weather/64x64/${isDay ? 'day' : 'night'}/${icon}.png`;
+  const icon = WEATHERAPI_ICONS[condition];
+  if (!icon) return null;
+  return `//cdn.weatherapi.com/weather/64x64/${isDay ? 'day' : 'night'}/${icon}.png`;
 };

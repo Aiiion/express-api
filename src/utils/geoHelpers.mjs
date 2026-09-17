@@ -1,7 +1,7 @@
-import { createRequire } from "module";
-import weatherApiService from "../services/providers/weatherApi.service.mjs";
-import weatherApiDto from "../dtos/weatherApi.dto.mjs";
-import localWeatherProviders from "./localWeatherProviders.mjs";
+import { createRequire } from 'module';
+import weatherApiDto from '../dtos/weatherApi.dto.mjs';
+import weatherApiService from '../services/providers/weatherApi.service.mjs';
+import localWeatherProviders from './localWeatherProviders.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -11,8 +11,7 @@ const pointInRing = (lat, lon, ring) => {
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const [xi, yi] = ring[i]; // GeoJSON coords are [lon, lat]
     const [xj, yj] = ring[j];
-    const intersects =
-      yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    const intersects = yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
     if (intersects) inside = !inside;
   }
   return inside;
@@ -20,12 +19,13 @@ const pointInRing = (lat, lon, ring) => {
 
 // Precomputes an axis-aligned bounding box for a Polygon or MultiPolygon.
 // GeoJSON coordinates are [lon, lat], so index 0 = lon, index 1 = lat.
-const computeBbox = (geometry) => {
-  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+const computeBbox = geometry => {
+  let minLon = Infinity,
+    maxLon = -Infinity,
+    minLat = Infinity,
+    maxLat = -Infinity;
   const rings =
-    geometry.type === "Polygon"
-      ? [geometry.coordinates[0]]
-      : geometry.coordinates.map((polygon) => polygon[0]);
+    geometry.type === 'Polygon' ? [geometry.coordinates[0]] : geometry.coordinates.map(polygon => polygon[0]);
   for (const ring of rings) {
     for (const [lon, lat] of ring) {
       if (lon < minLon) minLon = lon;
@@ -42,32 +42,32 @@ const pointInBbox = (lat, lon, bbox) =>
 
 // Handles both Polygon and MultiPolygon geometries.
 const pointInGeometry = (lat, lon, geometry) => {
-  if (geometry.type === "Polygon") {
+  if (geometry.type === 'Polygon') {
     return pointInRing(lat, lon, geometry.coordinates[0]);
   }
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.some((polygon) => pointInRing(lat, lon, polygon[0]));
+  if (geometry.type === 'MultiPolygon') {
+    return geometry.coordinates.some(polygon => pointInRing(lat, lon, polygon[0]));
   }
   return false;
 };
 
 const bordersArray = [
   {
-    country: "Sweden",
+    country: 'Sweden',
     provider: localWeatherProviders.SE,
-    geometry: require("../data/borders/SE.json"),
+    geometry: require('../data/borders/SE.json'),
   },
   {
-    country: "Norway",
+    country: 'Norway',
     provider: localWeatherProviders.NO,
-    geometry: require("../data/borders/NO.json"),
+    geometry: require('../data/borders/NO.json'),
   },
   {
-    country: "Finland",
+    country: 'Finland',
     provider: localWeatherProviders.FI,
-    geometry: require("../data/borders/FI.json"),
+    geometry: require('../data/borders/FI.json'),
   },
-].map((entry) => ({ ...entry, bbox: computeBbox(entry.geometry) }));
+].map(entry => ({ ...entry, bbox: computeBbox(entry.geometry) }));
 
 export const getCoordinateBound = (lat, lon) => {
   const latNum = parseFloat(lat);
@@ -80,7 +80,7 @@ export const getCoordinateBound = (lat, lon) => {
   }
 
   return {
-    country: "Global",
+    country: 'Global',
     provider: {
       service: weatherApiService,
       dto: weatherApiDto,

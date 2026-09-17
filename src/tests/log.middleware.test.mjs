@@ -1,7 +1,11 @@
-import { jest } from '@jest/globals';
 import { EventEmitter } from 'node:events';
-import { clearRedisTestData, closeRedisConnection, getQueuedRequestLogs } from '../services/infrastructure/redis.service.mjs';
+import { jest } from '@jest/globals';
 import { logRequest } from '../middleware/log.middleware.mjs';
+import {
+  clearRedisTestData,
+  closeRedisConnection,
+  getQueuedRequestLogs,
+} from '../services/infrastructure/redis.service.mjs';
 
 describe('logRequest middleware', () => {
   afterAll(async () => {
@@ -26,13 +30,9 @@ describe('logRequest middleware', () => {
 
     res.statusCode = 400;
     res.locals = {};
-    res.json = function (body) {
-      return body;
-    };
-    res.send = function (body) {
-      return body;
-    };
-    res.end = function () {};
+    res.json = body => body;
+    res.send = body => body;
+    res.end = () => {};
 
     const next = jest.fn();
 
@@ -41,7 +41,7 @@ describe('logRequest middleware', () => {
 
     res.json({ message: 'Invalid request' });
     res.emit('finish');
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
 
     const queuedEntries = await getQueuedRequestLogs();
     expect(queuedEntries).toHaveLength(1);

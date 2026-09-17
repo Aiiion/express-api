@@ -1,5 +1,5 @@
-import { parseXml } from './xml.mjs';
 import userAgent from './userAgent.mjs';
+import { parseXml } from './xml.mjs';
 
 /**
  * Fetches a WFS 2.0 endpoint using the BsWfs simple-feature storedquery format
@@ -36,7 +36,7 @@ export const fetchWfsBsSimple = async (baseUrl, params, timeout = 5000) => {
   return pivotBsSimple(parsed);
 };
 
-const pivotBsSimple = (parsed) => {
+const pivotBsSimple = parsed => {
   const members = [].concat(parsed?.FeatureCollection?.member ?? []);
   const timeMap = new Map();
 
@@ -48,7 +48,9 @@ const pivotBsSimple = (parsed) => {
     if (!time) continue;
 
     if (!timeMap.has(time)) {
-      const pos = String(el.Location?.Point?.pos ?? '').trim().split(/\s+/);
+      const pos = String(el.Location?.Point?.pos ?? '')
+        .trim()
+        .split(/\s+/);
       timeMap.set(time, {
         time,
         lat: pos[0] != null ? parseFloat(pos[0]) : null,

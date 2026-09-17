@@ -16,7 +16,7 @@ export const REQUEST_LOG_BATCH_SIZE = 500;
 export const PARTIAL_FLUSH_AGE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 const REQUEST_LOG_LOCK_TTL_SECONDS = 130;
 
-const parseRequestLogEntry = (entry) => {
+const parseRequestLogEntry = entry => {
   const parsedEntry = JSON.parse(entry);
 
   return {
@@ -63,9 +63,7 @@ export const flushRequestLogs = async (batchSize = REQUEST_LOG_BATCH_SIZE) => {
           // longer than PARTIAL_FLUSH_AGE_THRESHOLD_MS, flush whatever is
           // available rather than waiting for a full batch.
           const oldest = await peekOldestRequestLog();
-          const age = oldest?.created_at
-            ? Date.now() - new Date(oldest.created_at).getTime()
-            : 0;
+          const age = oldest?.created_at ? Date.now() - new Date(oldest.created_at).getTime() : 0;
 
           if (age < PARTIAL_FLUSH_AGE_THRESHOLD_MS) break;
 

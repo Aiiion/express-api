@@ -1,5 +1,5 @@
-import { Op } from 'sequelize';
 import { matchedData } from 'express-validator';
+import { Op } from 'sequelize';
 import { sequelize } from '../../models/index.mjs';
 
 const PER_PAGE = 100;
@@ -11,9 +11,7 @@ export const index = async (req, res) => {
   const where = {};
 
   if (provider !== undefined) {
-    where.provider = Array.isArray(provider)
-      ? { [Op.in]: provider }
-      : provider;
+    where.provider = Array.isArray(provider) ? { [Op.in]: provider } : provider;
   }
 
   if (country_code !== undefined) {
@@ -29,7 +27,10 @@ export const index = async (req, res) => {
     where,
     limit: PER_PAGE,
     offset,
-    order: [['valid_for', 'DESC'], ['forecasted_at', 'DESC']],
+    order: [
+      ['valid_for', 'DESC'],
+      ['forecasted_at', 'DESC'],
+    ],
   });
 
   const totalPages = Math.ceil(count / PER_PAGE);
