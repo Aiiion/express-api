@@ -1,9 +1,9 @@
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
+import referenceStations from '../data/referenceStations.mjs';
 import { sequelize } from '../models/index.mjs';
 import initProviderForecastSnapshot from '../models/providerForecastSnapshot.model.mjs';
 import weatherAggregatorService from '../services/weatherAggregator.service.mjs';
-import referenceStations from '../data/referenceStations.mjs';
 import { devError } from '../utils/logger.mjs';
 
 dotenv.config();

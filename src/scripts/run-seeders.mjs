@@ -1,16 +1,16 @@
 import dotenv from 'dotenv';
-import { Umzug, SequelizeStorage } from 'umzug';
+import { SequelizeStorage, Umzug } from 'umzug';
 import { sequelize } from '../models/index.mjs';
-import { devLog, devError } from '../utils/logger.mjs';
+import { devError, devLog } from '../utils/logger.mjs';
 
 dotenv.config();
 
 const umzug = new Umzug({
   migrations: { glob: 'src/db/seeders/*.js' },
   context: sequelize.getQueryInterface(),
-  storage: new SequelizeStorage({ 
+  storage: new SequelizeStorage({
     sequelize,
-    tableName: 'seeder_meta'
+    tableName: 'seeder_meta',
   }),
   logger: console,
 });

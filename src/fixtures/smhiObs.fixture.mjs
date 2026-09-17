@@ -1,8 +1,8 @@
 // Trimmed snapshot of SMHI metobs /parameter/{id}.json station list
 export const smhiObsStationsFixture = {
   station: [
-    { id: 98230, latitude: 59.3417, longitude: 18.0549, active: true,  name: 'Stockholm-Observatoriekullen A' },
-    { id: 71420, latitude: 57.7156, longitude: 11.9924, active: true,  name: 'Göteborg A' },
+    { id: 98230, latitude: 59.3417, longitude: 18.0549, active: true, name: 'Stockholm-Observatoriekullen A' },
+    { id: 71420, latitude: 57.7156, longitude: 11.9924, active: true, name: 'Göteborg A' },
     { id: 25080, latitude: 67.8565, longitude: 20.2937, active: false, name: 'Kiruna (inactive)' },
   ],
 };

@@ -1,48 +1,50 @@
 const parseAllowlist = (envValue = '') => {
-    return [...new Set(
-        envValue
-            .split(',')
-            .map((origin) => origin.trim())
-            .filter(Boolean)
-    )];
+  return [
+    ...new Set(
+      envValue
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean),
+    ),
+  ];
 };
 
 const getCorsAllowlist = (env = process.env) => {
-    const configuredOrigins = env.CORS_ALLOWLIST ?? '';
-    return parseAllowlist(configuredOrigins);
+  const configuredOrigins = env.CORS_ALLOWLIST ?? '';
+  return parseAllowlist(configuredOrigins);
 };
 
 export const createCorsError = () => {
-    const error = new Error('Origin not allowed by CORS');
-    error.status = 403;
-    return error;
+  const error = new Error('Origin not allowed by CORS');
+  error.status = 403;
+  return error;
 };
 
 export const createStrictCorsOptionsDelegate = (overrides = {}) => {
-    const allowlist = getCorsAllowlist();
-   
-    return (req, callback) => {
-        const requestOrigin = req.header('Origin');
+  const allowlist = getCorsAllowlist();
 
-        if (!requestOrigin) {
-            callback(null, {
-                ...overrides,
-                origin: false,
-            });
-            return;
-        }
+  return (req, callback) => {
+    const requestOrigin = req.header('Origin');
 
-        if (!allowlist.includes(requestOrigin)) {
-            callback(createCorsError());
-            return;
-        }
+    if (!requestOrigin) {
+      callback(null, {
+        ...overrides,
+        origin: false,
+      });
+      return;
+    }
 
-        callback(null, {
-            ...overrides,
-            origin: true,
-            credentials: true,
-        });
-    };
+    if (!allowlist.includes(requestOrigin)) {
+      callback(createCorsError());
+      return;
+    }
+
+    callback(null, {
+      ...overrides,
+      origin: true,
+      credentials: true,
+    });
+  };
 };
 
 export { getCorsAllowlist, parseAllowlist };

@@ -1,7 +1,7 @@
 // Helper to generate timestamps relative to now
 const now = () => Math.floor(Date.now() / 1000);
-const hoursFromNow = (hours) => now() + (hours * 3600);
-const formatDtTxt = (epochSeconds) => {
+const hoursFromNow = hours => now() + hours * 3600;
+const formatDtTxt = epochSeconds => {
   const date = new Date(epochSeconds * 1000);
   return date.toISOString().replace('T', ' ').substring(0, 19);
 };
@@ -16,12 +16,12 @@ export const weather = {
     weather: [
       {
         id: 804,
-        main: "Clouds",
-        description: "overcast clouds",
-        icon: "04n",
+        main: 'Clouds',
+        description: 'overcast clouds',
+        icon: '04n',
       },
     ],
-    base: "stations",
+    base: 'stations',
     main: {
       temp: 283.62,
       feels_like: 283.1,
@@ -38,22 +38,28 @@ export const weather = {
       deg: 230,
     },
     rain: {
-      "1h": 3.16
+      '1h': 3.16,
     },
     clouds: {
       all: 100,
     },
-    get dt() { return now(); },
+    get dt() {
+      return now();
+    },
     sys: {
       type: 2,
       id: 2005235,
-      country: "SE",
-      get sunrise() { return hoursFromNow(-6); },
-      get sunset() { return hoursFromNow(6); },
+      country: 'SE',
+      get sunrise() {
+        return hoursFromNow(-6);
+      },
+      get sunset() {
+        return hoursFromNow(6);
+      },
     },
     timezone: 3600,
     id: 2666237,
-    name: "Upplands Väsby Municipality",
+    name: 'Upplands Väsby Municipality',
     cod: 200,
   },
 };
@@ -61,7 +67,7 @@ export const weather = {
 export const weatherForecast = {
   get data() {
     return {
-      cod: "200",
+      cod: '200',
       message: 0,
       cnt: 40,
       list: [
@@ -81,9 +87,9 @@ export const weatherForecast = {
           weather: [
             {
               id: 804,
-              main: "Clouds",
-              description: "overcast clouds",
-              icon: "04n",
+              main: 'Clouds',
+              description: 'overcast clouds',
+              icon: '04n',
             },
           ],
           clouds: {
@@ -97,7 +103,7 @@ export const weatherForecast = {
           visibility: 10000,
           pop: 0,
           sys: {
-            pod: "n",
+            pod: 'n',
           },
           dt_txt: formatDtTxt(hoursFromNow(1)),
         },
@@ -117,9 +123,9 @@ export const weatherForecast = {
           weather: [
             {
               id: 804,
-              main: "Clouds",
-              description: "overcast clouds",
-              icon: "04n",
+              main: 'Clouds',
+              description: 'overcast clouds',
+              icon: '04n',
             },
           ],
           clouds: {
@@ -133,7 +139,7 @@ export const weatherForecast = {
           visibility: 10000,
           pop: 0,
           sys: {
-            pod: "n",
+            pod: 'n',
           },
           dt_txt: formatDtTxt(hoursFromNow(4)),
         },
@@ -153,9 +159,9 @@ export const weatherForecast = {
           weather: [
             {
               id: 500,
-              main: "Rain",
-              description: "light rain",
-              icon: "10n",
+              main: 'Rain',
+              description: 'light rain',
+              icon: '10n',
             },
           ],
           clouds: {
@@ -169,10 +175,10 @@ export const weatherForecast = {
           visibility: 10000,
           pop: 0.2,
           rain: {
-            "3h": 0.1,
+            '3h': 0.1,
           },
           sys: {
-            pod: "n",
+            pod: 'n',
           },
           dt_txt: formatDtTxt(hoursFromNow(7)),
         },
@@ -192,9 +198,9 @@ export const weatherForecast = {
           weather: [
             {
               id: 804,
-              main: "Clouds",
-              description: "overcast clouds",
-              icon: "04d",
+              main: 'Clouds',
+              description: 'overcast clouds',
+              icon: '04d',
             },
           ],
           clouds: {
@@ -208,24 +214,28 @@ export const weatherForecast = {
           visibility: 10000,
           pop: 0,
           sys: {
-            pod: "d",
+            pod: 'd',
           },
           dt_txt: formatDtTxt(hoursFromNow(10)),
         },
       ],
-      "city": {
-        "id": 2666238,
-        "name": "Upplands Vasby",
-        "coord": {
-          "lat": 59.496,
-          "lon": 17.891
+      city: {
+        id: 2666238,
+        name: 'Upplands Vasby',
+        coord: {
+          lat: 59.496,
+          lon: 17.891,
         },
-        "country": "SE",
-        "population": 36534,
-        "timezone": 7200,
-        get sunrise() { return hoursFromNow(-6); },
-        get sunset() { return hoursFromNow(6); },
-      }
+        country: 'SE',
+        population: 36534,
+        timezone: 7200,
+        get sunrise() {
+          return hoursFromNow(-6);
+        },
+        get sunset() {
+          return hoursFromNow(6);
+        },
+      },
     };
   },
 };

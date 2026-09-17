@@ -7,26 +7,35 @@ const mapSeverity = (title = '', capSeverity = '') => {
   if (/\bOrange\b/i.test(title)) return 'ORANGE';
   if (/\bYellow\b/i.test(title)) return 'YELLOW';
   switch (capSeverity.toLowerCase()) {
-    case 'extreme': return 'RED';
-    case 'severe':  return 'ORANGE';
+    case 'extreme':
+      return 'RED';
+    case 'severe':
+      return 'ORANGE';
     case 'moderate':
-    case 'minor':   return 'YELLOW';
-    default:        return 'NONE';
+    case 'minor':
+      return 'YELLOW';
+    default:
+      return 'NONE';
   }
 };
 
-const describeSeverity = (severity) => {
+const describeSeverity = severity => {
   switch (severity) {
-    case 'YELLOW': return 'Be aware of potentially dangerous weather. Stay informed and take precautions.';
-    case 'ORANGE': return 'Be prepared for dangerous weather. Disruptions to daily activities are expected.';
-    case 'RED':    return 'Take action — extreme weather is occurring. Extensive disruptions and risk to life.';
-    case 'NONE':   return 'No warnings in effect.';
-    default:       return 'Unknown severity.';
+    case 'YELLOW':
+      return 'Be aware of potentially dangerous weather. Stay informed and take precautions.';
+    case 'ORANGE':
+      return 'Be prepared for dangerous weather. Disruptions to daily activities are expected.';
+    case 'RED':
+      return 'Take action — extreme weather is occurring. Extensive disruptions and risk to life.';
+    case 'NONE':
+      return 'No warnings in effect.';
+    default:
+      return 'Unknown severity.';
   }
 };
 
 const fmiDto = {
-  weatherWarnings: (data) => {
+  weatherWarnings: data => {
     const entries = data?.feed?.entry;
     if (!entries?.length) return null;
 

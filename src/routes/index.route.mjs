@@ -1,12 +1,12 @@
-import { Router } from "express";
-import weatherRouter from "./v1/weather.route.mjs";
-import infoRouter from "./info.route.mjs"
-import authRouter from "./v1/auth.route.mjs";
-import logsRouter from "./v1/requestLogs.route.mjs";
-import errorLogsRouter from "./v1/errorLogs.route.mjs";
-import providerForecastSnapshotsRouter from "./v1/providerForecastSnapshots.route.mjs";
-import providerAccuracyScoresRouter from "./v1/providerAccuracyScores.route.mjs";
-import v1Router from "./v1/index.route.mjs";
+import { Router } from 'express';
+import infoRouter from './info.route.mjs';
+import authRouter from './v1/auth.route.mjs';
+import errorLogsRouter from './v1/errorLogs.route.mjs';
+import v1Router from './v1/index.route.mjs';
+import providerAccuracyScoresRouter from './v1/providerAccuracyScores.route.mjs';
+import providerForecastSnapshotsRouter from './v1/providerForecastSnapshots.route.mjs';
+import logsRouter from './v1/requestLogs.route.mjs';
+import weatherRouter from './v1/weather.route.mjs';
 
 const router = Router();
 
@@ -19,8 +19,8 @@ router.use(providerForecastSnapshotsRouter);
 router.use(providerAccuracyScoresRouter);
 router.use(v1Router);
 
-router.use((req, res) => {
-    res.status(404).json({ code: 404, message: 'Not Found' });
+router.use((_req, res) => {
+  res.status(404).json({ code: 404, message: 'Not Found' });
 });
 
 export default router;

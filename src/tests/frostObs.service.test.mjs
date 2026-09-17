@@ -3,7 +3,7 @@ import { frostObsFixture } from '../fixtures/frostObs.fixture.mjs';
 
 const { default: frostObsService } = await import('../services/observations/frostObs.service.mjs');
 
-const mockJsonResponse = (body) => ({
+const mockJsonResponse = body => ({
   ok: true,
   json: () => Promise.resolve(body),
 });
@@ -12,9 +12,7 @@ describe('frostObsService.getDailyStats', () => {
   let fetchMock;
 
   beforeEach(() => {
-    fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      mockJsonResponse(frostObsFixture)
-    );
+    fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(mockJsonResponse(frostObsFixture));
     process.env.MET_FROST_CLIENT_ID = 'test-client-id';
   });
 
@@ -46,7 +44,7 @@ describe('frostObsService.getDailyStats', () => {
     await frostObsService.getDailyStats(59.94, 10.72, '2026-06-23');
 
     const [, options] = fetchMock.mock.calls[0];
-    const expected = 'Basic ' + Buffer.from('test-client-id:').toString('base64');
+    const expected = `Basic ${Buffer.from('test-client-id:').toString('base64')}`;
     expect(options.headers.Authorization).toBe(expected);
   });
 
@@ -60,8 +58,7 @@ describe('frostObsService.getDailyStats', () => {
 
   it('throws when the API returns a non-ok response', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 401, statusText: 'Unauthorized' });
-    await expect(frostObsService.getDailyStats(59.94, 10.72, '2026-06-23'))
-      .rejects.toThrow('Frost API error: 401');
+    await expect(frostObsService.getDailyStats(59.94, 10.72, '2026-06-23')).rejects.toThrow('Frost API error: 401');
   });
 
   it('returns null stats when data array is empty', async () => {

@@ -1,19 +1,19 @@
 import { SMHI_METOBS_API_URL } from '../../utils/constants.mjs';
-import { withCache } from '../infrastructure/redis.service.mjs';
 import userAgent from '../../utils/userAgent.mjs';
+import { withCache } from '../infrastructure/redis.service.mjs';
 
 // Parameters used for accuracy evaluation
 const PARAMS = {
-  temperature: 1,   // instantaneous hourly, °C
-  windSpeed: 4,     // 10-min avg hourly, m/s
+  temperature: 1, // instantaneous hourly, °C
+  windSpeed: 4, // 10-min avg hourly, m/s
   precipitation: 7, // hourly total, mm
-  humidity: 6,      // hourly, %
-  pressure: 9,      // hourly, hPa
+  humidity: 6, // hourly, %
+  pressure: 9, // hourly, hPa
 };
 
 const STATION_CACHE_TTL = 86400; // 24h — station lists change rarely
 
-const fetchStations = async (parameterId) => {
+const fetchStations = async parameterId => {
   const cacheKey = `smhiobs:stations:${parameterId}`;
   return withCache(cacheKey, STATION_CACHE_TTL, async () => {
     const res = await fetch(`${SMHI_METOBS_API_URL}/parameter/${parameterId}.json`, {
@@ -31,10 +31,11 @@ const fetchStations = async (parameterId) => {
 
 const haversineKm = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
@@ -43,7 +44,10 @@ const nearestStation = (stations, lat, lon) => {
   let bestDist = Infinity;
   for (const s of stations) {
     const d = haversineKm(lat, lon, s.lat, s.lon);
-    if (d < bestDist) { bestDist = d; best = s; }
+    if (d < bestDist) {
+      bestDist = d;
+      best = s;
+    }
   }
   return best;
 };
@@ -53,10 +57,10 @@ const fetchObservations = async (parameterId, stationId, date) => {
   // so the window exactly matches the snapshot's valid_for date rather than
   // a rolling 24 h window that spans two calendar days.
   const from = Date.parse(`${date}T00:00:00Z`);
-  const to   = Date.parse(`${date}T23:59:59Z`);
+  const to = Date.parse(`${date}T23:59:59Z`);
   const res = await fetch(
     `${SMHI_METOBS_API_URL}/parameter/${parameterId}/station/${stationId}/period/corrected-archive/data.json?from=${from}&to=${to}`,
-    { signal: AbortSignal.timeout(5000), ...userAgent }
+    { signal: AbortSignal.timeout(5000), ...userAgent },
   );
   if (!res.ok) throw new Error(`SMHI metobs data error: ${res.status}`);
   const json = await res.json();
@@ -67,7 +71,7 @@ const fetchObservations = async (parameterId, stationId, date) => {
     .filter(v => !isNaN(v.value));
 };
 
-const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+const avg = arr => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
 
 /**
  * Returns observed daily stats for the given lat/lon from the nearest SMHI station.
@@ -79,16 +83,17 @@ const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 
  */
 const smhiObsService = {
   getDailyStats: async (lat, lon, date) => {
-    const [tempStations, windStations, precipStations, humidityStations, pressureStations] =
-      await Promise.all(Object.values(PARAMS).map(fetchStations));
+    const [tempStations, windStations, precipStations, humidityStations, pressureStations] = await Promise.all(
+      Object.values(PARAMS).map(fetchStations),
+    );
 
     const stationSets = [tempStations, windStations, precipStations, humidityStations, pressureStations];
     const stationIds = stationSets.map(stations => nearestStation(stations, lat, lon)?.id);
 
     const [tempObs, windObs, precipObs, humidityObs, pressureObs] = await Promise.all(
       Object.values(PARAMS).map((paramId, i) =>
-        stationIds[i] ? fetchObservations(paramId, stationIds[i], date).catch(() => []) : Promise.resolve([])
-      )
+        stationIds[i] ? fetchObservations(paramId, stationIds[i], date).catch(() => []) : Promise.resolve([]),
+      ),
     );
 
     return {

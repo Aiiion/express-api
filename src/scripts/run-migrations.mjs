@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
-import { Umzug, SequelizeStorage } from 'umzug';
+import { SequelizeStorage, Umzug } from 'umzug';
 import { sequelize } from '../models/index.mjs';
-import { devLog, devError } from '../utils/logger.mjs';
+import { devError, devLog } from '../utils/logger.mjs';
 
 dotenv.config();
 

@@ -3,7 +3,7 @@ import { openMeteoArchiveFixture } from '../fixtures/openMeteoArchive.fixture.mj
 
 const { default: openMeteoArchiveService } = await import('../services/observations/openMeteoArchive.service.mjs');
 
-const mockJsonResponse = (body) => ({
+const mockJsonResponse = body => ({
   ok: true,
   json: () => Promise.resolve(body),
 });
@@ -12,9 +12,7 @@ describe('openMeteoArchiveService.getDailyStats', () => {
   let fetchMock;
 
   beforeEach(() => {
-    fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      mockJsonResponse(openMeteoArchiveFixture)
-    );
+    fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(mockJsonResponse(openMeteoArchiveFixture));
   });
 
   afterEach(() => {
@@ -33,10 +31,12 @@ describe('openMeteoArchiveService.getDailyStats', () => {
   });
 
   it('returns 0 for total_precip on a dry day, not null', async () => {
-    fetchMock.mockResolvedValue(mockJsonResponse({
-      ...openMeteoArchiveFixture,
-      hourly: { ...openMeteoArchiveFixture.hourly, precipitation: [0.0, 0.0] },
-    }));
+    fetchMock.mockResolvedValue(
+      mockJsonResponse({
+        ...openMeteoArchiveFixture,
+        hourly: { ...openMeteoArchiveFixture.hourly, precipitation: [0.0, 0.0] },
+      }),
+    );
     const stats = await openMeteoArchiveService.getDailyStats(59.33, 18.06, '2026-06-23');
     expect(stats.total_precip).toBe(0);
   });
@@ -72,7 +72,8 @@ describe('openMeteoArchiveService.getDailyStats', () => {
 
   it('throws when the API returns a non-ok response', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 429, statusText: 'Too Many Requests' });
-    await expect(openMeteoArchiveService.getDailyStats(59.33, 18.06, '2026-06-23'))
-      .rejects.toThrow('Open-Meteo archive error: 429');
+    await expect(openMeteoArchiveService.getDailyStats(59.33, 18.06, '2026-06-23')).rejects.toThrow(
+      'Open-Meteo archive error: 429',
+    );
   });
 });

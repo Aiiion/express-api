@@ -11,17 +11,19 @@ const REQUEST_LOGS_FLUSH_LOCK_KEY = 'request_logs:flush_lock';
 let redisClient;
 let redisClientPromise;
 
-const getRedisUrl = () => process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || '127.0.0.1'}:${process.env.REDIS_PORT || 6379}`;
+const getRedisUrl = () =>
+  process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || '127.0.0.1'}:${process.env.REDIS_PORT || 6379}`;
 
 const getClient = async () => {
   if (redisClient?.isOpen) return redisClient;
 
   if (!redisClientPromise) {
     redisClient = createClient({ url: getRedisUrl() });
-    redisClient.on('error', (err) => devError('Redis error:', err));
-    redisClientPromise = redisClient.connect()
+    redisClient.on('error', err => devError('Redis error:', err));
+    redisClientPromise = redisClient
+      .connect()
       .then(() => redisClient)
-      .catch((err) => {
+      .catch(err => {
         redisClientPromise = undefined;
         redisClient = undefined;
         throw err;
@@ -51,7 +53,7 @@ export const setJsonValue = async (key, value, ttlSeconds) => {
   await client.set(key, serializedValue);
 };
 
-export const getJsonValue = async (key) => {
+export const getJsonValue = async key => {
   const client = await getClient();
   const serializedValue = await client.get(key);
   if (!serializedValue) return null;
@@ -63,17 +65,17 @@ export const getJsonValue = async (key) => {
   }
 };
 
-export const deleteValue = async (key) => {
+export const deleteValue = async key => {
   const client = await getClient();
   await client.del(key);
 };
 
-export const enqueueRequestLog = async (payload) => {
+export const enqueueRequestLog = async payload => {
   const client = await getClient();
   await client.lPush(REQUEST_LOGS_QUEUE_KEY, JSON.stringify(payload));
 };
 
-export const bulkEnqueueRequestLogs = async (payloads) => {
+export const bulkEnqueueRequestLogs = async payloads => {
   if (!payloads?.length) return;
   const client = await getClient();
   const tx = client.multi();
@@ -106,7 +108,7 @@ const MOVE_AND_FETCH_SCRIPT = `
   return items
 `;
 
-export const moveAndFetchRequestLogs = async (count) => {
+export const moveAndFetchRequestLogs = async count => {
   if (!count || count < 1) return [];
   const client = await getClient();
   const items = await client.eval(MOVE_AND_FETCH_SCRIPT, {
@@ -116,7 +118,7 @@ export const moveAndFetchRequestLogs = async (count) => {
   return items || [];
 };
 
-export const moveRequestLogsToProcessing = async (count) => {
+export const moveRequestLogsToProcessing = async count => {
   if (!count || count < 1) return 0;
   const client = await getClient();
   const tx = client.multi();
@@ -154,7 +156,7 @@ export const clearProcessingRequestLogs = async () => {
   await client.del(REQUEST_LOGS_PROCESSING_KEY);
 };
 
-export const acquireRequestLogsFlushLock = async (ttlSeconds) => {
+export const acquireRequestLogsFlushLock = async ttlSeconds => {
   const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const client = await getClient();
   const result = await client.set(REQUEST_LOGS_FLUSH_LOCK_KEY, token, {
@@ -174,7 +176,7 @@ const RELEASE_LOCK_SCRIPT = `
   end
 `;
 
-export const releaseRequestLogsFlushLock = async (token) => {
+export const releaseRequestLogsFlushLock = async token => {
   const client = await getClient();
   await client.eval(RELEASE_LOCK_SCRIPT, {
     keys: [REQUEST_LOGS_FLUSH_LOCK_KEY],

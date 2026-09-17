@@ -1,7 +1,7 @@
 import { FMI_WFS_URL } from '../../utils/constants.mjs';
 import { fetchWfsBsSimple } from '../../utils/wfs.mjs';
 
-const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+const avg = arr => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
 
 /**
  * Returns observed daily stats for the given lat/lon from the nearest FMI station.
@@ -24,7 +24,11 @@ const fmiObsService = {
 
     if (!timeSeries?.length) return null;
 
-    const temps = [], winds = [], humidities = [], pressures = [], precips = [];
+    const temps = [],
+      winds = [],
+      humidities = [],
+      pressures = [],
+      precips = [];
 
     for (const entry of timeSeries) {
       if (entry.temperature != null) temps.push(entry.temperature);

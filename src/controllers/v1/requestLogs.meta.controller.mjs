@@ -1,7 +1,7 @@
-import { distinct } from '../../services/meta.service.mjs';
 import { sequelize } from '../../models/index.mjs';
+import { distinct } from '../../services/meta.service.mjs';
 
-export const index = async (req, res) => {
+export const index = async (_req, res) => {
   const RequestLog = sequelize.models.RequestLog;
   const fields = Object.keys(RequestLog.getAttributes());
 
@@ -9,8 +9,8 @@ export const index = async (req, res) => {
     data: {
       resource: 'RequestLog',
       values: fields,
-      count: fields.length
-    }
+      count: fields.length,
+    },
   });
 };
 
@@ -20,6 +20,6 @@ export const show = async (req, res) => {
   const result = await distinct(RequestLog, field);
 
   return res.status(200).json({
-    data: result
+    data: result,
   });
 };

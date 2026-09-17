@@ -1,9 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { Op } from 'sequelize';
-import { fileURLToPath } from 'url';
+import initErrorLog from '../models/errorLog.model.mjs';
 import { sequelize } from '../models/index.mjs';
 import initRequestLog from '../models/requestLog.model.mjs';
-import initErrorLog from '../models/errorLog.model.mjs';
 import { devError } from '../utils/logger.mjs';
 
 dotenv.config();

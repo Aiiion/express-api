@@ -28,7 +28,7 @@ describe('fmiObsService.getDailyStats', () => {
         latlon: '60.1752,24.9446',
         starttime: '2026-06-23T00:00:00Z',
         endtime: '2026-06-23T23:59:59Z',
-      })
+      }),
     );
   });
 
@@ -59,7 +59,6 @@ describe('fmiObsService.getDailyStats', () => {
 
   it('propagates errors from fetchWfsBsSimple', async () => {
     fetchWfsBsSimpleMock.mockRejectedValue(new Error('WFS error'));
-    await expect(fmiObsService.getDailyStats(60.1752, 24.9446, '2026-06-23'))
-      .rejects.toThrow('WFS error');
+    await expect(fmiObsService.getDailyStats(60.1752, 24.9446, '2026-06-23')).rejects.toThrow('WFS error');
   });
 });

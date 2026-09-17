@@ -1,38 +1,38 @@
-import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
-import { kphToMs } from "../utils/mathHelpers.mjs";
-import { conditionFromWeatherApiCode } from "../utils/weatherConditions.mjs";
+import { translateEpochDate } from '../utils/dateTimeHelpers.mjs';
+import { kphToMs } from '../utils/mathHelpers.mjs';
+import { conditionFromWeatherApiCode } from '../utils/weatherConditions.mjs';
 
-const getPrecipitationType = (hour) => {
+const getPrecipitationType = hour => {
   // Check for snow
   if (hour.snow_cm && hour.snow_cm > 0) {
-    return "snow";
+    return 'snow';
   }
   // Check for rain (or any precipitation)
   if ((hour.precip_mm && hour.precip_mm > 0) || (hour.precip_in && hour.precip_in > 0)) {
     // Check condition text for specific types
     const conditionText = hour.condition?.text?.toLowerCase() || '';
     if (conditionText.includes('snow')) {
-      return "snow";
+      return 'snow';
     }
-    return "rain";
+    return 'rain';
   }
-  return "none";
+  return 'none';
 };
 
-const translateSeverity = (severity) => {
+const translateSeverity = severity => {
   switch (severity) {
-    case "minor":
-      return "YELLOW";
-    case "moderate":
-      return "ORANGE";
-    case "severe":
-      return "RED";
-    case "extreme":
-      return "RED";
-    case "unknown":
-      return "YELLOW";
+    case 'minor':
+      return 'YELLOW';
+    case 'moderate':
+      return 'ORANGE';
+    case 'severe':
+      return 'RED';
+    case 'extreme':
+      return 'RED';
+    case 'unknown':
+      return 'YELLOW';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
 };
 
@@ -52,7 +52,7 @@ const weatherApiDto = {
           lon: data?.location?.lon,
         },
         name: data?.location?.name,
-        timezone: data?.location?.tz_id
+        timezone: data?.location?.tz_id,
       },
       temperature: {
         temp: metric ? data?.current?.temp_c : data?.current?.temp_f,
@@ -63,8 +63,12 @@ const weatherApiDto = {
       pressure: data?.current?.pressure_mb,
       humidity: data?.current?.humidity,
       visibility: metric
-        ? (data?.current?.vis_km != null ? data.current.vis_km * 1000 : null)      // km → m
-        : (data?.current?.vis_miles != null ? data.current.vis_miles * 1609.34 : null), // miles → m
+        ? data?.current?.vis_km != null
+          ? data.current.vis_km * 1000
+          : null // km → m
+        : data?.current?.vis_miles != null
+          ? data.current.vis_miles * 1609.34
+          : null, // miles → m
       clouds: {
         all: data?.current?.cloud,
       },
@@ -86,8 +90,8 @@ const weatherApiDto = {
       sunrise: null,
       sunset: null,
       uv: data?.current?.uv,
-      provider: "weatherapi.com"
-    }
+      provider: 'weatherapi.com',
+    };
   },
   forecastWeather: (data, metric = true) => {
     if (!data) return null;
@@ -97,17 +101,17 @@ const weatherApiDto = {
 
     // Iterate through each forecast day
     if (data.forecast?.forecastday) {
-      for (let day of data.forecast.forecastday) {
+      for (const day of data.forecast.forecastday) {
         // Iterate through each hour in the day
         if (day.hour) {
-          for (let hour of day.hour) {
+          for (const hour of day.hour) {
             // Skip past timestamps
             if (hour.time_epoch <= now) {
               continue;
             }
 
             const dayName = translateEpochDate(hour.time_epoch, timezone);
-            
+
             if (!formatted[dayName]) {
               formatted[dayName] = [];
             }
@@ -142,26 +146,30 @@ const weatherApiDto = {
               clouds: {
                 all: hour.cloud,
               },
-              visibility: metric 
-                ? (hour.vis_km != null ? hour.vis_km * 1000 : null)
-                : (hour.vis_miles != null ? hour.vis_miles * 1609.34 : null),
+              visibility: metric
+                ? hour.vis_km != null
+                  ? hour.vis_km * 1000
+                  : null
+                : hour.vis_miles != null
+                  ? hour.vis_miles * 1609.34
+                  : null,
               precipitation: {
                 amount: metric ? hour.precip_mm : hour.precip_in,
                 hours_measured: 1,
                 type: precipitationType,
               },
             };
-            
+
             formatted[dayName].push(timeObj);
           }
         }
       }
     }
 
-    return { list: formatted, provider: "weatherapi.com" };
+    return { list: formatted, provider: 'weatherapi.com' };
   },
-  weatherWarnings: (data) => {
-    if (!data || !data.alerts?.alert?.[0]) return null;
+  weatherWarnings: data => {
+    if (!data?.alerts?.alert?.[0]) return null;
     const alertData = data.alerts.alert;
     const alert = alertData[0];
 
@@ -173,7 +181,7 @@ const weatherApiDto = {
       type: alert.event || null,
       warningsCount: alertData.length || 0,
       raw: alertData,
-      provider: "weatherapi.com",
+      provider: 'weatherapi.com',
     };
   },
 };

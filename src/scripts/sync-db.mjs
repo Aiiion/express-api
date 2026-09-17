@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
+import initErrorLog from '../models/errorLog.model.mjs';
 import { sequelize } from '../models/index.mjs';
 import initRequestLog from '../models/requestLog.model.mjs';
-import initErrorLog from '../models/errorLog.model.mjs';
-import { devLog, devError } from '../utils/logger.mjs';
+import { devError, devLog } from '../utils/logger.mjs';
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ initRequestLog(sequelize);
 initErrorLog(sequelize);
 
 const run = async () => {
-  if(process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production') {
     devError('Syncing database in production is not allowed. Use migrations instead.');
     process.exit(1);
   }

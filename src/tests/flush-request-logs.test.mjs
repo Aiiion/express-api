@@ -19,7 +19,9 @@ jest.unstable_mockModule('../models/index.mjs', () => ({
   },
 }));
 
-const { flushRequestLogs, PARTIAL_FLUSH_AGE_THRESHOLD_MS, REQUEST_LOG_BATCH_SIZE } = await import('../jobs/flush-request-logs.mjs');
+const { flushRequestLogs, PARTIAL_FLUSH_AGE_THRESHOLD_MS, REQUEST_LOG_BATCH_SIZE } = await import(
+  '../jobs/flush-request-logs.mjs'
+);
 
 const makeLog = (index, overrides = {}) => ({
   ip: '127.0.0.1',
@@ -48,9 +50,7 @@ describe('flushRequestLogs', () => {
     const remainder = 16;
     const total = REQUEST_LOG_BATCH_SIZE * 2 + remainder;
 
-    await bulkEnqueueRequestLogs(
-      Array.from({ length: total }, (_, i) => makeLog(i)),
-    );
+    await bulkEnqueueRequestLogs(Array.from({ length: total }, (_, i) => makeLog(i)));
 
     const result = await flushRequestLogs();
 
@@ -68,9 +68,7 @@ describe('flushRequestLogs', () => {
   });
 
   it('keeps a batch in request_logs:processing when the database write fails', async () => {
-    bulkCreateMock
-      .mockRejectedValueOnce(new Error('db down'))
-      .mockResolvedValueOnce([]);
+    bulkCreateMock.mockRejectedValueOnce(new Error('db down')).mockResolvedValueOnce([]);
 
     await bulkEnqueueRequestLogs(
       Array.from({ length: REQUEST_LOG_BATCH_SIZE }, (_, i) =>
@@ -100,9 +98,7 @@ describe('flushRequestLogs', () => {
       Date.now() - PARTIAL_FLUSH_AGE_THRESHOLD_MS - 60_000, // 1 minute past threshold
     ).toISOString();
 
-    await bulkEnqueueRequestLogs(
-      Array.from({ length: 15 }, (_, i) => makeLog(i, { created_at: staleTimestamp })),
-    );
+    await bulkEnqueueRequestLogs(Array.from({ length: 15 }, (_, i) => makeLog(i, { created_at: staleTimestamp })));
 
     const result = await flushRequestLogs();
 
@@ -120,9 +116,7 @@ describe('flushRequestLogs', () => {
   it('does not flush a partial batch when the oldest queued log is within the age threshold', async () => {
     bulkCreateMock.mockResolvedValue([]);
 
-    await bulkEnqueueRequestLogs(
-      Array.from({ length: 15 }, (_, i) => makeLog(i)),
-    );
+    await bulkEnqueueRequestLogs(Array.from({ length: 15 }, (_, i) => makeLog(i)));
 
     const result = await flushRequestLogs();
 

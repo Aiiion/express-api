@@ -1,16 +1,12 @@
-import { jest } from "@jest/globals";
-import {
-  weather,
-  weatherForecast,
-  airPollution,
-} from "../fixtures/openWeatherMaps.fixture.mjs";
+import { jest } from '@jest/globals';
+import { metForecast } from '../fixtures/met.fixture.mjs';
+import { airPollution, weather, weatherForecast } from '../fixtures/openWeatherMaps.fixture.mjs';
+import { smhiForecast } from '../fixtures/smhi.fixture.mjs';
 import {
   getIpLocation,
   weather as weatherApiWeather,
   weatherForecast as weatherApiWeatherForecast,
-} from "../fixtures/weatherApi.fixture.mjs";
-import { smhiForecast } from "../fixtures/smhi.fixture.mjs";
-import { metForecast } from "../fixtures/met.fixture.mjs";
+} from '../fixtures/weatherApi.fixture.mjs';
 
 // Stable mock function references so individual tests can override behaviour
 const owmMocks = {
@@ -37,26 +33,26 @@ const metMocks = {
 };
 
 // Mock the OpenWeatherMaps service
-jest.unstable_mockModule("../services/providers/openWeatherMaps.service.mjs", () => ({
+jest.unstable_mockModule('../services/providers/openWeatherMaps.service.mjs', () => ({
   default: owmMocks,
 }));
 
 // Mock the weatherApi service
-jest.unstable_mockModule("../services/providers/weatherApi.service.mjs", () => ({
+jest.unstable_mockModule('../services/providers/weatherApi.service.mjs', () => ({
   default: weatherApiMocks,
 }));
 
-jest.unstable_mockModule("../services/providers/smhi.service.mjs", () => ({
+jest.unstable_mockModule('../services/providers/smhi.service.mjs', () => ({
   default: smhiMocks,
 }));
 
-jest.unstable_mockModule("../services/providers/met.service.mjs", () => ({
+jest.unstable_mockModule('../services/providers/met.service.mjs', () => ({
   default: metMocks,
 }));
 
-import request from "supertest";
-import { exampleIp, exampleLatLon, exampleLat } from "../utils/constants.mjs";
-import { clearRedisTestData } from "../services/infrastructure/redis.service.mjs";
+import request from 'supertest';
+import { clearRedisTestData } from '../services/infrastructure/redis.service.mjs';
+import { exampleIp, exampleLat, exampleLatLon } from '../utils/constants.mjs';
 
 // Dynamically import app/start/stop after the mock is set up
 let app;
@@ -64,8 +60,7 @@ let server;
 let start;
 let stop;
 
-describe("API Routes", () => {
-  
+describe('API Routes', () => {
   const originalEnv = process.env.NODE_ENV;
   const originalOwmApiKey = process.env.OWM_API_KEY;
   const originalWeatherApiKey = process.env.WEATHERAPI_API_KEY;
@@ -76,7 +71,7 @@ describe("API Routes", () => {
     process.env.RESEND_API_KEY = 'resend_token_123';
     process.env.NODE_ENV = 'test';
     // import app after env is set and mocks registered
-    const mod = await import("../index.mjs");
+    const mod = await import('../index.mjs');
     app = mod.default;
     start = mod.start;
     stop = mod.stop;
@@ -111,23 +106,20 @@ describe("API Routes", () => {
     restoreEnvVar('RESEND_API_KEY', originalResendApiKey);
     restoreEnvVar('NODE_ENV', originalEnv);
     if (stop) await stop();
-    else if (server && typeof server.close === 'function') await new Promise((r) => server.close(r));
+    else if (server && typeof server.close === 'function') await new Promise(r => server.close(r));
   });
 
-  const simpleGetPaths = [
-    '/',
-    '/test',
-  ];
+  const simpleGetPaths = ['/', '/test'];
 
-  it.each(simpleGetPaths)('GET %s should return 200 OK', async (path) => {
+  it.each(simpleGetPaths)('GET %s should return 200 OK', async path => {
     const response = await request(app).get(path);
     expect(response.status).toBe(200);
   });
 
   //get requests with query parameters
   it.each([
-    ['/ip-location', {ip: exampleIp}, 200],
-    ['/ip-location', {ip: '9999.9999.9999.999'}, 400],
+    ['/ip-location', { ip: exampleIp }, 200],
+    ['/ip-location', { ip: '9999.9999.9999.999' }, 400],
     ['/v1/weather', exampleLatLon, 200],
     ['/v1/weather', { lat: exampleLat }, 400],
   ])('GET %s with %o -> %i', async (path, query, expected) => {

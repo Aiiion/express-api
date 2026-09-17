@@ -6,13 +6,13 @@ export const smhiForecast = {
   fixture: true,
   data: {
     geometry: {
-      type: "Point",
+      type: 'Point',
       coordinates: [16.158549, 58.577821],
     },
     timeSeries: [
       {
-        time: "2099-06-01T12:00:00Z",
-        intervalParametersStartTime: "2099-06-01T11:00:00Z",
+        time: '2099-06-01T12:00:00Z',
+        intervalParametersStartTime: '2099-06-01T11:00:00Z',
         data: {
           air_temperature: 10.5,
           wind_from_direction: 180,
@@ -29,8 +29,8 @@ export const smhiForecast = {
         },
       },
       {
-        time: "2099-06-01T13:00:00Z",
-        intervalParametersStartTime: "2099-06-01T12:00:00Z",
+        time: '2099-06-01T13:00:00Z',
+        intervalParametersStartTime: '2099-06-01T12:00:00Z',
         data: {
           air_temperature: 11.2,
           wind_from_direction: 190,

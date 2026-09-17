@@ -2,15 +2,15 @@ import { jest } from '@jest/globals';
 
 // --- Sequelize model mocks ---
 const snapshotFindAllMock = jest.fn();
-const snapshotUpdateMock  = jest.fn();
-const scoreUpsertMock     = jest.fn();
+const snapshotUpdateMock = jest.fn();
+const scoreUpsertMock = jest.fn();
 
 jest.unstable_mockModule('../models/index.mjs', () => ({
   sequelize: {
     models: {
       ProviderForecastSnapshot: {
         findAll: snapshotFindAllMock,
-        update:  snapshotUpdateMock,
+        update: snapshotUpdateMock,
       },
       ProviderAccuracyScore: {
         upsert: scoreUpsertMock,
@@ -20,36 +20,38 @@ jest.unstable_mockModule('../models/index.mjs', () => ({
 }));
 
 // --- Observation service mocks ---
-const smhiObsMock        = { getDailyStats: jest.fn() };
-const frostObsMock       = { getDailyStats: jest.fn() };
-const fmiObsMock         = { getDailyStats: jest.fn() };
-const openMeteoObsMock   = { getDailyStats: jest.fn() };
+const smhiObsMock = { getDailyStats: jest.fn() };
+const frostObsMock = { getDailyStats: jest.fn() };
+const fmiObsMock = { getDailyStats: jest.fn() };
+const openMeteoObsMock = { getDailyStats: jest.fn() };
 
-jest.unstable_mockModule('../services/observations/smhiObs.service.mjs',          () => ({ default: smhiObsMock       }));
-jest.unstable_mockModule('../services/observations/frostObs.service.mjs',         () => ({ default: frostObsMock      }));
-jest.unstable_mockModule('../services/observations/fmiObs.service.mjs',           () => ({ default: fmiObsMock        }));
-jest.unstable_mockModule('../services/observations/openMeteoArchive.service.mjs', () => ({ default: openMeteoObsMock  }));
+jest.unstable_mockModule('../services/observations/smhiObs.service.mjs', () => ({ default: smhiObsMock }));
+jest.unstable_mockModule('../services/observations/frostObs.service.mjs', () => ({ default: frostObsMock }));
+jest.unstable_mockModule('../services/observations/fmiObs.service.mjs', () => ({ default: fmiObsMock }));
+jest.unstable_mockModule('../services/observations/openMeteoArchive.service.mjs', () => ({
+  default: openMeteoObsMock,
+}));
 
 const { evaluateProviderAccuracy } = await import('../jobs/evaluate-provider-accuracy.mjs');
 
 // Helper — creates a fake snapshot row
 const makeSnap = (overrides = {}) => ({
-  id:                 1,
-  provider:           'smhi.se',
-  lat:                '59.34',
-  lon:                '18.05',
-  country_code:       'SE',
-  valid_for:          '2026-06-23',
-  avg_temp:           13.0,
-  total_precip:        0.5,
-  avg_wind_speed:      4.0,
-  avg_humidity:       72.0,
-  avg_pressure:       null,
-  evaluated:          false,
-  obs_avg_temp:       null,
-  obs_total_precip:   null,
+  id: 1,
+  provider: 'smhi.se',
+  lat: '59.34',
+  lon: '18.05',
+  country_code: 'SE',
+  valid_for: '2026-06-23',
+  avg_temp: 13.0,
+  total_precip: 0.5,
+  avg_wind_speed: 4.0,
+  avg_humidity: 72.0,
+  avg_pressure: null,
+  evaluated: false,
+  obs_avg_temp: null,
+  obs_total_precip: null,
   obs_avg_wind_speed: null,
-  obs_avg_humidity:   null,
+  obs_avg_humidity: null,
   ...overrides,
 });
 
@@ -84,7 +86,7 @@ describe('evaluateProviderAccuracy', () => {
   it('marks all processed snapshots as evaluated and persists observed values', async () => {
     const snap = makeSnap();
     snapshotFindAllMock
-      .mockResolvedValueOnce([snap])  // unevaluated query
+      .mockResolvedValueOnce([snap]) // unevaluated query
       .mockResolvedValueOnce([snap]); // 30-day window query
     smhiObsMock.getDailyStats.mockResolvedValue(OBS);
 
@@ -92,13 +94,13 @@ describe('evaluateProviderAccuracy', () => {
 
     expect(snapshotUpdateMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        evaluated:          true,
-        obs_avg_temp:       OBS.avg_temp,
-        obs_total_precip:   OBS.total_precip,
+        evaluated: true,
+        obs_avg_temp: OBS.avg_temp,
+        obs_total_precip: OBS.total_precip,
         obs_avg_wind_speed: OBS.avg_wind_speed,
-        obs_avg_humidity:   OBS.avg_humidity,
+        obs_avg_humidity: OBS.avg_humidity,
       }),
-      expect.objectContaining({ where: expect.objectContaining({ id: expect.anything() }) })
+      expect.objectContaining({ where: expect.objectContaining({ id: expect.anything() }) }),
     );
   });
 
@@ -106,9 +108,7 @@ describe('evaluateProviderAccuracy', () => {
     const seSnap = makeSnap({ id: 1, country_code: 'SE' });
     const glSnap = makeSnap({ id: 2, country_code: 'GL', lat: '40.71', lon: '-74.01' });
 
-    snapshotFindAllMock
-      .mockResolvedValueOnce([seSnap, glSnap])
-      .mockResolvedValueOnce([seSnap, glSnap]);
+    snapshotFindAllMock.mockResolvedValueOnce([seSnap, glSnap]).mockResolvedValueOnce([seSnap, glSnap]);
 
     await evaluateProviderAccuracy();
 
@@ -122,9 +122,7 @@ describe('evaluateProviderAccuracy', () => {
     const noSnap = makeSnap({ id: 1, country_code: 'NO', lat: '59.94', lon: '10.72' });
     const fiSnap = makeSnap({ id: 2, country_code: 'FI', lat: '60.18', lon: '24.94' });
 
-    snapshotFindAllMock
-      .mockResolvedValueOnce([noSnap, fiSnap])
-      .mockResolvedValueOnce([noSnap, fiSnap]);
+    snapshotFindAllMock.mockResolvedValueOnce([noSnap, fiSnap]).mockResolvedValueOnce([noSnap, fiSnap]);
 
     await evaluateProviderAccuracy();
 
@@ -136,13 +134,16 @@ describe('evaluateProviderAccuracy', () => {
     const snap = makeSnap({ avg_temp: 13.0, total_precip: 0.5, avg_wind_speed: 4.0, avg_humidity: 72.0 });
     // The 30-day window row carries obs_* as persisted during evaluation
     const snapWithObs = makeSnap({
-      avg_temp: 13.0, total_precip: 0.5, avg_wind_speed: 4.0, avg_humidity: 72.0,
-      obs_avg_temp: OBS.avg_temp, obs_total_precip: OBS.total_precip,
-      obs_avg_wind_speed: OBS.avg_wind_speed, obs_avg_humidity: OBS.avg_humidity,
+      avg_temp: 13.0,
+      total_precip: 0.5,
+      avg_wind_speed: 4.0,
+      avg_humidity: 72.0,
+      obs_avg_temp: OBS.avg_temp,
+      obs_total_precip: OBS.total_precip,
+      obs_avg_wind_speed: OBS.avg_wind_speed,
+      obs_avg_humidity: OBS.avg_humidity,
     });
-    snapshotFindAllMock
-      .mockResolvedValueOnce([snap])
-      .mockResolvedValueOnce([snapWithObs]);
+    snapshotFindAllMock.mockResolvedValueOnce([snap]).mockResolvedValueOnce([snapWithObs]);
     smhiObsMock.getDailyStats.mockResolvedValue(OBS);
 
     await evaluateProviderAccuracy();
@@ -164,18 +165,24 @@ describe('evaluateProviderAccuracy', () => {
       valid_for: '2026-06-20',
       evaluated: true,
       avg_temp: 10.0,
-      obs_avg_temp: 8.0,       // stored from previous run
+      obs_avg_temp: 8.0, // stored from previous run
       obs_total_precip: 0.0,
       obs_avg_wind_speed: 2.0,
       obs_avg_humidity: 80.0,
     });
 
     snapshotFindAllMock
-      .mockResolvedValueOnce([todaySnap])           // unevaluated query
-      .mockResolvedValueOnce([olderSnap, makeSnap({ // 30-day window — both rows
-        obs_avg_temp: OBS.avg_temp, obs_total_precip: OBS.total_precip,
-        obs_avg_wind_speed: OBS.avg_wind_speed, obs_avg_humidity: OBS.avg_humidity,
-      })]);
+      .mockResolvedValueOnce([todaySnap]) // unevaluated query
+      .mockResolvedValueOnce([
+        olderSnap,
+        makeSnap({
+          // 30-day window — both rows
+          obs_avg_temp: OBS.avg_temp,
+          obs_total_precip: OBS.total_precip,
+          obs_avg_wind_speed: OBS.avg_wind_speed,
+          obs_avg_humidity: OBS.avg_humidity,
+        }),
+      ]);
     smhiObsMock.getDailyStats.mockResolvedValue(OBS);
 
     await evaluateProviderAccuracy();
@@ -189,9 +196,7 @@ describe('evaluateProviderAccuracy', () => {
 
   it('continues when an observation fetch fails for one coordinate', async () => {
     const snap = makeSnap();
-    snapshotFindAllMock
-      .mockResolvedValueOnce([snap])
-      .mockResolvedValueOnce([]);
+    snapshotFindAllMock.mockResolvedValueOnce([snap]).mockResolvedValueOnce([]);
     smhiObsMock.getDailyStats.mockRejectedValue(new Error('Station timeout'));
 
     // Should not throw; snapshot stays unevaluated so the job can retry it later

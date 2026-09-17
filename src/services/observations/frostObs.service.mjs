@@ -4,7 +4,7 @@ import userAgent from '../../utils/userAgent.mjs';
 // Frost API uses Basic auth: client_id as username, empty password
 const authHeader = () => {
   const clientId = process.env.MET_FROST_CLIENT_ID ?? '';
-  return 'Basic ' + Buffer.from(`${clientId}:`).toString('base64');
+  return `Basic ${Buffer.from(`${clientId}:`).toString('base64')}`;
 };
 
 const ELEMENTS = [
@@ -15,7 +15,7 @@ const ELEMENTS = [
   'air_pressure_at_sea_level',
 ].join(',');
 
-const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+const avg = arr => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
 
 /**
  * Returns observed daily stats for the given lat/lon from the nearest Frost (MET Norway) station.
@@ -46,7 +46,11 @@ const frostObsService = {
 
     const observations = json.data ?? [];
 
-    const temps = [], precips = [], winds = [], humidities = [], pressures = [];
+    const temps = [],
+      precips = [],
+      winds = [],
+      humidities = [],
+      pressures = [];
 
     for (const obs of observations) {
       for (const o of obs.observations ?? []) {

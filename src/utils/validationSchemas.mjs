@@ -1,38 +1,38 @@
 export const latLonValidationSchema = {
-	lat: {
-		in: ['query'],
-		exists: {
-			errorMessage: 'Lat is required',
-		},
-		isFloat: {
-			options: { min: -90, max: 90 },
-			errorMessage: 'Lat must be a number between -90 and 90',
-		},
-		toFloat: true,
-		// ~110 m precision. Enough to collapse GPS jitter (metres) so repeat
-		// requests share provider and response cache entries, while staying
-		// well inside a single grid cell of even the finest provider model
-		// (MET Nordic ~1 km, SMHI ~2.5 km). Rounding harder would start moving
-		// the point across coastlines and valley walls, where a kilometre is
-		// worth several degrees of temperature.
-		customSanitizer: {
-			options: (value) => Math.round(value * 1000) / 1000,
-		},
-	},
-	lon: {
-		in: ['query'],
-		exists: {
-			errorMessage: 'Lon is required',
-		},
-		isFloat: {
-			options: { min: -180, max: 180 },
-			errorMessage: 'Lon must be a number between -180 and 180',
-		},
-		toFloat: true,
-		customSanitizer: {
-			options: (value) => Math.round(value * 1000) / 1000,
-		},
-	},
+  lat: {
+    in: ['query'],
+    exists: {
+      errorMessage: 'Lat is required',
+    },
+    isFloat: {
+      options: { min: -90, max: 90 },
+      errorMessage: 'Lat must be a number between -90 and 90',
+    },
+    toFloat: true,
+    // ~110 m precision. Enough to collapse GPS jitter (metres) so repeat
+    // requests share provider and response cache entries, while staying
+    // well inside a single grid cell of even the finest provider model
+    // (MET Nordic ~1 km, SMHI ~2.5 km). Rounding harder would start moving
+    // the point across coastlines and valley walls, where a kilometre is
+    // worth several degrees of temperature.
+    customSanitizer: {
+      options: value => Math.round(value * 1000) / 1000,
+    },
+  },
+  lon: {
+    in: ['query'],
+    exists: {
+      errorMessage: 'Lon is required',
+    },
+    isFloat: {
+      options: { min: -180, max: 180 },
+      errorMessage: 'Lon must be a number between -180 and 180',
+    },
+    toFloat: true,
+    customSanitizer: {
+      options: value => Math.round(value * 1000) / 1000,
+    },
+  },
 };
 
 // `days` and `units` are deliberately not `optional`: express-validator skips
@@ -40,168 +40,168 @@ export const latLonValidationSchema = {
 // absent, so the defaults would never apply. Without `optional`, `default`
 // fills the missing value first and the validators run on that.
 export const weatherValidationSchema = {
-	...latLonValidationSchema,
-	days: {
-		in: ['query'],
-		default: { options: 5 },
-		isInt: {
-			options: { min: 1 },
-			errorMessage: 'Days must be a positive integer',
-		},
-		toInt: true,
-		customSanitizer: {
-			options: (value) => Math.min(value, 6),
-		},
-	},
-	units: {
-		in: ['query'],
-		default: { options: 'metric' },
-		isIn: {
-			options: [['metric', 'imperial']],
-			errorMessage: 'Units must be metric or imperial',
-		},
-		customSanitizer: {
-			options: (value) => value !== 'imperial',
-		},
-	},
+  ...latLonValidationSchema,
+  days: {
+    in: ['query'],
+    default: { options: 5 },
+    isInt: {
+      options: { min: 1 },
+      errorMessage: 'Days must be a positive integer',
+    },
+    toInt: true,
+    customSanitizer: {
+      options: value => Math.min(value, 6),
+    },
+  },
+  units: {
+    in: ['query'],
+    default: { options: 'metric' },
+    isIn: {
+      options: [['metric', 'imperial']],
+      errorMessage: 'Units must be metric or imperial',
+    },
+    customSanitizer: {
+      options: value => value !== 'imperial',
+    },
+  },
 };
 
 export const paginationValidationSchema = {
-	page: {
-		in: ['query'],
-		optional: true,
-		default: { options: 1 },
-		isInt: {
-			options: { min: 1 },
-			errorMessage: 'Page must be a positive integer',
-		},
-		toInt: true,
-	},
+  page: {
+    in: ['query'],
+    optional: true,
+    default: { options: 1 },
+    isInt: {
+      options: { min: 1 },
+      errorMessage: 'Page must be a positive integer',
+    },
+    toInt: true,
+  },
 };
 
 export const searchValidationSchema = {
-	search: {
-		in: ['query'],
-		optional: true,
-		isString: {
-			errorMessage: 'Search must be a string',
-		},
-		trim: true,
-	},
+  search: {
+    in: ['query'],
+    optional: true,
+    isString: {
+      errorMessage: 'Search must be a string',
+    },
+    trim: true,
+  },
 };
 
 export const requestLogsIndexValidationSchema = {
-	...paginationValidationSchema,
-	...searchValidationSchema,
-	code: {
-		in: ['query'],
-		optional: true,
-		custom: {
-			options: (value) => {
-				const values = Array.isArray(value) ? value : [value];
+  ...paginationValidationSchema,
+  ...searchValidationSchema,
+  code: {
+    in: ['query'],
+    optional: true,
+    custom: {
+      options: value => {
+        const values = Array.isArray(value) ? value : [value];
 
-				return values.every((entry) => /^\d+$/.test(String(entry)));
-			},
-			errorMessage: 'Code must be an integer or a list of integers',
-		},
-		customSanitizer: {
-			options: (value) => {
-				const values = Array.isArray(value) ? value : [value];
-				return values.map((v) => parseInt(v, 10));
-			},
-		},
-	},
+        return values.every(entry => /^\d+$/.test(String(entry)));
+      },
+      errorMessage: 'Code must be an integer or a list of integers',
+    },
+    customSanitizer: {
+      options: value => {
+        const values = Array.isArray(value) ? value : [value];
+        return values.map(v => parseInt(v, 10));
+      },
+    },
+  },
 };
 
 export const errorLogsIndexValidationSchema = {
-	...paginationValidationSchema,
-	...searchValidationSchema,
+  ...paginationValidationSchema,
+  ...searchValidationSchema,
 };
 
 export const providerValidationSchema = {
-	provider: {
-		in: ['query'],
-		optional: true,
-		isString: {
-			errorMessage: 'Provider must be a string',
-		},
-		trim: true,
-	},
+  provider: {
+    in: ['query'],
+    optional: true,
+    isString: {
+      errorMessage: 'Provider must be a string',
+    },
+    trim: true,
+  },
 };
 
 export const countryCodeValidationSchema = {
-	country_code: {
-		in: ['query'],
-		optional: true,
-		isString: {
-			errorMessage: 'Country code must be a string',
-		},
-		isLength: {
-			options: { min: 2, max: 2 },
-			errorMessage: 'Country code must be exactly 2 characters',
-		},
-		toUpperCase: true,
-	},
+  country_code: {
+    in: ['query'],
+    optional: true,
+    isString: {
+      errorMessage: 'Country code must be a string',
+    },
+    isLength: {
+      options: { min: 2, max: 2 },
+      errorMessage: 'Country code must be exactly 2 characters',
+    },
+    toUpperCase: true,
+  },
 };
 
 export const providerForecastSnapshotsIndexValidationSchema = {
-	...paginationValidationSchema,
-	...providerValidationSchema,
-	...countryCodeValidationSchema,
-	evaluated: {
-		in: ['query'],
-		optional: true,
-		isBoolean: {
-			errorMessage: 'Evaluated must be a boolean',
-		},
-		toBoolean: true,
-	},
+  ...paginationValidationSchema,
+  ...providerValidationSchema,
+  ...countryCodeValidationSchema,
+  evaluated: {
+    in: ['query'],
+    optional: true,
+    isBoolean: {
+      errorMessage: 'Evaluated must be a boolean',
+    },
+    toBoolean: true,
+  },
 };
 
 export const providerAccuracyScoresIndexValidationSchema = {
-	...paginationValidationSchema,
-	...providerValidationSchema,
-	...countryCodeValidationSchema,
+  ...paginationValidationSchema,
+  ...providerValidationSchema,
+  ...countryCodeValidationSchema,
 };
 
 export const verifyCodeValidationSchema = {
-	sessionToken: {
-		in: ['body'],
-		exists: {
-			errorMessage: 'Session token is required',
-		},
-		isString: {
-			errorMessage: 'Session token must be a string',
-		},
-		notEmpty: {
-			errorMessage: 'Session token cannot be empty',
-		},
-	},
-	code: {
-		in: ['body'],
-		exists: {
-			errorMessage: 'Code is required',
-		},
-		isString: {
-			errorMessage: 'Code must be a string',
-		},
-		notEmpty: {
-			errorMessage: 'Code cannot be empty',
-		},
-	},
+  sessionToken: {
+    in: ['body'],
+    exists: {
+      errorMessage: 'Session token is required',
+    },
+    isString: {
+      errorMessage: 'Session token must be a string',
+    },
+    notEmpty: {
+      errorMessage: 'Session token cannot be empty',
+    },
+  },
+  code: {
+    in: ['body'],
+    exists: {
+      errorMessage: 'Code is required',
+    },
+    isString: {
+      errorMessage: 'Code must be a string',
+    },
+    notEmpty: {
+      errorMessage: 'Code cannot be empty',
+    },
+  },
 };
 
 export const loginValidationSchema = {
-	password: {
-		in: ['body'],
-		exists: {
-			errorMessage: 'Password is required',
-		},
-		isString: {
-			errorMessage: 'Password must be a string',
-		},
-		notEmpty: {
-			errorMessage: 'Password cannot be empty',
-		}
-	},
+  password: {
+    in: ['body'],
+    exists: {
+      errorMessage: 'Password is required',
+    },
+    isString: {
+      errorMessage: 'Password must be a string',
+    },
+    notEmpty: {
+      errorMessage: 'Password cannot be empty',
+    },
+  },
 };

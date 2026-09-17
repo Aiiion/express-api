@@ -21,12 +21,14 @@ describe('fmiDto.weatherWarnings', () => {
   it('falls back to cap:severity when title has no colour keyword', () => {
     const data = {
       feed: {
-        entry: [{
-          identifier: 'test-1',
-          severity: 'Severe',
-          event: 'Wind warning',
-          title: 'Warning issued for Finland',
-        }],
+        entry: [
+          {
+            identifier: 'test-1',
+            severity: 'Severe',
+            event: 'Wind warning',
+            title: 'Warning issued for Finland',
+          },
+        ],
       },
     };
     expect(fmiDto.weatherWarnings(data).severity).toBe('ORANGE');
@@ -37,9 +39,24 @@ describe('fmiDto.weatherWarnings', () => {
     const data = {
       feed: {
         entry: [
-          { identifier: 'id-A', severity: 'Moderate', event: 'Wind', title: 'Yellow Wind Warning issued for Finland - Region A' },
-          { identifier: 'id-A', severity: 'Moderate', event: 'Wind', title: 'Yellow Wind Warning issued for Finland - Region B' },
-          { identifier: 'id-B', severity: 'Moderate', event: 'Rain', title: 'Yellow Rain Warning issued for Finland - Region A' },
+          {
+            identifier: 'id-A',
+            severity: 'Moderate',
+            event: 'Wind',
+            title: 'Yellow Wind Warning issued for Finland - Region A',
+          },
+          {
+            identifier: 'id-A',
+            severity: 'Moderate',
+            event: 'Wind',
+            title: 'Yellow Wind Warning issued for Finland - Region B',
+          },
+          {
+            identifier: 'id-B',
+            severity: 'Moderate',
+            event: 'Rain',
+            title: 'Yellow Rain Warning issued for Finland - Region A',
+          },
         ],
       },
     };
@@ -51,8 +68,18 @@ describe('fmiDto.weatherWarnings', () => {
     const data = {
       feed: {
         entry: [
-          { identifier: 'id-1', severity: 'Moderate', event: 'Wildfire', title: 'Yellow Forest-fire Warning issued for Finland - A' },
-          { identifier: 'id-2', severity: 'Severe',   event: 'Wind',     title: 'Orange Wind Warning issued for Finland - B' },
+          {
+            identifier: 'id-1',
+            severity: 'Moderate',
+            event: 'Wildfire',
+            title: 'Yellow Forest-fire Warning issued for Finland - A',
+          },
+          {
+            identifier: 'id-2',
+            severity: 'Severe',
+            event: 'Wind',
+            title: 'Orange Wind Warning issued for Finland - B',
+          },
         ],
       },
     };

@@ -1,6 +1,6 @@
-import { translateEpochDate } from "../utils/dateTimeHelpers.mjs";
-import { celsiusToFahrenheit, msToMph, mmToInches } from "../utils/mathHelpers.mjs";
-import { conditionFromSmhiSymbol } from "../utils/weatherConditions.mjs";
+import { translateEpochDate } from '../utils/dateTimeHelpers.mjs';
+import { celsiusToFahrenheit, mmToInches, msToMph } from '../utils/mathHelpers.mjs';
+import { conditionFromSmhiSymbol } from '../utils/weatherConditions.mjs';
 
 const getHoursMeasured = (time, intervalStart) => {
   const endMs = new Date(time).getTime();
@@ -9,23 +9,42 @@ const getHoursMeasured = (time, intervalStart) => {
 };
 
 // https://opendata.smhi.se/metfcst/snow1gv1/parameters#precipitation-type
-const mapPrecipitationType = (typeCode) => {
-  if (typeCode === 0) return "none";
-  if (typeCode === 5 || typeCode === 6 || typeCode === 9) return "snow";
-  if (typeCode === 10) return "hail";
-  return "rain";
+const mapPrecipitationType = typeCode => {
+  if (typeCode === 0) return 'none';
+  if (typeCode === 5 || typeCode === 6 || typeCode === 9) return 'snow';
+  if (typeCode === 10) return 'hail';
+  return 'rain';
 };
 
-const mapSymbolToWeather = (symbolCode) => {
+const mapSymbolToWeather = symbolCode => {
   const symbols = {
-    1: "Clear sky", 2: "Nearly clear sky", 3: "Variable cloudiness",
-    4: "Halfclear sky", 5: "Cloudy sky", 6: "Overcast", 7: "Fog",
-    8: "Light rain showers", 9: "Moderate rain showers", 10: "Heavy rain showers",
-    11: "Thunderstorm", 12: "Light sleet showers", 13: "Moderate sleet showers",
-    14: "Heavy sleet showers", 15: "Light snow showers", 16: "Moderate snow showers",
-    17: "Heavy snow showers", 18: "Light rain", 19: "Moderate rain", 20: "Heavy rain",
-    21: "Thunder", 22: "Light sleet", 23: "Moderate sleet", 24: "Heavy sleet",
-    25: "Light snowfall", 26: "Moderate snowfall", 27: "Heavy snowfall",
+    1: 'Clear sky',
+    2: 'Nearly clear sky',
+    3: 'Variable cloudiness',
+    4: 'Halfclear sky',
+    5: 'Cloudy sky',
+    6: 'Overcast',
+    7: 'Fog',
+    8: 'Light rain showers',
+    9: 'Moderate rain showers',
+    10: 'Heavy rain showers',
+    11: 'Thunderstorm',
+    12: 'Light sleet showers',
+    13: 'Moderate sleet showers',
+    14: 'Heavy sleet showers',
+    15: 'Light snow showers',
+    16: 'Moderate snow showers',
+    17: 'Heavy snow showers',
+    18: 'Light rain',
+    19: 'Moderate rain',
+    20: 'Heavy rain',
+    21: 'Thunder',
+    22: 'Light sleet',
+    23: 'Moderate sleet',
+    24: 'Heavy sleet',
+    25: 'Light snowfall',
+    26: 'Moderate snowfall',
+    27: 'Heavy snowfall',
   };
   return symbols[symbolCode] || null;
 };
@@ -50,9 +69,12 @@ const mapTimeSeriesEntry = (entry, metric = true, intervalEntry = entry) => {
     condition: conditionFromSmhiSymbol(data.symbol_code),
     icon: null,
     temperature: {
-      temp: data.air_temperature != null
-        ? (metric ? data.air_temperature : celsiusToFahrenheit(data.air_temperature))
-        : null,
+      temp:
+        data.air_temperature != null
+          ? metric
+            ? data.air_temperature
+            : celsiusToFahrenheit(data.air_temperature)
+          : null,
       feels_like: null,
       max: null,
       min: null,
@@ -68,19 +90,14 @@ const mapTimeSeriesEntry = (entry, metric = true, intervalEntry = entry) => {
       ground_level: null,
     },
     wind: {
-      speed: data.wind_speed != null
-        ? (metric ? data.wind_speed : msToMph(data.wind_speed))
-        : null,
+      speed: data.wind_speed != null ? (metric ? data.wind_speed : msToMph(data.wind_speed)) : null,
       deg: data.wind_from_direction ?? null,
       dir: null,
-      gust: data.wind_speed_of_gust != null
-        ? (metric ? data.wind_speed_of_gust : msToMph(data.wind_speed_of_gust))
-        : null,
+      gust:
+        data.wind_speed_of_gust != null ? (metric ? data.wind_speed_of_gust : msToMph(data.wind_speed_of_gust)) : null,
     },
     precipitation: {
-      amount: precipAmount != null
-        ? (metric ? precipAmount : mmToInches(precipAmount))
-        : 0,
+      amount: precipAmount != null ? (metric ? precipAmount : mmToInches(precipAmount)) : 0,
       hours_measured: hoursMeasured,
       type: precipType,
     },
@@ -105,7 +122,7 @@ const smhiDto = {
       sunrise: null,
       sunset: null,
       uv: null,
-      provider: "smhi.se",
+      provider: 'smhi.se',
     };
   },
   forecastWeather: (data, metric = true, timezone = 'UTC') => {
@@ -127,9 +144,9 @@ const smhiDto = {
       formatted[day].push(mapTimeSeriesEntry(entry, metric, series[i + 1]));
     }
 
-    return { list: formatted, provider: "smhi.se" };
+    return { list: formatted, provider: 'smhi.se' };
   },
-  weatherWarnings: (data) => {
+  weatherWarnings: data => {
     if (!data) return null;
 
     return {
@@ -140,25 +157,25 @@ const smhiDto = {
       type: data.inner?.type || null,
       warningsCount: data.inner?.warningsCount || 0,
       raw: data,
-      provider: "smhi.se",
+      provider: 'smhi.se',
     };
   },
 };
 
 //todo: crate severity enum and add translate layer for enum here
-const describeSeverity = (severity) => {
+const describeSeverity = severity => {
   switch (severity) {
     case 'YELLOW':
-      return "Certain risks to the public. Disruptions to some societal functions. Take extra care - especially at places more susceptible to changing weather conditions";
+      return 'Certain risks to the public. Disruptions to some societal functions. Take extra care - especially at places more susceptible to changing weather conditions';
     case 'ORANGE':
-      return "Danger to the public. Disruptions to societal functions.Avoid exposure to the weather conditions.";
+      return 'Danger to the public. Disruptions to societal functions.Avoid exposure to the weather conditions.';
     case 'RED':
-      return "Great danger to the public. Extensive disruptions to societal functions. Avoid all exposure to the weather conditions!";
+      return 'Great danger to the public. Extensive disruptions to societal functions. Avoid all exposure to the weather conditions!';
     case 'NONE':
-      return "No warnings in effect.";
+      return 'No warnings in effect.';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
-}
+};
 
 export default smhiDto;
