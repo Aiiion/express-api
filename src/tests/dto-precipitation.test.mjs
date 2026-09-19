@@ -1,53 +1,10 @@
-import openWeatherMapsDto from '../dtos/openWeatherMaps.dto.mjs';
 import smhiDto from '../dtos/smhi.dto.mjs';
 
-// OWM and SMHI stamp precipitation at the *end* of the period it fell in,
-// WeatherAPI and MET at the start. The aggregator reads every entry as
-// "the period starting at dt", so these two DTOs must hand each entry the
-// precipitation of the interval that begins at its timestamp.
+// SMHI stamps precipitation at the *end* of the period it fell in, WeatherAPI
+// and MET at the start. The aggregator reads every entry as "the period
+// starting at dt", so the SMHI DTO must hand each entry the precipitation of
+// the interval that begins at its timestamp.
 describe('forecast precipitation is stamped at the start of its period', () => {
-  describe('openWeatherMaps', () => {
-    // Three consecutive 3 h slots, far enough out never to be filtered as past
-    const base = Math.floor(Date.UTC(2099, 5, 10, 12) / 1000);
-    const item = (offsetHours, extra = {}) => ({
-      dt: base + offsetHours * 3600,
-      main: { temp: 10 },
-      weather: [{ id: 500, main: 'Rain', description: 'light rain', icon: '10d' }],
-      wind: { speed: 1, deg: 0 },
-      clouds: { all: 50 },
-      ...extra,
-    });
-    const raw = {
-      city: { timezone: 0 },
-      list: [
-        item(0), // 09–12 accumulation: not ours
-        item(3, { rain: { '3h': 0.6 } }), // fell during 12–15
-        item(6, { snow: { '3h': 1.2 } }), // fell during 15–18
-      ],
-    };
-
-    it("takes each entry's amount and type from the entry that follows it", () => {
-      const hours = Object.values(openWeatherMapsDto.forecastWeather(raw).list).flat();
-
-      expect(hours.map(h => h.dt)).toEqual([base, base + 3 * 3600]);
-      expect(hours[0].precipitation).toEqual({ amount: 0.6, hours_measured: 3, type: 'rain' });
-      expect(hours[1].precipitation).toEqual({ amount: 1.2, hours_measured: 3, type: 'snow' });
-    });
-
-    it('drops the final entry, whose period has no successor to describe it', () => {
-      const hours = Object.values(openWeatherMapsDto.forecastWeather(raw).list).flat();
-
-      expect(hours.some(h => h.dt === base + 6 * 3600)).toBe(false);
-    });
-
-    it("keeps the entry's own instantaneous fields", () => {
-      const [first] = Object.values(openWeatherMapsDto.forecastWeather(raw).list).flat();
-
-      expect(first.temperature.temp).toBe(10);
-      expect(first.condition).toBe('light_rain');
-    });
-  });
-
   describe('smhi', () => {
     const entry = (time, intervalStart, precip, typeCode = 1) => ({
       time,

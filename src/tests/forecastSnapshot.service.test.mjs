@@ -14,12 +14,10 @@ jest.unstable_mockModule('../utils/geoHelpers.mjs', () => ({
   getCoordinateBound: jest.fn(() => ({ country: 'Sweden' })),
 }));
 
-const owmDtoMock = { forecastWeather: jest.fn() };
 const wApiDtoMock = { forecastWeather: jest.fn() };
 const smhiDtoMock = { forecastWeather: jest.fn() };
 const metDtoMock = { forecastWeather: jest.fn() };
 
-jest.unstable_mockModule('../dtos/openWeatherMaps.dto.mjs', () => ({ default: owmDtoMock }));
 jest.unstable_mockModule('../dtos/weatherApi.dto.mjs', () => ({ default: wApiDtoMock }));
 jest.unstable_mockModule('../dtos/smhi.dto.mjs', () => ({ default: smhiDtoMock }));
 jest.unstable_mockModule('../dtos/met.dto.mjs', () => ({ default: metDtoMock }));
@@ -51,7 +49,6 @@ describe('captureForecasts', () => {
     bulkCreateMock.mockReset();
     getCoordinateBound.mockReturnValue({ country: 'Sweden' });
 
-    owmDtoMock.forecastWeather.mockReturnValue(makeForecastSource('openweathermaps.org', 12.0, 0.5));
     wApiDtoMock.forecastWeather.mockReturnValue(makeForecastSource('weatherapi.com', 14.0, 0.2));
     smhiDtoMock.forecastWeather.mockReturnValue(makeForecastSource('smhi.se', 13.0, 0.0));
     metDtoMock.forecastWeather.mockReturnValue(makeForecastSource('met.no', 11.0, 1.0));
@@ -60,7 +57,6 @@ describe('captureForecasts', () => {
   it('inserts one row per provider with the correct daily stats', async () => {
     await captureForecasts(
       {
-        owmForecast: { status: 'fulfilled', value: {} },
         weatherApiForecast: { status: 'fulfilled', value: {} },
         smhi: { status: 'fulfilled', value: {} },
         met: { status: 'fulfilled', value: {} },
@@ -71,15 +67,14 @@ describe('captureForecasts', () => {
 
     expect(bulkCreateMock).toHaveBeenCalledTimes(1);
     const rows = bulkCreateMock.mock.calls[0][0];
-    expect(rows).toHaveLength(4);
-    expect(rows.map(r => r.provider).sort()).toEqual(['met.no', 'openweathermaps.org', 'smhi.se', 'weatherapi.com']);
+    expect(rows).toHaveLength(3);
+    expect(rows.map(r => r.provider).sort()).toEqual(['met.no', 'smhi.se', 'weatherapi.com']);
   });
 
   it('rounds coordinates to 2 decimal places', async () => {
     await captureForecasts(
       {
-        owmForecast: { status: 'fulfilled', value: {} },
-        weatherApiForecast: { status: 'rejected' },
+        weatherApiForecast: { status: 'fulfilled', value: {} },
         smhi: { status: 'rejected' },
         met: { status: 'rejected' },
       },
@@ -103,8 +98,7 @@ describe('captureForecasts', () => {
       getCoordinateBound.mockReturnValue({ country });
       await captureForecasts(
         {
-          owmForecast: { status: 'fulfilled', value: {} },
-          weatherApiForecast: { status: 'rejected' },
+          weatherApiForecast: { status: 'fulfilled', value: {} },
           smhi: { status: 'rejected' },
           met: { status: 'rejected' },
         },
@@ -119,7 +113,6 @@ describe('captureForecasts', () => {
   it('skips providers whose settled result is rejected', async () => {
     await captureForecasts(
       {
-        owmForecast: { status: 'rejected', reason: new Error('timeout') },
         weatherApiForecast: { status: 'fulfilled', value: {} },
         smhi: { status: 'rejected', reason: new Error('timeout') },
         met: { status: 'fulfilled', value: {} },
@@ -134,14 +127,12 @@ describe('captureForecasts', () => {
   });
 
   it('does not call bulkCreate when all providers fail', async () => {
-    owmDtoMock.forecastWeather.mockReturnValue(null);
     wApiDtoMock.forecastWeather.mockReturnValue(null);
     smhiDtoMock.forecastWeather.mockReturnValue(null);
     metDtoMock.forecastWeather.mockReturnValue(null);
 
     await captureForecasts(
       {
-        owmForecast: { status: 'fulfilled', value: {} },
         weatherApiForecast: { status: 'fulfilled', value: {} },
         smhi: { status: 'fulfilled', value: {} },
         met: { status: 'fulfilled', value: {} },
@@ -160,8 +151,7 @@ describe('captureForecasts', () => {
     await expect(
       captureForecasts(
         {
-          owmForecast: { status: 'fulfilled', value: {} },
-          weatherApiForecast: { status: 'rejected' },
+          weatherApiForecast: { status: 'fulfilled', value: {} },
           smhi: { status: 'rejected' },
           met: { status: 'rejected' },
         },
@@ -174,8 +164,7 @@ describe('captureForecasts', () => {
   it('passes ignoreDuplicates: true to bulkCreate', async () => {
     await captureForecasts(
       {
-        owmForecast: { status: 'fulfilled', value: {} },
-        weatherApiForecast: { status: 'rejected' },
+        weatherApiForecast: { status: 'fulfilled', value: {} },
         smhi: { status: 'rejected' },
         met: { status: 'rejected' },
       },

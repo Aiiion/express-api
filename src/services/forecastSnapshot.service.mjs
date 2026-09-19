@@ -1,5 +1,4 @@
 import metDto from '../dtos/met.dto.mjs';
-import openWeatherMapsDto from '../dtos/openWeatherMaps.dto.mjs';
 import smhiDto from '../dtos/smhi.dto.mjs';
 import weatherApiDto from '../dtos/weatherApi.dto.mjs';
 import { sequelize } from '../models/index.mjs';
@@ -68,12 +67,12 @@ const extractProviderSnapshot = (settledResult, dtoFn, providerName, tomorrow) =
  * Fire-and-forget: captures each provider's next-day forecast as a DB snapshot.
  * Called from allWeather() after the provider fetches complete — never throws.
  *
- * @param {{ owmForecast, weatherApiForecast, smhi, met }} rawResults - settled promise results
+ * @param {{ weatherApiForecast, smhi, met }} rawResults - settled promise results
  * @param {number} lat
  * @param {number} lon
  * @param {string} timezone - tz_id or UTC offset used when calling the forecast DTOs
  */
-export const captureForecasts = async ({ owmForecast, weatherApiForecast, smhi, met }, lat, lon, timezone = 'UTC') => {
+export const captureForecasts = async ({ weatherApiForecast, smhi, met }, lat, lon, timezone = 'UTC') => {
   try {
     const ProviderForecastSnapshot = sequelize.models.ProviderForecastSnapshot;
     if (!ProviderForecastSnapshot) return;
@@ -85,7 +84,6 @@ export const captureForecasts = async ({ owmForecast, weatherApiForecast, smhi, 
     const rLon = roundCoord(lon);
 
     const snapshots = [
-      extractProviderSnapshot(owmForecast, v => openWeatherMapsDto.forecastWeather(v), 'openweathermaps.org', tomorrow),
       extractProviderSnapshot(weatherApiForecast, v => weatherApiDto.forecastWeather(v), 'weatherapi.com', tomorrow),
       extractProviderSnapshot(smhi, v => smhiDto.forecastWeather(v, true, timezone), 'smhi.se', tomorrow),
       extractProviderSnapshot(met, v => metDto.forecastWeather(v, true, timezone), 'met.no', tomorrow),

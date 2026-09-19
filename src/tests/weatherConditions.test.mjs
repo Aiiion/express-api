@@ -2,7 +2,6 @@ import {
   CONDITIONS,
   conditionFor,
   conditionFromMetSymbol,
-  conditionFromOwmId,
   conditionFromSmhiSymbol,
   conditionFromWeatherApiCode,
   GROUP_SEVERITY,
@@ -15,41 +14,28 @@ describe('weatherConditions', () => {
   // each provider's own structured code, taken from their published tables.
   describe('providers agree on the same sky', () => {
     const scenarios = [
-      { sky: 'clear sky', owm: 800, weatherApi: 1000, smhi: 1, met: 'clearsky_day', expected: 'clear' },
-      { sky: 'moderate rain', owm: 501, weatherApi: 1189, smhi: 19, met: 'rain', expected: 'rain' },
-      {
-        sky: 'light rain showers',
-        owm: 520,
-        weatherApi: 1240,
-        smhi: 8,
-        met: 'lightrainshowers_day',
-        expected: 'light_rain',
-      },
-      { sky: 'heavy snow', owm: 602, weatherApi: 1225, smhi: 27, met: 'heavysnow', expected: 'heavy_snow' },
-      { sky: 'sleet', owm: 611, weatherApi: 1252, smhi: 23, met: 'sleet', expected: 'sleet' },
-      { sky: 'fog', owm: 741, weatherApi: 1135, smhi: 7, met: 'fog', expected: 'fog' },
-      { sky: 'thunder', owm: 200, weatherApi: 1087, smhi: 21, met: 'rainandthunder', expected: 'thunderstorm' },
+      { sky: 'clear sky', weatherApi: 1000, smhi: 1, met: 'clearsky_day', expected: 'clear' },
+      { sky: 'moderate rain', weatherApi: 1189, smhi: 19, met: 'rain', expected: 'rain' },
+      { sky: 'light rain showers', weatherApi: 1240, smhi: 8, met: 'lightrainshowers_day', expected: 'light_rain' },
+      { sky: 'heavy snow', weatherApi: 1225, smhi: 27, met: 'heavysnow', expected: 'heavy_snow' },
+      { sky: 'sleet', weatherApi: 1252, smhi: 23, met: 'sleet', expected: 'sleet' },
+      { sky: 'fog', weatherApi: 1135, smhi: 7, met: 'fog', expected: 'fog' },
+      { sky: 'thunder', weatherApi: 1087, smhi: 21, met: 'rainandthunder', expected: 'thunderstorm' },
     ];
 
-    it.each(scenarios)('maps $sky to $expected for every provider', ({ owm, weatherApi, smhi, met, expected }) => {
-      expect(conditionFromOwmId(owm)).toBe(expected);
+    it.each(scenarios)('maps $sky to $expected for every provider', ({ weatherApi, smhi, met, expected }) => {
       expect(conditionFromWeatherApiCode(weatherApi)).toBe(expected);
       expect(conditionFromSmhiSymbol(smhi)).toBe(expected);
       expect(conditionFromMetSymbol(met)).toBe(expected);
     });
 
     it("puts a fully clouded sky in one group even though MET has no 'overcast'", () => {
-      const codes = [
-        conditionFromOwmId(804),
-        conditionFromWeatherApiCode(1009),
-        conditionFromSmhiSymbol(6),
-        conditionFromMetSymbol('cloudy'),
-      ];
+      const codes = [conditionFromWeatherApiCode(1009), conditionFromSmhiSymbol(6), conditionFromMetSymbol('cloudy')];
 
       // MET tops out at "cloudy", so the codes differ by one rank — the vote
       // still lands in the same group, which is what decides the winner
       expect(new Set(codes.map(c => CONDITIONS[c].group))).toEqual(new Set(['cloud']));
-      expect(codes).toEqual(['overcast', 'overcast', 'overcast', 'cloudy']);
+      expect(codes).toEqual(['overcast', 'overcast', 'cloudy']);
     });
   });
 
@@ -73,25 +59,22 @@ describe('weatherConditions', () => {
 
   describe('unrecognised input', () => {
     it('returns null when a provider supplied no code at all', () => {
-      expect(conditionFromOwmId(undefined)).toBeNull();
       expect(conditionFromWeatherApiCode(null)).toBeNull();
       expect(conditionFromSmhiSymbol(undefined)).toBeNull();
       expect(conditionFromMetSymbol(null)).toBeNull();
     });
 
     it("returns 'unknown' for a code outside the mapped set", () => {
-      expect(conditionFromOwmId(781)).toBe('unknown'); // tornado
       expect(conditionFromWeatherApiCode(9999)).toBe('unknown');
       expect(conditionFromSmhiSymbol(99)).toBe('unknown');
       expect(conditionFromMetSymbol('meteorshower')).toBe('unknown');
     });
 
-    it("reads WeatherAPI's haze, dust and smoke codes as fog, like OWM's 7xx", () => {
+    it("reads WeatherAPI's haze, dust and smoke codes as fog", () => {
       // 1012-1048 were added to WeatherAPI's table after the original set
       for (const code of [1012, 1021, 1033, 1039, 1048]) {
         expect(conditionFromWeatherApiCode(code)).toBe('fog');
       }
-      expect(conditionFromOwmId(721)).toBe('fog'); // haze
     });
   });
 
