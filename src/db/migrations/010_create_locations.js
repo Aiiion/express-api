@@ -14,6 +14,12 @@ export async function up({ context: queryInterface }) {
       type: Sequelize.STRING(100),
       allowNull: false,
     },
+    // Place name the frontend fills in automatically (e.g. from the weather
+    // provider's reverse geocode); free text, not unique.
+    provider_name: {
+      type: Sequelize.STRING(100),
+      allowNull: false,
+    },
     // DOUBLE rather than DECIMAL: pg returns DECIMAL as strings, and this is a
     // public resource whose coordinates should serialize as JSON numbers.
     lat: {

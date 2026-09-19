@@ -15,7 +15,8 @@ export const index = async (req, res) => {
   const where = {};
 
   if (search) {
-    where.name = { [Op.iLike]: `%${search}%` };
+    const pattern = `%${search}%`;
+    where[Op.or] = [{ name: { [Op.iLike]: pattern } }, { provider_name: { [Op.iLike]: pattern } }];
   }
 
   const Location = sequelize.models.Location;
@@ -53,11 +54,11 @@ export const show = async (req, res) => {
 // unique index on lower(name) is the source of truth and its violation is
 // mapped to a 409 here. Anything else propagates to handleError.
 export const store = async (req, res) => {
-  const { name, lat, lon } = matchedData(req);
+  const { name, provider_name, lat, lon } = matchedData(req);
 
   const Location = sequelize.models.Location;
   try {
-    const location = await Location.create({ name, lat, lon });
+    const location = await Location.create({ name, provider_name, lat, lon });
     return res.status(201).json({ data: location });
   } catch (err) {
     if (err instanceof UniqueConstraintError) return nameTaken(res);

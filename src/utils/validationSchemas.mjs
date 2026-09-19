@@ -184,26 +184,30 @@ export const idParamValidationSchema = {
 
 const LOCATION_NAME_MAX_LENGTH = 100;
 
-// NFC-normalize so composed and decomposed forms of the same character
-// ("ö" as one code point vs "o" + combining diaeresis) can't slip past the
-// case-insensitive unique index as two visually identical names.
-const locationNameRules = {
+// Shared by `name` and `provider_name`. NFC-normalize so composed and
+// decomposed forms of the same character ("ö" as one code point vs "o" +
+// combining diaeresis) can't slip past the case-insensitive unique index as
+// two visually identical names.
+const createNameRules = label => ({
   in: ['body'],
   isString: {
-    errorMessage: 'Name must be a string',
+    errorMessage: `${label} must be a string`,
   },
   trim: true,
   customSanitizer: {
     options: value => (typeof value === 'string' ? value.normalize('NFC') : value),
   },
   notEmpty: {
-    errorMessage: 'Name cannot be empty',
+    errorMessage: `${label} cannot be empty`,
   },
   isLength: {
     options: { max: LOCATION_NAME_MAX_LENGTH },
-    errorMessage: `Name must be at most ${LOCATION_NAME_MAX_LENGTH} characters`,
+    errorMessage: `${label} must be at most ${LOCATION_NAME_MAX_LENGTH} characters`,
   },
-};
+});
+
+const locationNameRules = createNameRules('Name');
+const providerNameRules = createNameRules('Provider name');
 
 export const locationStoreValidationSchema = {
   ...createLatLonValidationSchema({ location: 'body' }),
@@ -213,6 +217,12 @@ export const locationStoreValidationSchema = {
     },
     ...locationNameRules,
   },
+  provider_name: {
+    exists: {
+      errorMessage: 'Provider name is required',
+    },
+    ...providerNameRules,
+  },
 };
 
 // Every field optional; the controller rejects a body with none of them.
@@ -221,6 +231,10 @@ export const locationUpdateValidationSchema = {
   name: {
     optional: true,
     ...locationNameRules,
+  },
+  provider_name: {
+    optional: true,
+    ...providerNameRules,
   },
 };
 

@@ -502,7 +502,7 @@ Max 1000 values will be returned, limited tells if amount of data was limited
 
 Named coordinates saved by API clients so anyone can look a place up and pass its `lat`/`lon` to `/v1/weather`. Reading and creating are public; updating and deleting require the admin JWT cookie. There are no user accounts, so a location has no owner.
 
-Names are unique **case-insensitively** (`Stockholm` and `stockholm` are the same name) and are stored trimmed, exactly as entered otherwise. Coordinates are rounded to 3 decimals (~110 m), the same rounding `/v1/weather` applies.
+`name` is what the user typed; `provider_name` is a second label the frontend fills in on its own (for example the place name the weather provider reports for the coordinates). Both are required. Names are unique **case-insensitively** (`Stockholm` and `stockholm` are the same name) and are stored trimmed, exactly as entered otherwise; `provider_name` is free text with no uniqueness. Coordinates are rounded to 3 decimals (~110 m), the same rounding `/v1/weather` applies.
 
 ### (POST) **/v1/locations**
 
@@ -510,14 +510,15 @@ Creates a location. Rate-limited to 30 requests per 15 minutes per IP.
 
 **Body:**
 ```json
-{ "name": "Stockholm", "lat": 59.3293, "lon": 18.0686 }
+{ "name": "Stockholm", "provider_name": "Stockholm, Sweden", "lat": 59.3293, "lon": 18.0686 }
 ```
 
-| Field  | Required | Type   | Description |
-|--------|----------|--------|-------------|
-| `name` | ✅       | string | 1–100 characters after trimming; unique, case-insensitive |
-| `lat`  | ✅       | float  | Latitude (-90 to 90) |
-| `lon`  | ✅       | float  | Longitude (-180 to 180) |
+| Field           | Required | Type   | Description |
+|-----------------|----------|--------|-------------|
+| `name`          | ✅       | string | 1–100 characters after trimming; unique, case-insensitive |
+| `provider_name` | ✅       | string | 1–100 characters after trimming; not unique |
+| `lat`           | ✅       | float  | Latitude (-90 to 90) |
+| `lon`           | ✅       | float  | Longitude (-180 to 180) |
 
 **Response (201):**
 ```json
@@ -525,6 +526,7 @@ Creates a location. Rate-limited to 30 requests per 15 minutes per IP.
   "data": {
     "id": 1,
     "name": "Stockholm",
+    "provider_name": "Stockholm, Sweden",
     "lat": 59.329,
     "lon": 18.069,
     "created_at": "2026-09-19T12:00:00.000Z",
@@ -548,8 +550,8 @@ Creates a location. Rate-limited to 30 requests per 15 minutes per IP.
 Retrieves paginated locations ordered by name.
 
 **Query Parameters:**
-- `page` (optional) — Page number (default: 1). Each page returns up to 100 locations.
-- `search` (optional) — Case-insensitive substring match on `name`.
+- `page` (optional) — Page number (default: 1). Each page returns up to 25 locations.
+- `search` (optional) — Case-insensitive substring match on `name` or `provider_name`.
 
 **Examples:**
 - `/v1/locations?search=stock`
@@ -562,6 +564,7 @@ Retrieves paginated locations ordered by name.
     {
       "id": 1,
       "name": "Stockholm",
+      "provider_name": "Stockholm, Sweden",
       "lat": 59.329,
       "lon": 18.069,
       "created_at": "2026-09-19T12:00:00.000Z",
@@ -587,6 +590,7 @@ Retrieves a single location.
   "data": {
     "id": 1,
     "name": "Stockholm",
+    "provider_name": "Stockholm, Sweden",
     "lat": 59.329,
     "lon": 18.069,
     "created_at": "2026-09-19T12:00:00.000Z",
@@ -602,7 +606,7 @@ Retrieves a single location.
 
 ### (PATCH) **/v1/locations/:id**
 
-Updates any of `name`, `lat`, `lon`. Fields not sent are left as they are. Requires JWT authentication via HTTP-only cookie.
+Updates any of `name`, `provider_name`, `lat`, `lon`. Fields not sent are left as they are; a field that is sent must be valid on its own (so `provider_name` cannot be cleared). Requires JWT authentication via HTTP-only cookie.
 
 **Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
 
@@ -643,8 +647,8 @@ Returns the available location fields that can be queried through the meta endpo
 {
   "data": {
     "resource": "Location",
-    "values": ["id", "name", "lat", "lon", "created_at", "updated_at"],
-    "count": 6
+    "values": ["id", "name", "provider_name", "lat", "lon", "created_at", "updated_at"],
+    "count": 7
   }
 }
 ```

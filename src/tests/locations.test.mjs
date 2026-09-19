@@ -23,7 +23,12 @@ describe('Locations Routes', () => {
   const getAuthCookie = () =>
     `jwt_token=${jwt.sign({ sub: 'test-user' }, process.env.JWT_SECRET, { expiresIn: '3h' })}`;
 
-  const createLocation = body => request(app).post('/v1/locations').send(body);
+  // Default provider_name so cases about other fields stay short; pass
+  // `provider_name: undefined` to omit it (JSON serialisation drops it).
+  const createLocation = body =>
+    request(app)
+      .post('/v1/locations')
+      .send({ provider_name: `${PREFIX}provider`, ...body });
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
@@ -64,6 +69,7 @@ describe('Locations Routes', () => {
       expect(res.status).toBe(201);
       expect(res.body.data).toMatchObject({
         name: named('Stockholm'),
+        provider_name: `${PREFIX}provider`,
         lat: 59.329,
         lon: 18.069,
         updated_at: null,
@@ -73,12 +79,31 @@ describe('Locations Routes', () => {
       expect(typeof res.body.data.created_at).toBe('string');
     });
 
+    it('trims provider_name', async () => {
+      const res = await createLocation({
+        name: named('With provider'),
+        provider_name: '  Stockholm, Sweden ',
+        ...stockholm,
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.provider_name).toBe('Stockholm, Sweden');
+    });
+
     it.each([
       ['missing name', { ...stockholm }],
       ['whitespace-only name', { name: '   ', ...stockholm }],
       ['name over 100 characters', { name: named('x'.repeat(101)), ...stockholm }],
       ['lat out of range', { name: named('bad-lat'), lat: 91, lon: 18 }],
       ['missing lon', { name: named('no-lon'), lat: 59 }],
+      ['missing provider_name', { name: named('no-provider'), provider_name: undefined, ...stockholm }],
+      ['null provider_name', { name: named('null-provider'), provider_name: null, ...stockholm }],
+      ['whitespace-only provider_name', { name: named('blank-provider'), provider_name: '   ', ...stockholm }],
+      ['non-string provider_name', { name: named('bad-provider'), provider_name: 42, ...stockholm }],
+      [
+        'provider_name over 100 characters',
+        { name: named('long-provider'), provider_name: 'x'.repeat(101), ...stockholm },
+      ],
     ])('returns 400 for %s', async (_label, body) => {
       const res = await createLocation(body);
 
@@ -103,7 +128,12 @@ describe('Locations Routes', () => {
   describe('GET /v1/locations', () => {
     beforeAll(async () => {
       await createLocation({ name: named('Search Malmö'), lat: 55.605, lon: 13.0038 });
-      await createLocation({ name: named('Search Uppsala'), lat: 59.8586, lon: 17.6389 });
+      await createLocation({
+        name: named('Search Uppsala'),
+        provider_name: `${PREFIX}Provider Uppsala kommun`,
+        lat: 59.8586,
+        lon: 17.6389,
+      });
     });
 
     it('returns a paginated list', async () => {
@@ -111,7 +141,7 @@ describe('Locations Routes', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.pagination).toMatchObject({ page: 1, perPage: 100 });
+      expect(res.body.pagination).toMatchObject({ page: 1, perPage: 25 });
       expect(res.body.pagination.totalCount).toBeGreaterThanOrEqual(2);
     });
 
@@ -123,6 +153,15 @@ describe('Locations Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.map(row => row.name)).toEqual([named('Search Malmö')]);
       expect(res.body.pagination.totalCount).toBe(1);
+    });
+
+    it('matches the search against provider_name too', async () => {
+      const res = await request(app)
+        .get('/v1/locations')
+        .query({ search: `${PREFIX}provider uppsala` });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.map(row => row.name)).toEqual([named('Search Uppsala')]);
     });
 
     it('returns 400 for an invalid page', async () => {
@@ -187,6 +226,33 @@ describe('Locations Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject({ name: named('Partial'), lat: 10, lon: 18.069 });
+    });
+
+    it('updates provider_name', async () => {
+      const created = await createLocation({ name: named('Provider patch'), ...stockholm });
+      const id = created.body.data.id;
+
+      const res = await request(app)
+        .patch(`/v1/locations/${id}`)
+        .set('Cookie', getAuthCookie())
+        .send({ provider_name: '  Stockholms län ' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.provider_name).toBe('Stockholms län');
+    });
+
+    it.each([
+      ['null', null],
+      ['an empty string', ''],
+    ])('returns 400 when provider_name is %s', async (_label, provider_name) => {
+      const created = await createLocation({ name: named(`Keep provider ${_label}`), ...stockholm });
+
+      const res = await request(app)
+        .patch(`/v1/locations/${created.body.data.id}`)
+        .set('Cookie', getAuthCookie())
+        .send({ provider_name });
+
+      expect(res.status).toBe(400);
     });
 
     it('returns 400 when no updatable field is sent', async () => {
@@ -268,7 +334,7 @@ describe('Locations Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.resource).toBe('Location');
-      expect(res.body.data.values).toEqual(['id', 'name', 'lat', 'lon', 'created_at', 'updated_at']);
+      expect(res.body.data.values).toEqual(['id', 'name', 'provider_name', 'lat', 'lon', 'created_at', 'updated_at']);
     });
 
     it('returns distinct values for a valid field', async () => {
