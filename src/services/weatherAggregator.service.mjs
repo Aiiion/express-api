@@ -40,7 +40,7 @@ const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
  * @returns {number|null} Average value or null if no valid values
  */
 const averageValues = values => {
-  const validValues = values.filter(v => v !== null && v !== undefined && !isNaN(v));
+  const validValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v));
   if (validValues.length === 0) return null;
   return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
 };

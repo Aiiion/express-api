@@ -40,7 +40,7 @@ const openMeteoArchiveService = {
     const h = json.hourly;
     if (!h) return null;
 
-    const validValues = arr => (arr ?? []).filter(v => v != null && !isNaN(v));
+    const validValues = arr => (arr ?? []).filter(v => Number.isFinite(v));
     const precips = validValues(h.precipitation);
 
     return {

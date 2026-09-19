@@ -55,7 +55,7 @@ const frostObsService = {
     for (const obs of observations) {
       for (const o of obs.observations ?? []) {
         const val = parseFloat(o.value);
-        if (isNaN(val)) continue;
+        if (Number.isNaN(val)) continue;
         const el = o.elementId ?? '';
         if (el === 'air_temperature') temps.push(val);
         else if (el.startsWith('sum(precipitation')) precips.push(val);
