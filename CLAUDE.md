@@ -62,6 +62,8 @@ There is no build script.
 - Login is rate-limited (10 req / 15 min) using `express-rate-limit` with a Redis store; in-memory store when `NODE_ENV=test`
 - Protected endpoints use an `authenticate` middleware that reads the JWT cookie
 
+**Locations** (`/v1/locations`) is the one client-writable resource: named coordinates anyone can save so others can feed them to `/v1/weather`. There are no user accounts, so rows have no owner — `GET` index/show and `POST` are public (POST is rate-limited per IP, 30 / 15 min), while `PATCH`, `DELETE` and the `/meta` routes require the admin JWT. Names are unique case-insensitively via a functional index on `lower(name)` (`uq_locations_name_lower`, created with raw SQL in the migration — a column-level `unique` would be case-sensitive); the controller relies on the resulting `UniqueConstraintError` for its 409 rather than a racy pre-check. Coordinates are `DOUBLE` (not `DECIMAL`, which `pg` returns as strings) and go through the same 3-decimal rounding as weather requests. Because public and cookie-authenticated routes share one prefix, the route module mounts a single CORS delegate that picks open (`origin: '*'`) or allowlist+credentials per path and method — for a preflight it reads `Access-Control-Request-Method`; two stacked `cors()` mounts would overwrite each other's headers.
+
 **Request logging** is asynchronous and two-stage:
 - `src/middleware/log.middleware.mjs` queues structured log payloads into Redis after each response
 - `src/jobs/flush-request-logs.mjs` flushes the queue to Postgres in batches with a Redis lock (avoids concurrent flushers); uses `bulkCreate(..., { ignoreDuplicates: true })` with `stable_id` for deduplication
@@ -92,7 +94,9 @@ There is no build script.
 - Request coordinates are rounded to 3 decimals (~110 m) by `latLonValidationSchema` so GPS jitter shares cache entries, while staying inside one grid cell of the finest provider model. `forecastSnapshot.service.mjs` rounds to 2 decimals separately and deliberately — that key exists to pool near-duplicate requests for accuracy statistics, not to serve a forecast.
 - `src/data/borders/` contains geographic boundary data used by geo helpers for weather warning region checks.
 - `src/data/referenceStations.mjs` lists the 13 fixed station coordinates used by the daily accuracy poll; coordinates are sourced from real station positions (SMHI metobs, Frost, FMI) so observation lookups resolve to exactly those stations.
-- `src/services/infrastructure/redis.service.mjs` exposes a `withCache(key, ttl, fn)` helper for programmatic caching; the `cache(duration)` middleware in `src/middleware/cache.middleware.mjs` wraps `res.send` to cache full HTTP responses by URL.
+- `src/services/infrastructure/redis.service.mjs` exposes a `withCache(key, ttl, fn)` helper for programmatic caching; the `cache(duration)` middleware in `src/middleware/cache.middleware.mjs` wraps `res.send` to cache full HTTP responses by URL. Don't put it on a route whose data the API itself mutates (e.g. the locations index) — there is no invalidation hook.
+- Per-IP rate limits come from `createRateLimiter({ windowMs, max, prefix, message })` in `src/middleware/rateLimit.middleware.mjs` (Redis store outside `NODE_ENV=test`). `prefix` is mandatory and must be unique per limiter: `rate-limit-redis` defaults every store to `rl:`, so two limiters without their own prefix would share one counter.
+- `createLatLonValidationSchema({ location, optional })` in `src/utils/validationSchemas.mjs` builds the lat/lon rules for either `query` or `body`; `latLonValidationSchema` is the query default. `idParamValidationSchema` validates a positive-integer `:id` route param.
 
 ## Adding a country warning provider
 

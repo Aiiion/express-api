@@ -1,39 +1,46 @@
-export const latLonValidationSchema = {
-  lat: {
-    in: ['query'],
-    exists: {
-      errorMessage: 'Lat is required',
+// ~110 m precision. Enough to collapse GPS jitter (metres) so repeat
+// requests share provider and response cache entries, while staying
+// well inside a single grid cell of even the finest provider model
+// (MET Nordic ~1 km, SMHI ~2.5 km). Rounding harder would start moving
+// the point across coastlines and valley walls, where a kilometre is
+// worth several degrees of temperature. Stored locations round the same
+// way so a saved place and a live request from it share one cache entry.
+const roundCoordinate = value => Math.round(value * 1000) / 1000;
+
+// `optional` swaps the `exists` check for `optional: true` (no `default` —
+// optional skips the whole chain, default included).
+export const createLatLonValidationSchema = ({ location = 'query', optional = false } = {}) => {
+  const presence = required => (optional ? { optional: true } : { exists: { errorMessage: required } });
+
+  return {
+    lat: {
+      in: [location],
+      ...presence('Lat is required'),
+      isFloat: {
+        options: { min: -90, max: 90 },
+        errorMessage: 'Lat must be a number between -90 and 90',
+      },
+      toFloat: true,
+      customSanitizer: {
+        options: roundCoordinate,
+      },
     },
-    isFloat: {
-      options: { min: -90, max: 90 },
-      errorMessage: 'Lat must be a number between -90 and 90',
+    lon: {
+      in: [location],
+      ...presence('Lon is required'),
+      isFloat: {
+        options: { min: -180, max: 180 },
+        errorMessage: 'Lon must be a number between -180 and 180',
+      },
+      toFloat: true,
+      customSanitizer: {
+        options: roundCoordinate,
+      },
     },
-    toFloat: true,
-    // ~110 m precision. Enough to collapse GPS jitter (metres) so repeat
-    // requests share provider and response cache entries, while staying
-    // well inside a single grid cell of even the finest provider model
-    // (MET Nordic ~1 km, SMHI ~2.5 km). Rounding harder would start moving
-    // the point across coastlines and valley walls, where a kilometre is
-    // worth several degrees of temperature.
-    customSanitizer: {
-      options: value => Math.round(value * 1000) / 1000,
-    },
-  },
-  lon: {
-    in: ['query'],
-    exists: {
-      errorMessage: 'Lon is required',
-    },
-    isFloat: {
-      options: { min: -180, max: 180 },
-      errorMessage: 'Lon must be a number between -180 and 180',
-    },
-    toFloat: true,
-    customSanitizer: {
-      options: value => Math.round(value * 1000) / 1000,
-    },
-  },
+  };
 };
+
+export const latLonValidationSchema = createLatLonValidationSchema();
 
 // `days` and `units` are deliberately not `optional`: express-validator skips
 // every item in an optional chain — `default` included — when the field is
@@ -162,6 +169,64 @@ export const providerAccuracyScoresIndexValidationSchema = {
   ...paginationValidationSchema,
   ...providerValidationSchema,
   ...countryCodeValidationSchema,
+};
+
+export const idParamValidationSchema = {
+  id: {
+    in: ['params'],
+    isInt: {
+      options: { min: 1 },
+      errorMessage: 'Id must be a positive integer',
+    },
+    toInt: true,
+  },
+};
+
+const LOCATION_NAME_MAX_LENGTH = 100;
+
+// NFC-normalize so composed and decomposed forms of the same character
+// ("ö" as one code point vs "o" + combining diaeresis) can't slip past the
+// case-insensitive unique index as two visually identical names.
+const locationNameRules = {
+  in: ['body'],
+  isString: {
+    errorMessage: 'Name must be a string',
+  },
+  trim: true,
+  customSanitizer: {
+    options: value => (typeof value === 'string' ? value.normalize('NFC') : value),
+  },
+  notEmpty: {
+    errorMessage: 'Name cannot be empty',
+  },
+  isLength: {
+    options: { max: LOCATION_NAME_MAX_LENGTH },
+    errorMessage: `Name must be at most ${LOCATION_NAME_MAX_LENGTH} characters`,
+  },
+};
+
+export const locationStoreValidationSchema = {
+  ...createLatLonValidationSchema({ location: 'body' }),
+  name: {
+    exists: {
+      errorMessage: 'Name is required',
+    },
+    ...locationNameRules,
+  },
+};
+
+// Every field optional; the controller rejects a body with none of them.
+export const locationUpdateValidationSchema = {
+  ...createLatLonValidationSchema({ location: 'body', optional: true }),
+  name: {
+    optional: true,
+    ...locationNameRules,
+  },
+};
+
+export const locationsIndexValidationSchema = {
+  ...paginationValidationSchema,
+  ...searchValidationSchema,
 };
 
 export const verifyCodeValidationSchema = {

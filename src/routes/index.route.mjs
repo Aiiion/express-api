@@ -3,6 +3,7 @@ import infoRouter from './info.route.mjs';
 import authRouter from './v1/auth.route.mjs';
 import errorLogsRouter from './v1/errorLogs.route.mjs';
 import v1Router from './v1/index.route.mjs';
+import locationsRouter from './v1/locations.route.mjs';
 import providerAccuracyScoresRouter from './v1/providerAccuracyScores.route.mjs';
 import providerForecastSnapshotsRouter from './v1/providerForecastSnapshots.route.mjs';
 import logsRouter from './v1/requestLogs.route.mjs';
@@ -17,6 +18,7 @@ router.use(logsRouter);
 router.use(errorLogsRouter);
 router.use(providerForecastSnapshotsRouter);
 router.use(providerAccuracyScoresRouter);
+router.use(locationsRouter);
 router.use(v1Router);
 
 router.use((_req, res) => {
