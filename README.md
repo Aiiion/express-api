@@ -202,6 +202,11 @@ Lists all available REST resources and aggregates in the v1 API. Weather is list
       "name": "ErrorLog",
       "endpoint": "/v1/errorLogs",
       "meta": "/v1/errorLogs/meta"
+    },
+    {
+      "name": "Location",
+      "endpoint": "/v1/locations",
+      "meta": "/v1/locations/meta"
     }
   ],
   "aggregates": [
@@ -477,6 +482,197 @@ Max 1000 values will be returned, limited tells if amount of data was limited
   "data": {
     "field": "route",
     "values": ["/v1/requestLogs", "/v1/errorLogs"],
+    "count": 2,
+    "limited": false
+  }
+}
+```
+
+**Response (404):**
+```json
+{
+  "code": 404,
+  "message": "Field not found for the requested resource"
+}
+```
+
+---
+
+## Locations
+
+Named coordinates saved by API clients so anyone can look a place up and pass its `lat`/`lon` to `/v1/weather`. Reading and creating are public; updating and deleting require the admin JWT cookie. There are no user accounts, so a location has no owner.
+
+`name` is what the user typed; `provider_name` is a second label the frontend fills in on its own (for example the place name the weather provider reports for the coordinates). Both are required. Names are unique **case-insensitively** (`Stockholm` and `stockholm` are the same name) and are stored trimmed, exactly as entered otherwise; `provider_name` is free text with no uniqueness. Coordinates are rounded to 3 decimals (~110 m), the same rounding `/v1/weather` applies.
+
+### (POST) **/v1/locations**
+
+Creates a location. Rate-limited to 30 requests per 15 minutes per IP.
+
+**Body:**
+```json
+{ "name": "Stockholm", "provider_name": "Stockholm, Sweden", "lat": 59.3293, "lon": 18.0686 }
+```
+
+| Field           | Required | Type   | Description |
+|-----------------|----------|--------|-------------|
+| `name`          | ✅       | string | 1–100 characters after trimming; unique, case-insensitive |
+| `provider_name` | ✅       | string | 1–100 characters after trimming; not unique |
+| `lat`           | ✅       | float  | Latitude (-90 to 90) |
+| `lon`           | ✅       | float  | Longitude (-180 to 180) |
+
+**Response (201):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Stockholm",
+    "provider_name": "Stockholm, Sweden",
+    "lat": 59.329,
+    "lon": 18.069,
+    "created_at": "2026-09-19T12:00:00.000Z",
+    "updated_at": null
+  }
+}
+```
+
+**Response (409):**
+```json
+{ "code": 409, "message": "A location with that name already exists" }
+```
+
+**Response (429):**
+```json
+{ "code": 429, "message": "Too many locations created, please try again later" }
+```
+
+### (GET) **/v1/locations**
+
+Retrieves paginated locations ordered by name.
+
+**Query Parameters:**
+- `page` (optional) — Page number (default: 1). Each page returns up to 25 locations.
+- `search` (optional) — Case-insensitive substring match on `name` or `provider_name`.
+
+**Examples:**
+- `/v1/locations?search=stock`
+- `/v1/locations?page=2`
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Stockholm",
+      "provider_name": "Stockholm, Sweden",
+      "lat": 59.329,
+      "lon": 18.069,
+      "created_at": "2026-09-19T12:00:00.000Z",
+      "updated_at": null
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "perPage": 25,
+    "totalPages": 1,
+    "totalCount": 1
+  }
+}
+```
+
+### (GET) **/v1/locations/:id**
+
+Retrieves a single location.
+
+**Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Stockholm",
+    "provider_name": "Stockholm, Sweden",
+    "lat": 59.329,
+    "lon": 18.069,
+    "created_at": "2026-09-19T12:00:00.000Z",
+    "updated_at": null
+  }
+}
+```
+
+**Response (404):**
+```json
+{ "code": 404, "message": "Location not found" }
+```
+
+### (PATCH) **/v1/locations/:id**
+
+Updates any of `name`, `provider_name`, `lat`, `lon`. Fields not sent are left as they are; a field that is sent must be valid on its own (so `provider_name` cannot be cleared). Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Body:**
+```json
+{ "name": "Stockholm City" }
+```
+
+**Response (200):** the updated location in the same shape as `GET /v1/locations/:id`, with `updated_at` set.
+
+**Response (400):**
+```json
+{ "code": 400, "message": "No fields to update" }
+```
+
+**Response (404):** `{ "code": 404, "message": "Location not found" }`
+
+**Response (409):** `{ "code": 409, "message": "A location with that name already exists" }`
+
+### (DELETE) **/v1/locations/:id**
+
+Deletes a location. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Response (204):** no body.
+
+**Response (404):** `{ "code": 404, "message": "Location not found" }`
+
+### (GET) **/v1/locations/meta**
+
+Returns the available location fields that can be queried through the meta endpoint family. Requires JWT authentication via HTTP-only cookie.
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Response (200):**
+```json
+{
+  "data": {
+    "resource": "Location",
+    "values": ["id", "name", "provider_name", "lat", "lon", "created_at", "updated_at"],
+    "count": 7
+  }
+}
+```
+
+### (GET) **/v1/locations/meta/:field**
+
+Returns the distinct values for a single location field. Requires JWT authentication via HTTP-only cookie.
+
+Max 1000 values will be returned, limited tells if amount of data was limited
+
+**Cookie:** `jwt_token=<jwt>` (sent automatically by browser)
+
+**Route Parameters:**
+- `field` — A valid location field name returned by `/v1/locations/meta`.
+
+**Example:**
+- `/v1/locations/meta/name`
+
+**Response (200):**
+```json
+{
+  "data": {
+    "field": "name",
+    "values": ["Göteborg", "Stockholm"],
     "count": 2,
     "limited": false
   }

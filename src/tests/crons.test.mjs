@@ -4,6 +4,7 @@ const requestDestroyMock = jest.fn();
 const errorDestroyMock = jest.fn();
 
 jest.unstable_mockModule('../models/index.mjs', () => ({
+  initModels: jest.fn().mockResolvedValue({}),
   sequelize: {
     models: {
       RequestLog: { destroy: requestDestroyMock },

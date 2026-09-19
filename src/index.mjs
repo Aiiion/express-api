@@ -5,11 +5,7 @@ import helmet from 'helmet';
 import { registerCronJobs } from './cron.mjs';
 import { handleError } from './middleware/handleError.middleware.mjs';
 import { logRequest } from './middleware/log.middleware.mjs';
-import initErrorLog from './models/errorLog.model.mjs';
-import { sequelize } from './models/index.mjs';
-import initProviderAccuracyScore from './models/providerAccuracyScore.model.mjs';
-import initProviderForecastSnapshot from './models/providerForecastSnapshot.model.mjs';
-import initRequestLog from './models/requestLog.model.mjs';
+import { initModels, sequelize } from './models/index.mjs';
 import routes from './routes/index.route.mjs';
 import { closePool, connect } from './services/infrastructure/db.service.mjs';
 import { closeRedisConnection, ensureRedisConnection } from './services/infrastructure/redis.service.mjs';
@@ -39,11 +35,8 @@ const start = async (listenPort = port) => {
   try {
     await connect();
     await ensureRedisConnection();
-    // initialize sequelize models (no sync here; migrations manage schema)
-    initRequestLog(sequelize);
-    initErrorLog(sequelize);
-    initProviderForecastSnapshot(sequelize);
-    initProviderAccuracyScore(sequelize);
+    // register sequelize models (no sync here; migrations manage schema)
+    await initModels();
     await sequelize.authenticate();
     if (!cronHandle) {
       cronHandle = registerCronJobs();
