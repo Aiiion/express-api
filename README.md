@@ -573,7 +573,7 @@ Retrieves paginated locations ordered by name.
   ],
   "pagination": {
     "page": 1,
-    "perPage": 100,
+    "perPage": 25,
     "totalPages": 1,
     "totalCount": 1
   }
