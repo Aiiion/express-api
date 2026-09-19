@@ -1,9 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { Op } from 'sequelize';
-import initErrorLog from '../models/errorLog.model.mjs';
-import { sequelize } from '../models/index.mjs';
-import initRequestLog from '../models/requestLog.model.mjs';
+import { initModels, sequelize } from '../models/index.mjs';
 import { devError } from '../utils/logger.mjs';
 
 dotenv.config();
@@ -29,8 +27,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   (async () => {
     try {
       await sequelize.authenticate();
-      initRequestLog(sequelize);
-      initErrorLog(sequelize);
+      await initModels();
       await purgeOldLogs();
       process.exit(0);
     } catch (err) {

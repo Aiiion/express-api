@@ -1,8 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import referenceStations from '../data/referenceStations.mjs';
-import { sequelize } from '../models/index.mjs';
-import initProviderForecastSnapshot from '../models/providerForecastSnapshot.model.mjs';
+import { initModels, sequelize } from '../models/index.mjs';
 import weatherAggregatorService from '../services/weatherAggregator.service.mjs';
 import { devError } from '../utils/logger.mjs';
 
@@ -35,7 +34,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   (async () => {
     try {
       await sequelize.authenticate();
-      initProviderForecastSnapshot(sequelize);
+      await initModels();
       const result = await pollReferenceStations();
       console.log('Done:', result);
       process.exit(0);

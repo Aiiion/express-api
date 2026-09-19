@@ -1,3 +1,4 @@
+import { readdir } from 'node:fs/promises';
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
 
@@ -12,4 +13,24 @@ const sequelize = new Sequelize(connectionString, {
   logging: false,
 });
 
-export { sequelize };
+const modelsDir = new URL('.', import.meta.url);
+
+let initialized;
+
+// Registers every `*.model.mjs` in this directory on the instance. Each file
+// default-exports `sequelize => Model`, so a new model only needs its file —
+// nothing lists them by hand. Memoized: `start()` and the standalone job
+// entrypoints can all call it without defining a model twice.
+const initModels = () => {
+  initialized ??= (async () => {
+    const files = (await readdir(modelsDir)).filter(file => file.endsWith('.model.mjs')).sort();
+    for (const file of files) {
+      const { default: init } = await import(new URL(file, modelsDir).href);
+      init(sequelize);
+    }
+    return sequelize.models;
+  })();
+  return initialized;
+};
+
+export { initModels, sequelize };

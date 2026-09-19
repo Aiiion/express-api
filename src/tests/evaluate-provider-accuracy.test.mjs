@@ -6,6 +6,7 @@ const snapshotUpdateMock = jest.fn();
 const scoreUpsertMock = jest.fn();
 
 jest.unstable_mockModule('../models/index.mjs', () => ({
+  initModels: jest.fn().mockResolvedValue({}),
   sequelize: {
     models: {
       ProviderForecastSnapshot: {

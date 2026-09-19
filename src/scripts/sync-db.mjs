@@ -1,14 +1,8 @@
 import dotenv from 'dotenv';
-import initErrorLog from '../models/errorLog.model.mjs';
-import { sequelize } from '../models/index.mjs';
-import initRequestLog from '../models/requestLog.model.mjs';
+import { initModels, sequelize } from '../models/index.mjs';
 import { devError, devLog } from '../utils/logger.mjs';
 
 dotenv.config();
-
-// Initialize models
-initRequestLog(sequelize);
-initErrorLog(sequelize);
 
 const run = async () => {
   if (process.env.NODE_ENV === 'production') {
@@ -19,6 +13,7 @@ const run = async () => {
   try {
     await sequelize.authenticate();
     devLog('Database connection OK');
+    await initModels();
     await sequelize.sync({ alter: true });
     devLog('Database synced (models applied)');
     process.exit(0);

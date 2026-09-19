@@ -40,7 +40,7 @@ There is no build script.
 
 ## Architecture
 
-**Entrypoint:** `src/index.mjs` builds the Express app, applies middleware (helmet, JSON, cookie-parser, request logger, global error handler), mounts routes, then `start()` connects Postgres + Redis, initializes Sequelize models, and registers cron jobs. The server does not auto-start when `NODE_ENV=test` — most test files call `start(0)` themselves.
+**Entrypoint:** `src/index.mjs` builds the Express app, applies middleware (helmet, JSON, cookie-parser, request logger, global error handler), mounts routes, then `start()` connects Postgres + Redis, awaits `initModels()`, and registers cron jobs. The server does not auto-start when `NODE_ENV=test` — most test files call `start(0)` themselves.
 
 **Routing** is composed in `src/routes/index.route.mjs`. Route modules (not controllers) own request-level concerns: they compose `checkSchema(...)`, `validateResult`, CORS, and auth middleware before handing off to a controller. Validation schemas are shared from `src/utils/validationSchemas.mjs`.
 
@@ -78,7 +78,7 @@ There is no build script.
 - Observation ground truth by country: SE → SMHI metobs API (`src/services/observations/smhiObs.service.mjs`, station list cached 24h in Redis); NO → Frost API with Basic auth (`src/services/observations/frostObs.service.mjs`, `nearest(POINT(...))` query); FI → FMI WFS via existing `fetchWfsBsSimple` (`src/services/observations/fmiObs.service.mjs`); global → Open-Meteo ERA5 archive (`src/services/observations/openMeteoArchive.service.mjs`)
 - `country_code` uses 2-letter ISO codes; `'GL'` is the sentinel for coordinates outside SE/NO/FI
 
-**Database** uses both `pg` and Sequelize. `src/services/infrastructure/db.service.mjs` owns the low-level `pg` connectivity check. `src/models/index.mjs` creates the Sequelize instance. Schema is managed entirely through migrations in `src/db/migrations/` — `sequelize.sync()` is never used.
+**Database** uses both `pg` and Sequelize. `src/services/infrastructure/db.service.mjs` owns the low-level `pg` connectivity check. `src/models/index.mjs` creates the Sequelize instance and exports `initModels()`, which registers every `src/models/*.model.mjs` by directory scan (each default-exports `sequelize => Model`) — a new model needs only its file, never an import in `src/index.mjs`. It is memoized, so `start()`, the standalone job entrypoints and `sync-db.mjs` all just `await initModels()`. Tests that mock `../models/index.mjs` must stub `initModels` as well as `sequelize`. Schema is managed entirely through migrations in `src/db/migrations/` — `sequelize.sync()` is never used.
 
 **Response shape conventions:**
 - Errors: `{ code, message }`
