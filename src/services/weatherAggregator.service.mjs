@@ -866,17 +866,20 @@ const weatherAggregatorService = {
 
     const currentWeather = processCurrentWeather(weatherApiCurrentResult, smhiResult, metResult, metric);
 
-    // Derive timezone from the current-weather response (more reliable than forecast responses).
-    // Passed explicitly so processForecastWeather doesn't fall back to 'UTC' when a forecast
-    // call fails and SMHI/MET data gets re-bucketed into the wrong day.
-    const currentTimezone = weatherApiCurrentResult.value?.location?.tz_id ?? null;
+    // Resolve the timezone once, from whichever WeatherAPI response came back — the
+    // current-weather one is preferred as the more reliable of the two — and hand the
+    // same value to the forecast merge and the accuracy snapshot, so SMHI/MET are
+    // bucketed into the same local days in both rather than one of them silently
+    // falling back to UTC.
+    const timezone =
+      weatherApiCurrentResult.value?.location?.tz_id ?? weatherApiForecastResult.value?.location?.tz_id ?? 'UTC';
 
     const forecastWeather = processForecastWeather(
       weatherApiForecastResult,
       smhiResult,
       metResult,
       metric,
-      currentTimezone,
+      timezone,
       days,
     );
 
@@ -889,7 +892,7 @@ const weatherAggregatorService = {
       },
       lat,
       lon,
-      currentTimezone ?? 'UTC',
+      timezone,
     );
 
     return { currentWeather, forecastWeather };

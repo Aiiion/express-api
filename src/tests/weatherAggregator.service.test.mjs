@@ -61,6 +61,11 @@ jest.unstable_mockModule('../services/errorLog.service.mjs', () => ({
   logError: jest.fn(),
 }));
 
+const captureForecastsMock = jest.fn();
+jest.unstable_mockModule('../services/forecastSnapshot.service.mjs', () => ({
+  captureForecasts: captureForecastsMock,
+}));
+
 // ---------------------------------------------------------------------------
 // Pre-normalized test data (what the DTOs would return after transforming raw
 // API responses). Using controlled values makes expected aggregations precise.
@@ -1447,6 +1452,44 @@ describe('weatherAggregatorService', () => {
       expect(result.currentWeather.errors[0].provider).toBe('weatherapi.com');
       expect(result.forecastWeather.errors).toHaveLength(1);
       expect(result.forecastWeather.errors[0].provider).toBe('smhi.se');
+    });
+
+    describe('snapshot timezone', () => {
+      // The accuracy snapshot buckets SMHI/MET by the timezone it is handed,
+      // so it must get the same one the forecast merge used — never a UTC
+      // fallback while the response itself was bucketed locally
+      beforeEach(() => {
+        captureForecastsMock.mockClear();
+      });
+
+      const snapshotTimezone = () => captureForecastsMock.mock.calls[0][3];
+
+      it("prefers the current-weather response's timezone", async () => {
+        weatherApiServiceMocks.currentWeather.mockResolvedValue({ location: { tz_id: 'Europe/Stockholm' } });
+        weatherApiServiceMocks.forecastWeather.mockResolvedValue({ location: { tz_id: 'Europe/Oslo' } });
+
+        await weatherAggregatorService.allWeather(59.4, 18.0);
+
+        expect(snapshotTimezone()).toBe('Europe/Stockholm');
+      });
+
+      it("falls back to the forecast response's timezone when the current call fails", async () => {
+        weatherApiServiceMocks.currentWeather.mockRejectedValue(new Error('WeatherAPI current down'));
+        weatherApiServiceMocks.forecastWeather.mockResolvedValue({ location: { tz_id: 'Europe/Oslo' } });
+
+        await weatherAggregatorService.allWeather(59.4, 18.0);
+
+        expect(snapshotTimezone()).toBe('Europe/Oslo');
+      });
+
+      it('falls back to UTC only when WeatherAPI gave no timezone at all', async () => {
+        weatherApiServiceMocks.currentWeather.mockRejectedValue(new Error('WeatherAPI current down'));
+        weatherApiServiceMocks.forecastWeather.mockRejectedValue(new Error('WeatherAPI forecast down'));
+
+        await weatherAggregatorService.allWeather(59.4, 18.0);
+
+        expect(snapshotTimezone()).toBe('UTC');
+      });
     });
   });
 });
