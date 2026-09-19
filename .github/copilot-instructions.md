@@ -32,7 +32,7 @@
   - `/v1` discovery/index endpoint
 - The weather endpoint is a multi-provider aggregation pipeline, not a thin proxy:
   - controller: `src/controllers/v1/weather.controller.mjs`
-  - provider clients: `src/services/openWeatherMaps.service.mjs`, `src/services/weatherApi.service.mjs`, `src/services/smhi.service.mjs`, `src/services/met.service.mjs`
+  - provider clients: `src/services/providers/weatherApi.service.mjs`, `src/services/providers/smhi.service.mjs`, `src/services/providers/met.service.mjs` (`src/services/providers/openWeatherMaps.service.mjs` only serves pollution)
   - normalization layer: `src/dtos/*.dto.mjs`
   - merge/orchestration: `src/services/weatherAggregator.service.mjs`
   The aggregator fetches providers in parallel, normalizes them into a shared DTO shape, averages overlapping numeric fields, has custom precipitation-window merging logic, and logs provider failures while still returning partial weather data when possible.

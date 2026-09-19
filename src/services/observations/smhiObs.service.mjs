@@ -68,7 +68,7 @@ const fetchObservations = async (parameterId, stationId, date) => {
   return (json.value ?? [])
     .filter(v => v.quality === 'G' || v.quality === 'Y')
     .map(v => ({ epochMs: Number(v.date), value: parseFloat(v.value) }))
-    .filter(v => !isNaN(v.value));
+    .filter(v => !Number.isNaN(v.value));
 };
 
 const avg = arr => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);

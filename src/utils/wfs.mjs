@@ -62,7 +62,7 @@ const pivotBsSimple = parsed => {
     const raw = el.ParameterValue;
     if (name) {
       const num = parseFloat(raw);
-      timeMap.get(time)[name] = isNaN(num) ? null : num;
+      timeMap.get(time)[name] = Number.isNaN(num) ? null : num;
     }
   }
 

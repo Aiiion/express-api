@@ -9,17 +9,9 @@ const owmFetch = (path, query) => {
   return providerFetch('OpenWeatherMap', `${OWM_API_URL}${path}?${params}`);
 };
 
+// OpenWeatherMap only supplies air pollution. It no longer takes part in the
+// weather aggregation pipeline.
 const openWeatherMapsService = {
-  currentWeather: query =>
-    withCache(`owm:current:${query.lat}:${query.lon}:${query.units ?? 'metric'}`, OWM_CACHE_TTL, () =>
-      owmFetch('/weather', query),
-    ),
-
-  forecastWeather: query =>
-    withCache(`owm:forecast:${query.lat}:${query.lon}:${query.units ?? 'metric'}`, OWM_CACHE_TTL, () =>
-      owmFetch('/forecast', query),
-    ),
-
   currentPollution: query =>
     withCache(`owm:pollution:current:${query.lat}:${query.lon}`, OWM_CACHE_TTL, () =>
       owmFetch('/air_pollution', query),

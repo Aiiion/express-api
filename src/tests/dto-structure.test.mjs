@@ -1,11 +1,9 @@
 import fmiDto from '../dtos/fmi.dto.mjs';
 import metDto from '../dtos/met.dto.mjs';
-import openWeatherMapsDto from '../dtos/openWeatherMaps.dto.mjs';
 import smhiDto from '../dtos/smhi.dto.mjs';
 import weatherApiDto from '../dtos/weatherApi.dto.mjs';
 import { fmiWarningsFixtureParsed } from '../fixtures/fmi.fixture.mjs';
 import { metForecast } from '../fixtures/met.fixture.mjs';
-import { weather, weatherForecast } from '../fixtures/openWeatherMaps.fixture.mjs';
 import { smhiForecast } from '../fixtures/smhi.fixture.mjs';
 import {
   weatherForecast as weatherApiForecast,
@@ -73,31 +71,17 @@ const compareStructures = (keys1, keys2, name1, name2) => {
 };
 
 describe('DTO Structure Consistency', () => {
+  // WeatherAPI is the reference shape; every other provider feeding the
+  // aggregator must normalize to exactly the same keys.
   describe('currentWeather', () => {
-    it('should have the same structure across openWeatherMaps and weatherApi DTOs', () => {
-      const owmResult = openWeatherMapsDto.currentWeather(weather.data);
+    it('should have the same structure across weatherApi and smhi DTOs', () => {
       const weatherApiResult = weatherApiDto.currentWeather(weatherApiWeather.data);
-
-      const owmKeys = getObjectStructure(owmResult);
-      const weatherApiKeys = getObjectStructure(weatherApiResult);
-
-      const comparison = compareStructures(owmKeys, weatherApiKeys, 'openWeatherMaps', 'weatherApi');
-
-      if (!comparison.areEqual) {
-        devError(comparison.report);
-      }
-
-      expect(comparison.areEqual).toBe(true);
-    });
-
-    it('should have the same structure across openWeatherMaps and smhi DTOs', () => {
-      const owmResult = openWeatherMapsDto.currentWeather(weather.data);
       const smhiResult = smhiDto.currentWeather(smhiForecast.data);
 
-      const owmKeys = getObjectStructure(owmResult);
+      const weatherApiKeys = getObjectStructure(weatherApiResult);
       const smhiKeys = getObjectStructure(smhiResult);
 
-      const comparison = compareStructures(owmKeys, smhiKeys, 'openWeatherMaps', 'smhi');
+      const comparison = compareStructures(weatherApiKeys, smhiKeys, 'weatherApi', 'smhi');
 
       if (!comparison.areEqual) {
         devError(comparison.report);
@@ -106,14 +90,14 @@ describe('DTO Structure Consistency', () => {
       expect(comparison.areEqual).toBe(true);
     });
 
-    it('should have the same structure across openWeatherMaps and met DTOs', () => {
-      const owmResult = openWeatherMapsDto.currentWeather(weather.data);
+    it('should have the same structure across weatherApi and met DTOs', () => {
+      const weatherApiResult = weatherApiDto.currentWeather(weatherApiWeather.data);
       const metResult = metDto.currentWeather(metForecast.data);
 
-      const owmKeys = getObjectStructure(owmResult);
+      const weatherApiKeys = getObjectStructure(weatherApiResult);
       const metKeys = getObjectStructure(metResult);
 
-      const comparison = compareStructures(owmKeys, metKeys, 'openWeatherMaps', 'met');
+      const comparison = compareStructures(weatherApiKeys, metKeys, 'weatherApi', 'met');
 
       if (!comparison.areEqual) {
         devError(comparison.report);
@@ -124,63 +108,31 @@ describe('DTO Structure Consistency', () => {
   });
 
   describe('forecastWeather', () => {
-    it('should have the same structure across openWeatherMaps and weatherApi DTOs', () => {
-      const owmResult = openWeatherMapsDto.forecastWeather(weatherForecast.data);
+    it('should have the same structure across weatherApi and smhi DTOs', () => {
       const weatherApiResult = weatherApiDto.forecastWeather(weatherApiForecast.data);
+      const smhiResult = smhiDto.forecastWeather(smhiForecast.data);
 
       // For forecast, we need to compare the structure of the items within the list
       // not the day names themselves (those will vary based on when the forecast was fetched)
-      const owmDays = Object.keys(owmResult.list);
       const weatherApiDays = Object.keys(weatherApiResult.list);
-
-      expect(owmDays.length).toBeGreaterThan(0);
-      expect(weatherApiDays.length).toBeGreaterThan(0);
-
-      // Compare the structure of the first forecast day from each provider
-      const owmKeys = getObjectStructure(owmResult.list[owmDays[0]]);
-      const weatherApiKeys = getObjectStructure(weatherApiResult.list[weatherApiDays[0]]);
-
-      // Also compare the top-level structure (excluding the specific day names)
-      const owmTopLevel = new Set(['list', 'provider']);
-      const weatherApiTopLevel = new Set(['list', 'provider']);
-
-      const topLevelComparison = compareStructures(owmTopLevel, weatherApiTopLevel, 'openWeatherMaps', 'weatherApi');
-
-      const dayStructureComparison = compareStructures(owmKeys, weatherApiKeys, 'openWeatherMaps', 'weatherApi');
-
-      if (!topLevelComparison.areEqual) {
-        devError('Top level:', topLevelComparison.report);
-      }
-
-      if (!dayStructureComparison.areEqual) {
-        devError('Day structure:', dayStructureComparison.report);
-      }
-
-      expect(topLevelComparison.areEqual).toBe(true);
-      expect(dayStructureComparison.areEqual).toBe(true);
-    });
-
-    it('should have the same structure across openWeatherMaps and smhi DTOs', () => {
-      const owmResult = openWeatherMapsDto.forecastWeather(weatherForecast.data);
-      const smhiResult = smhiDto.forecastWeather(smhiForecast.data);
-
-      const owmDays = Object.keys(owmResult.list);
       const smhiDays = Object.keys(smhiResult.list);
 
-      expect(owmDays.length).toBeGreaterThan(0);
+      expect(weatherApiDays.length).toBeGreaterThan(0);
       expect(smhiDays.length).toBeGreaterThan(0);
 
-      const owmKeys = getObjectStructure(owmResult.list[owmDays[0]]);
+      // Compare the structure of the first forecast day from each provider
+      const weatherApiKeys = getObjectStructure(weatherApiResult.list[weatherApiDays[0]]);
       const smhiKeys = getObjectStructure(smhiResult.list[smhiDays[0]]);
 
+      // Also compare the top-level structure (excluding the specific day names)
       const topLevelComparison = compareStructures(
-        new Set(Object.keys(owmResult)),
+        new Set(Object.keys(weatherApiResult)),
         new Set(Object.keys(smhiResult)),
-        'openWeatherMaps',
+        'weatherApi',
         'smhi',
       );
 
-      const dayStructureComparison = compareStructures(owmKeys, smhiKeys, 'openWeatherMaps', 'smhi');
+      const dayStructureComparison = compareStructures(weatherApiKeys, smhiKeys, 'weatherApi', 'smhi');
 
       if (!topLevelComparison.areEqual) {
         devError('Top level:', topLevelComparison.report);
@@ -194,27 +146,27 @@ describe('DTO Structure Consistency', () => {
       expect(dayStructureComparison.areEqual).toBe(true);
     });
 
-    it('should have the same structure across openWeatherMaps and met DTOs', () => {
-      const owmResult = openWeatherMapsDto.forecastWeather(weatherForecast.data);
+    it('should have the same structure across weatherApi and met DTOs', () => {
+      const weatherApiResult = weatherApiDto.forecastWeather(weatherApiForecast.data);
       const metResult = metDto.forecastWeather(metForecast.data);
 
-      const owmDays = Object.keys(owmResult.list);
+      const weatherApiDays = Object.keys(weatherApiResult.list);
       const metDays = Object.keys(metResult.list);
 
-      expect(owmDays.length).toBeGreaterThan(0);
+      expect(weatherApiDays.length).toBeGreaterThan(0);
       expect(metDays.length).toBeGreaterThan(0);
 
-      const owmKeys = getObjectStructure(owmResult.list[owmDays[0]]);
+      const weatherApiKeys = getObjectStructure(weatherApiResult.list[weatherApiDays[0]]);
       const metKeys = getObjectStructure(metResult.list[metDays[0]]);
 
       const topLevelComparison = compareStructures(
-        new Set(Object.keys(owmResult)),
+        new Set(Object.keys(weatherApiResult)),
         new Set(Object.keys(metResult)),
-        'openWeatherMaps',
+        'weatherApi',
         'met',
       );
 
-      const dayStructureComparison = compareStructures(owmKeys, metKeys, 'openWeatherMaps', 'met');
+      const dayStructureComparison = compareStructures(weatherApiKeys, metKeys, 'weatherApi', 'met');
 
       if (!topLevelComparison.areEqual) {
         devError('Top level:', topLevelComparison.report);

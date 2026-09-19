@@ -21,7 +21,7 @@ const yesterday = () => {
 };
 
 const mae = errors => {
-  const valid = errors.filter(e => e != null && isFinite(e));
+  const valid = errors.filter(e => e != null && Number.isFinite(e));
   return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
 };
 

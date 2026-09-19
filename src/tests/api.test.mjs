@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { metForecast } from '../fixtures/met.fixture.mjs';
-import { airPollution, weather, weatherForecast } from '../fixtures/openWeatherMaps.fixture.mjs';
+import { airPollution } from '../fixtures/openWeatherMaps.fixture.mjs';
 import { smhiForecast } from '../fixtures/smhi.fixture.mjs';
 import {
   getIpLocation,
@@ -10,8 +10,6 @@ import {
 
 // Stable mock function references so individual tests can override behaviour
 const owmMocks = {
-  currentWeather: jest.fn().mockResolvedValue(weather.data),
-  forecastWeather: jest.fn().mockResolvedValue(weatherForecast.data),
   currentPollution: jest.fn().mockResolvedValue(airPollution.data),
 };
 
@@ -83,8 +81,6 @@ describe('API Routes', () => {
 
   beforeEach(async () => {
     await clearRedisTestData();
-    owmMocks.currentWeather.mockResolvedValue(weather.data);
-    owmMocks.forecastWeather.mockResolvedValue(weatherForecast.data);
     owmMocks.currentPollution.mockResolvedValue(airPollution.data);
     weatherApiMocks.ipLocation.mockResolvedValue(getIpLocation.data);
     weatherApiMocks.currentWeather.mockResolvedValue(weatherApiWeather.data);
@@ -149,8 +145,7 @@ describe('API Routes', () => {
     });
 
     it('should still return 200 when one weather provider fails', async () => {
-      owmMocks.currentWeather.mockRejectedValueOnce(new Error('OWM unavailable'));
-      owmMocks.forecastWeather.mockRejectedValueOnce(new Error('OWM unavailable'));
+      smhiMocks.forecastWeather.mockRejectedValueOnce(new Error('SMHI unavailable'));
       const res = await request(app).get('/v1/weather').query(exampleLatLon);
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('data');

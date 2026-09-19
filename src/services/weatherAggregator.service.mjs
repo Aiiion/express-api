@@ -1,5 +1,4 @@
 import metDto from '../dtos/met.dto.mjs';
-import openWeatherMapsDto from '../dtos/openWeatherMaps.dto.mjs';
 import smhiDto from '../dtos/smhi.dto.mjs';
 import weatherApiDto from '../dtos/weatherApi.dto.mjs';
 import { translateEpochDate, translateEpochDay } from '../utils/dateTimeHelpers.mjs';
@@ -8,7 +7,6 @@ import { CONDITIONS, conditionFor, GROUP_SEVERITY, weatherApiIconFor } from '../
 import { logError } from './errorLog.service.mjs';
 import { captureForecasts } from './forecastSnapshot.service.mjs';
 import metService from './providers/met.service.mjs';
-import openWeatherMapsService from './providers/openWeatherMaps.service.mjs';
 import smhiService from './providers/smhi.service.mjs';
 import weatherApiService from './providers/weatherApi.service.mjs';
 
@@ -42,7 +40,7 @@ const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
  * @returns {number|null} Average value or null if no valid values
  */
 const averageValues = values => {
-  const validValues = values.filter(v => v !== null && v !== undefined && !isNaN(v));
+  const validValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v));
   if (validValues.length === 0) return null;
   return validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
 };
@@ -90,12 +88,14 @@ const precipitationRate = source => {
 };
 
 /**
- * Picks the most-voted condition group. With four providers a 2–2 split is
- * common, so ties are settled by evidence before policy: a dry-versus-wet tie
- * goes to whichever side the voters' own precipitation amounts support, so
- * the condition never contradicts the amount reported beside it. What the
- * numbers cannot separate (rain vs snow, cloud vs fog) goes to the more
- * severe group (see GROUP_SEVERITY) — never to whichever provider is listed first.
+ * Picks the most-voted condition group. With three providers a tie happens
+ * whenever one is missing (SMHI has no coverage outside the Nordics) and the
+ * other two disagree, or when all three differ, so ties are settled by
+ * evidence before policy: a dry-versus-wet tie goes to whichever side the
+ * voters' own precipitation amounts support, so the condition never
+ * contradicts the amount reported beside it. What the numbers cannot separate
+ * (rain vs snow, cloud vs fog) goes to the more severe group (see
+ * GROUP_SEVERITY) — never to whichever provider is listed first.
  * @param {Array<{ group: string, rate: number|null }>} voters - One per voting source
  * @param {boolean} metric - Whether `rate` is in mm/h (true) or in/h
  * @returns {string|null}
@@ -122,7 +122,7 @@ const majorityGroup = (voters, metric = true) => {
 
 /**
  * Reads day/night from whichever provider icon is available: WeatherAPI URLs
- * carry /day/ or /night/, OWM codes end in d or n. SMHI and MET serve no icon.
+ * carry /day/ or /night/. SMHI and MET serve no icon.
  * @param {Array<Object>} sources
  * @returns {boolean|null} null when no source gave a hint
  */
@@ -130,8 +130,8 @@ const isDaytime = sources => {
   for (const source of sources) {
     const icon = source?.icon;
     if (typeof icon !== 'string') continue;
-    if (icon.includes('/day/') || /\dd$/.test(icon)) return true;
-    if (icon.includes('/night/') || /\dn$/.test(icon)) return false;
+    if (icon.includes('/day/')) return true;
+    if (icon.includes('/night/')) return false;
   }
   return null;
 };
@@ -367,8 +367,9 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays, { day, tim
   }
 
   // Group merged hours into windows aligned to the coarse providers' fixed
-  // reporting grid (e.g. OWM's 3-hour periods anchored at 00/03/06 UTC), so a
-  // coarse period's total is never split across two windows.
+  // reporting grid (SMHI and MET switch to 3- and 6-hour periods further out,
+  // anchored at 00/06/12/18 UTC), so a coarse period's total is never split
+  // across two windows.
   const windowHours = maxHoursMeasured;
   const windowSeconds = windowHours * 3600;
   const windows = new Map();
@@ -408,8 +409,8 @@ const adjustPrecipitationAcrossHours = (mergedHours, sourceDayArrays, { day, tim
     // they don't: a provider whose hourly range ends mid-window, or whose data
     // starts at a day boundary, would contribute a short total against
     // full-length ones and drag the average down. Rates also put coarse and
-    // granular sources on equal footing — OWM's 3 mm over 3 h and WeatherAPI's
-    // 1 mm over 1 h are the same 1 mm/h forecast, not a 3-versus-1 disagreement.
+    // granular sources on equal footing — MET's 6 mm over 6 h and WeatherAPI's
+    // 1 mm over 1 h are the same 1 mm/h forecast, not a 6-versus-1 disagreement.
     // Sources absent from the window are excluded (null), but a source
     // reporting zero is a real "no rain" prediction and must count.
     const sourceRates = sourceDayArrays.map(sourceHours => {
@@ -709,17 +710,15 @@ const collectProvider = (result, dtoFn, name, route) => {
 
 /**
  * Processes settled current weather results from all providers into a merged response.
- * @param {PromiseSettledResult} owmResult
  * @param {PromiseSettledResult} weatherApiResult
  * @param {PromiseSettledResult} smhiResult
  * @param {PromiseSettledResult} metResult
  * @param {boolean} metric
  * @returns {Object}
  */
-const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResult, metric = true) => {
+const processCurrentWeather = (weatherApiResult, smhiResult, metResult, metric = true) => {
   const route = 'weatherAggregator.currentWeather';
   const collected = [
-    collectProvider(owmResult, v => openWeatherMapsDto.currentWeather(v), 'openweathermaps.org', route),
     collectProvider(weatherApiResult, v => weatherApiDto.currentWeather(v, metric), 'weatherapi.com', route),
     collectProvider(smhiResult, v => smhiDto.currentWeather(v, metric), 'smhi.se', route),
     collectProvider(metResult, v => metDto.currentWeather(v, metric), 'met.no', route),
@@ -735,7 +734,6 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
 
 /**
  * Processes settled forecast weather results from all providers into a merged response.
- * @param {PromiseSettledResult} owmResult
  * @param {PromiseSettledResult} weatherApiResult
  * @param {PromiseSettledResult} smhiResult
  * @param {PromiseSettledResult} metResult
@@ -744,7 +742,7 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  *   conversion. Overrides the timezone inferred from provider responses. Pass the value from a
  *   current-weather result when available, as those are more reliable than forecast responses.
  *   Accepts a tz_id string (e.g. "Europe/Stockholm") or a UTC offset in hours. Defaults to null
- *   (falls back to the timezone reported by WeatherAPI, then OWM, then UTC).
+ *   (falls back to the timezone reported by WeatherAPI, then UTC).
  * @param {number|null} days - Maximum number of forecast days to include in the response. Slices
  *   the merged day list to the first N entries after weekday conversion. Pass null to return all
  *   available days (default: null).
@@ -752,7 +750,6 @@ const processCurrentWeather = (owmResult, weatherApiResult, smhiResult, metResul
  *   an optional `errors` array for any providers that failed.
  */
 const processForecastWeather = (
-  owmResult,
   weatherApiResult,
   smhiResult,
   metResult,
@@ -764,14 +761,10 @@ const processForecastWeather = (
   // Prefer an explicitly supplied timezone (derived from current-weather results, which are more
   // reliable than forecast responses) so that SMHI/MET DTOs are not re-bucketed to UTC when a
   // forecast call fails.
-  const timezone =
-    explicitTimezone ??
-    weatherApiResult.value?.location?.tz_id ??
-    (owmResult.value?.city?.timezone != null ? owmResult.value.city.timezone / 3600 : 'UTC');
+  const timezone = explicitTimezone ?? weatherApiResult.value?.location?.tz_id ?? 'UTC';
 
   const route = 'weatherAggregator.forecastWeather';
   const collected = [
-    collectProvider(owmResult, v => openWeatherMapsDto.forecastWeather(v), 'openweathermaps.org', route),
     collectProvider(weatherApiResult, v => weatherApiDto.forecastWeather(v, metric), 'weatherapi.com', route),
     collectProvider(smhiResult, v => smhiDto.forecastWeather(v, metric, timezone), 'smhi.se', route),
     collectProvider(metResult, v => metDto.forecastWeather(v, metric, timezone), 'met.no', route),
@@ -828,14 +821,12 @@ const weatherAggregatorService = {
    * @returns {Promise<Object>} Averaged weather data from all sources
    */
   currentWeather: async (lat, lon, metric = true) => {
-    const owmQuery = { lat, lon, units: metric ? 'metric' : 'imperial' };
-    const [owmResult, weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
-      openWeatherMapsService.currentWeather(owmQuery),
+    const [weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
       weatherApiService.currentWeather(lat, lon),
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
-    return processCurrentWeather(owmResult, weatherApiResult, smhiResult, metResult, metric);
+    return processCurrentWeather(weatherApiResult, smhiResult, metResult, metric);
   },
 
   /**
@@ -847,14 +838,12 @@ const weatherAggregatorService = {
    * @returns {Promise<Object>} Averaged forecast data from all sources
    */
   forecastWeather: async (lat, lon, metric = true, days = 5) => {
-    const owmQuery = { lat, lon, units: metric ? 'metric' : 'imperial' };
-    const [owmResult, weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
-      openWeatherMapsService.forecastWeather(owmQuery),
+    const [weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
       weatherApiService.forecastWeather(lat, lon, days),
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
-    return processForecastWeather(owmResult, weatherApiResult, smhiResult, metResult, metric, null, days);
+    return processForecastWeather(weatherApiResult, smhiResult, metResult, metric, null, days);
   },
 
   /**
@@ -868,59 +857,42 @@ const weatherAggregatorService = {
    * @returns {Promise<{ currentWeather: Object, forecastWeather: Object }>}
    */
   allWeather: async (lat, lon, metric = true, days = 5) => {
-    const owmQuery = { lat, lon, units: metric ? 'metric' : 'imperial' };
-    const [
-      owmCurrentResult,
-      owmForecastResult,
-      weatherApiCurrentResult,
-      weatherApiForecastResult,
-      smhiResult,
-      metResult,
-    ] = await Promise.allSettled([
-      openWeatherMapsService.currentWeather(owmQuery),
-      openWeatherMapsService.forecastWeather(owmQuery),
+    const [weatherApiCurrentResult, weatherApiForecastResult, smhiResult, metResult] = await Promise.allSettled([
       weatherApiService.currentWeather(lat, lon),
       weatherApiService.forecastWeather(lat, lon, days),
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
 
-    const currentWeather = processCurrentWeather(
-      owmCurrentResult,
-      weatherApiCurrentResult,
-      smhiResult,
-      metResult,
-      metric,
-    );
+    const currentWeather = processCurrentWeather(weatherApiCurrentResult, smhiResult, metResult, metric);
 
-    // Derive timezone from current-weather responses (more reliable than forecast responses).
-    // Passed explicitly so processForecastWeather doesn't fall back to 'UTC' when a forecast
-    // call fails and SMHI/MET data gets re-bucketed into the wrong day.
-    const currentTimezone =
-      weatherApiCurrentResult.value?.location?.tz_id ??
-      (owmCurrentResult.value?.city?.timezone != null ? owmCurrentResult.value.city.timezone / 3600 : null);
+    // Resolve the timezone once, from whichever WeatherAPI response came back — the
+    // current-weather one is preferred as the more reliable of the two — and hand the
+    // same value to the forecast merge and the accuracy snapshot, so SMHI/MET are
+    // bucketed into the same local days in both rather than one of them silently
+    // falling back to UTC.
+    const timezone =
+      weatherApiCurrentResult.value?.location?.tz_id ?? weatherApiForecastResult.value?.location?.tz_id ?? 'UTC';
 
     const forecastWeather = processForecastWeather(
-      owmForecastResult,
       weatherApiForecastResult,
       smhiResult,
       metResult,
       metric,
-      currentTimezone,
+      timezone,
       days,
     );
 
     // Fire-and-forget: capture per-provider next-day forecasts for accuracy evaluation.
     captureForecasts(
       {
-        owmForecast: owmForecastResult,
         weatherApiForecast: weatherApiForecastResult,
         smhi: smhiResult,
         met: metResult,
       },
       lat,
       lon,
-      currentTimezone ?? 'UTC',
+      timezone,
     );
 
     return { currentWeather, forecastWeather };
