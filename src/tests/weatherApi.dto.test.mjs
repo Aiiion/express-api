@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import weatherApiDto from '../dtos/weatherApi.dto.mjs';
 import { weather as weatherApiWeather } from '../fixtures/weatherApi.fixture.mjs';
 import { localTimeToEpoch, translateEpochDate, translateEpochTime } from '../utils/dateTimeHelpers.mjs';
@@ -52,6 +53,17 @@ describe('localTimeToEpoch', () => {
 });
 
 describe('weatherApiDto.currentWeather sunrise/sunset', () => {
+  // The fixture builder, the DTO and the assertions each read the clock on their own; a local
+  // midnight between two of those reads would leave them looking for different days. A fixed
+  // instant — midday in Stockholm, clear of a DST switch — keeps all three on one date.
+  beforeAll(() => {
+    jest.useFakeTimers({ now: Date.UTC(2026, 5, 15, 10, 0) });
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   it("converts today's astro clock text into epochs in the location's timezone", () => {
     const result = weatherApiDto.currentWeather(
       current(),

@@ -57,8 +57,9 @@ jest.unstable_mockModule('../dtos/met.dto.mjs', () => ({
   default: metDtoMocks,
 }));
 
+const logErrorMock = jest.fn();
 jest.unstable_mockModule('../services/errorLog.service.mjs', () => ({
-  logError: jest.fn(),
+  logError: logErrorMock,
 }));
 
 const captureForecastsMock = jest.fn();
@@ -232,6 +233,7 @@ describe('weatherAggregatorService', () => {
     weatherApiServiceMocks.forecastWeather.mockResolvedValue({});
     smhiServiceMocks.forecastWeather.mockResolvedValue({});
     metServiceMocks.forecastWeather.mockResolvedValue({});
+    logErrorMock.mockClear();
     weatherApiDtoMocks.currentWeather.mockReturnValue(weatherApiNormalizedCurrent);
     weatherApiDtoMocks.forecastWeather.mockReturnValue(null);
     smhiDtoMocks.currentWeather.mockReturnValue(smhiNormalizedCurrent);
@@ -280,6 +282,10 @@ describe('weatherAggregatorService', () => {
       expect(weatherApiDtoMocks.currentWeather).toHaveBeenCalledWith(currentPayload, true, null);
       expect(result.providers).toContain('weatherapi.com');
       expect(result.errors).toBeUndefined();
+      // Nothing else sees this call, so a silent failure would read as a permanently null sunrise
+      expect(logErrorMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'WeatherAPI forecast down' }), {
+        route: 'weatherAggregator.currentWeather',
+      });
     });
 
     it('uses the most recent dt (maximum) across providers', async () => {

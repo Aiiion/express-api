@@ -843,6 +843,13 @@ const weatherAggregatorService = {
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
+    // That forecast only feeds sunrise/sunset, so it never reaches collectProvider and a failure
+    // would leave no trace beyond a permanently null sunrise. allWeather's forecast is logged
+    // already, by processForecastWeather, so the log belongs here rather than in
+    // processCurrentWeather, which both paths share.
+    if (weatherApiForecastResult.status === 'rejected') {
+      logError(weatherApiForecastResult.reason, { route: 'weatherAggregator.currentWeather' });
+    }
     return processCurrentWeather(weatherApiResult, smhiResult, metResult, metric, weatherApiForecastResult);
   },
 
