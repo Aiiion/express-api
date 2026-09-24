@@ -714,12 +714,27 @@ const collectProvider = (result, dtoFn, name, route) => {
  * @param {PromiseSettledResult} smhiResult
  * @param {PromiseSettledResult} metResult
  * @param {boolean} metric
+ * @param {PromiseSettledResult|null} weatherApiForecastResult - WeatherAPI's forecast call, when one
+ *   was made. Its payload is the only place WeatherAPI reports sunrise/sunset, so it is handed to the
+ *   current DTO alongside the current payload; without it those fields are null.
  * @returns {Object}
  */
-const processCurrentWeather = (weatherApiResult, smhiResult, metResult, metric = true) => {
+const processCurrentWeather = (
+  weatherApiResult,
+  smhiResult,
+  metResult,
+  metric = true,
+  weatherApiForecastResult = null,
+) => {
   const route = 'weatherAggregator.currentWeather';
+  const weatherApiForecast = weatherApiForecastResult?.value ?? null;
   const collected = [
-    collectProvider(weatherApiResult, v => weatherApiDto.currentWeather(v, metric), 'weatherapi.com', route),
+    collectProvider(
+      weatherApiResult,
+      v => weatherApiDto.currentWeather(v, metric, weatherApiForecast),
+      'weatherapi.com',
+      route,
+    ),
     collectProvider(smhiResult, v => smhiDto.currentWeather(v, metric), 'smhi.se', route),
     collectProvider(metResult, v => metDto.currentWeather(v, metric), 'met.no', route),
   ];
@@ -821,12 +836,21 @@ const weatherAggregatorService = {
    * @returns {Promise<Object>} Averaged weather data from all sources
    */
   currentWeather: async (lat, lon, metric = true) => {
-    const [weatherApiResult, smhiResult, metResult] = await Promise.allSettled([
+    // A one-day WeatherAPI forecast rides along for today's sunrise/sunset, which current.json lacks
+    const [weatherApiResult, weatherApiForecastResult, smhiResult, metResult] = await Promise.allSettled([
       weatherApiService.currentWeather(lat, lon),
+      weatherApiService.forecastWeather(lat, lon, 1),
       smhiService.forecastWeather(lat, lon),
       metService.forecastWeather(lat, lon),
     ]);
-    return processCurrentWeather(weatherApiResult, smhiResult, metResult, metric);
+    // That forecast only feeds sunrise/sunset, so it never reaches collectProvider and a failure
+    // would leave no trace beyond a permanently null sunrise. allWeather's forecast is logged
+    // already, by processForecastWeather, so the log belongs here rather than in
+    // processCurrentWeather, which both paths share.
+    if (weatherApiForecastResult.status === 'rejected') {
+      logError(weatherApiForecastResult.reason, { route: 'weatherAggregator.currentWeather' });
+    }
+    return processCurrentWeather(weatherApiResult, smhiResult, metResult, metric, weatherApiForecastResult);
   },
 
   /**
@@ -864,7 +888,13 @@ const weatherAggregatorService = {
       metService.forecastWeather(lat, lon),
     ]);
 
-    const currentWeather = processCurrentWeather(weatherApiCurrentResult, smhiResult, metResult, metric);
+    const currentWeather = processCurrentWeather(
+      weatherApiCurrentResult,
+      smhiResult,
+      metResult,
+      metric,
+      weatherApiForecastResult,
+    );
 
     // Resolve the timezone once, from whichever WeatherAPI response came back — the
     // current-weather one is preferred as the more reliable of the two — and hand the
