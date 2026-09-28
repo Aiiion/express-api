@@ -57,8 +57,9 @@ jest.unstable_mockModule('../dtos/met.dto.mjs', () => ({
   default: metDtoMocks,
 }));
 
+const logErrorMock = jest.fn();
 jest.unstable_mockModule('../services/errorLog.service.mjs', () => ({
-  logError: jest.fn(),
+  logError: logErrorMock,
 }));
 
 const captureForecastsMock = jest.fn();
@@ -232,6 +233,7 @@ describe('weatherAggregatorService', () => {
     weatherApiServiceMocks.forecastWeather.mockResolvedValue({});
     smhiServiceMocks.forecastWeather.mockResolvedValue({});
     metServiceMocks.forecastWeather.mockResolvedValue({});
+    logErrorMock.mockClear();
     weatherApiDtoMocks.currentWeather.mockReturnValue(weatherApiNormalizedCurrent);
     weatherApiDtoMocks.forecastWeather.mockReturnValue(null);
     smhiDtoMocks.currentWeather.mockReturnValue(smhiNormalizedCurrent);
@@ -256,6 +258,34 @@ describe('weatherAggregatorService', () => {
       const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
 
       expect(result.icon).toBe('//cdn.weatherapi.com/weather/64x64/night/113.png');
+    });
+
+    it('fetches a one-day WeatherAPI forecast and hands it to the current DTO for sunrise/sunset', async () => {
+      const currentPayload = { location: { tz_id: 'Europe/Stockholm' } };
+      const forecastPayload = { forecast: { forecastday: [] } };
+      weatherApiServiceMocks.currentWeather.mockResolvedValue(currentPayload);
+      weatherApiServiceMocks.forecastWeather.mockResolvedValue(forecastPayload);
+
+      await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+      expect(weatherApiServiceMocks.forecastWeather).toHaveBeenCalledWith(59.4, 18.0, 1);
+      expect(weatherApiDtoMocks.currentWeather).toHaveBeenCalledWith(currentPayload, true, forecastPayload);
+    });
+
+    it('still normalizes WeatherAPI current data when its forecast call fails', async () => {
+      const currentPayload = { location: { tz_id: 'Europe/Stockholm' } };
+      weatherApiServiceMocks.currentWeather.mockResolvedValue(currentPayload);
+      weatherApiServiceMocks.forecastWeather.mockRejectedValue(new Error('WeatherAPI forecast down'));
+
+      const result = await weatherAggregatorService.currentWeather(59.4, 18.0);
+
+      expect(weatherApiDtoMocks.currentWeather).toHaveBeenCalledWith(currentPayload, true, null);
+      expect(result.providers).toContain('weatherapi.com');
+      expect(result.errors).toBeUndefined();
+      // Nothing else sees this call, so a silent failure would read as a permanently null sunrise
+      expect(logErrorMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'WeatherAPI forecast down' }), {
+        route: 'weatherAggregator.currentWeather',
+      });
     });
 
     it('uses the most recent dt (maximum) across providers', async () => {
@@ -1416,6 +1446,30 @@ describe('weatherAggregatorService', () => {
 
       expect(result.forecastWeather.list).toHaveProperty('Monday');
       expect(result.forecastWeather.providers).toEqual(expect.arrayContaining(['weatherapi.com', 'smhi.se', 'met.no']));
+    });
+
+    it('hands the one WeatherAPI forecast payload to the current DTO as well, for sunrise/sunset', async () => {
+      const currentPayload = { location: { tz_id: 'Europe/Stockholm' } };
+      const forecastPayload = { forecast: { forecastday: [] } };
+      weatherApiServiceMocks.currentWeather.mockResolvedValue(currentPayload);
+      weatherApiServiceMocks.forecastWeather.mockResolvedValue(forecastPayload);
+      weatherApiServiceMocks.forecastWeather.mockClear();
+
+      await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(weatherApiServiceMocks.forecastWeather).toHaveBeenCalledTimes(1);
+      expect(weatherApiDtoMocks.currentWeather).toHaveBeenCalledWith(currentPayload, true, forecastPayload);
+    });
+
+    it('hands the current DTO null for the forecast payload when that call failed', async () => {
+      const currentPayload = { location: { tz_id: 'Europe/Stockholm' } };
+      weatherApiServiceMocks.currentWeather.mockResolvedValue(currentPayload);
+      weatherApiServiceMocks.forecastWeather.mockRejectedValue(new Error('WeatherAPI forecast down'));
+
+      const result = await weatherAggregatorService.allWeather(59.4, 18.0);
+
+      expect(weatherApiDtoMocks.currentWeather).toHaveBeenCalledWith(currentPayload, true, null);
+      expect(result.currentWeather.providers).toContain('weatherapi.com');
     });
 
     it('propagates SMHI failure to both currentWeather and forecastWeather errors', async () => {

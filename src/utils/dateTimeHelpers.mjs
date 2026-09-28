@@ -68,3 +68,43 @@ export const translateEpochTime = (epoch, timezone) => {
   const m = String(date.getMinutes()).padStart(2, '0');
   return `${h}:${m}`;
 };
+
+// Offset of `timezone` from UTC in milliseconds at the given instant (positive east of UTC)
+const timezoneOffsetMs = (utcMs, timezone) => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(utcMs));
+  const get = type => Number(parts.find(p => p.type === type)?.value);
+  const wallClockAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+  return wallClockAsUtc - Math.floor(utcMs / 1000) * 1000;
+};
+
+// Returns the epoch (seconds) of a wall-clock time — a "YYYY-MM-DD" date plus hours and
+// minutes — read in the given timezone. The inverse of translateEpochDate/translateEpochTime,
+// for providers that report a moment as local clock text rather than as a timestamp.
+export const localTimeToEpoch = (isoDate, hours, minutes, timezone) => {
+  const [year, month, day] = String(isoDate).split('-').map(Number);
+  const wallClock = Date.UTC(year, month - 1, day, hours, minutes);
+  if (!Number.isFinite(wallClock)) return null;
+
+  if (typeof timezone === 'number') {
+    return Math.floor((wallClock - timezone * 3_600_000) / 1000);
+  }
+
+  if (typeof timezone === 'string') {
+    // Treat the wall clock as UTC for a first guess and correct it by the zone's offset at
+    // that guess; a second pass settles guesses that landed on the far side of a DST switch
+    let instant = wallClock - timezoneOffsetMs(wallClock, timezone);
+    instant = wallClock - timezoneOffsetMs(instant, timezone);
+    return Math.floor(instant / 1000);
+  }
+
+  return Math.floor(wallClock / 1000);
+};

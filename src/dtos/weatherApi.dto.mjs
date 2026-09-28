@@ -1,4 +1,4 @@
-import { translateEpochDate } from '../utils/dateTimeHelpers.mjs';
+import { localTimeToEpoch, translateEpochDate } from '../utils/dateTimeHelpers.mjs';
 import { kphToMs } from '../utils/mathHelpers.mjs';
 import { conditionFromWeatherApiCode } from '../utils/weatherConditions.mjs';
 
@@ -19,6 +19,38 @@ const getPrecipitationType = hour => {
   return 'none';
 };
 
+// WeatherAPI writes astro times as local clock text, "06:14 AM"; above the polar
+// circles it writes "No sunrise" / "No sunset" instead, which parses to null
+const parseClockTime = text => {
+  const match = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(String(text ?? '').trim());
+  if (!match) return null;
+  const hours = (Number(match[1]) % 12) + (match[3].toUpperCase() === 'P' ? 12 : 0);
+  return { hours, minutes: Number(match[2]) };
+};
+
+// Sunrise and sunset never appear on current.json — WeatherAPI only reports them per
+// forecast day (`astro`) — so the current DTO reads them off the forecast payload for
+// the location's current local date and turns the clock text into epochs. Without a
+// forecast payload, a timezone or a matching day the fields stay null.
+const sunTimesFor = (current, forecast) => {
+  const none = { sunrise: null, sunset: null };
+  const timezone = current?.location?.tz_id ?? forecast?.location?.tz_id;
+  if (!timezone) return none;
+  try {
+    const today = translateEpochDate(Math.floor(Date.now() / 1000), timezone);
+    const astro = forecast?.forecast?.forecastday?.find(day => day?.date === today)?.astro;
+    if (!astro) return none;
+    const toEpoch = text => {
+      const time = parseClockTime(text);
+      return time ? localTimeToEpoch(today, time.hours, time.minutes, timezone) : null;
+    };
+    return { sunrise: toEpoch(astro.sunrise), sunset: toEpoch(astro.sunset) };
+  } catch {
+    // An unknown tz_id throws inside Intl; a missing sunrise must not cost the whole source
+    return none;
+  }
+};
+
 const translateSeverity = severity => {
   switch (severity) {
     case 'minor':
@@ -37,7 +69,9 @@ const translateSeverity = severity => {
 };
 
 const weatherApiDto = {
-  currentWeather: (data, metric = true) => {
+  // `forecast` is the raw forecast.json payload for the same location, if one was fetched —
+  // it is the only place WeatherAPI reports sunrise/sunset
+  currentWeather: (data, metric = true, forecast = null) => {
     if (!data) return null;
     return {
       weather: data?.current?.condition.text,
@@ -87,8 +121,7 @@ const weatherApiDto = {
         hours_measured: 1,
         type: getPrecipitationType(data?.current),
       },
-      sunrise: null,
-      sunset: null,
+      ...sunTimesFor(data, forecast),
       uv: data?.current?.uv,
       provider: 'weatherapi.com',
     };
